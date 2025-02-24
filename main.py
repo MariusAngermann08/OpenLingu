@@ -1,7 +1,8 @@
 import kivy
 from kivymd.app import MDApp
-# Klasse für die MainApp
+
 class OpenLinguApp(MDApp):
+    #Hallo Jonas
     def build(self, **kwargs):
         return None
 
