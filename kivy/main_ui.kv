@@ -52,9 +52,13 @@
                 name: 'screen 2'
                 text: 'Konto'
                 icon: 'account'
-
-                MDBoxLayout:
-                    orientation: 'vertical'
+                
+                MDTopAppBar:
+                    title: "Title"
+                    icon: "cog"
+                    type: "bottom"
+                    left_action_items: [["menu", lambda x: x]]
+                    mode: "end"
                         
 
 <SettingsScreen>:
