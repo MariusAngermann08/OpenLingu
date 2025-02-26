@@ -9,7 +9,14 @@ import requests
 from database import Database
 
 #Importing custom modules
-Builder.load_file('kivy\main_ui.kv')
+Builder.load_file('kivy/main_ui.kv')
+Builder.load_file('kivy/auth_pages.kv')
+
+class SignInScreen(Screen):
+    pass
+
+class SignUpScreen(Screen):
+    pass
 class MainScreen(Screen):
     pass
 
@@ -27,6 +34,9 @@ class OpenLinguApp(MDApp):
         self.sm.add_widget(MainScreen(name="main"))
         self.sm.add_widget(SettingsScreen(name="settings"))
         self.sm.add_widget(LanguageScreen(name="language"))
+        self.sm.add_widget(SignInScreen(name="signin"))
+        self.sm.add_widget(SignUpScreen(name="signup"))
+        self.sm.current = "signin"
         return self.sm
     
     def open_settings_menu(self, **kwargs):
@@ -41,6 +51,14 @@ class OpenLinguApp(MDApp):
         self.transition_type = "language"
         self.sm.transition.direction = "down"
         self.sm.current = "language"
+    def sign_in_menu(self, **kwargs):
+        self.sm.transition.direction = "right"
+        self.sm.current = "signin"
+    def sign_up_menu(self, **kwargs):
+        self.sm.transition.direction = "left"
+        self.sm.current = "signup"
+
+
 if __name__ == "__main__":
     
     OpenLinguApp().run()
