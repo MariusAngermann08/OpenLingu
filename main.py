@@ -2,6 +2,7 @@ import kivy
 from kivymd.app import MDApp # type: ignore
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
+
 #Importing custom modules
 Builder.load_file('kivy\main_ui.kv')
 class MainScreen(Screen):
@@ -9,6 +10,7 @@ class MainScreen(Screen):
 
 class SettingsScreen(Screen):
     pass
+
 class OpenLinguApp(MDApp):
     #Hallo Jonas
     def build(self, **kwargs):
@@ -18,8 +20,10 @@ class OpenLinguApp(MDApp):
         return self.sm
     
     def open_settings_menu(self, **kwargs):
+        self.sm.transition.direction = "left"
         self.sm.current = "settings"
     def backto_main_menu(self, **kwargs):
+        self.sm.transition.direction = "right"
         self.sm.current = "main"
 
 if __name__ == "__main__":
