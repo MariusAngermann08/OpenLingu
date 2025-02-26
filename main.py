@@ -2,6 +2,11 @@ import kivy
 from kivymd.app import MDApp # type: ignore
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
+import json
+import requests
+
+#Import Database Module
+from database import Database
 
 #Importing custom modules
 Builder.load_file('kivy\main_ui.kv')
