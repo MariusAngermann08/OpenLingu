@@ -25,7 +25,8 @@ class OpenLinguApp(MDApp):
     def backto_main_menu(self, **kwargs):
         self.sm.transition.direction = "right"
         self.sm.current = "main"
-
+    def language_menu(self, **kwargs):
+        pass
 if __name__ == "__main__":
     
     OpenLinguApp().run()
