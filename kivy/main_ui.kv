@@ -1,7 +1,11 @@
-MDScreen:
+
+    
+
+<MainScreen>:
+    name: "main"
     MDBoxLayout:
         orientation: 'vertical'
-    
+        
         MDTopAppBar:
             title: "Openlingu"
             right_action_items: [["cog", lambda x: app.open_settings_menu()]]
@@ -32,3 +36,19 @@ MDScreen:
                 MDLabel:
                     text: 'Konto'
                     halign: 'center'
+
+<SettingsScreen>:
+    name: "settings"
+    MDScreen:
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDTopAppBar:
+                title: "Settings"
+                left_action_items: [["arrow-left", lambda x: app.backto_main_menu()]]
+                md_bg_color: 0.82, 0.78, 0.69, 1
+                specific_text_color: "black"
+
+            MDLabel:
+                text: "Settings Page"
+                halign: "center"
