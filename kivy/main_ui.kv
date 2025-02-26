@@ -65,10 +65,26 @@
 
             MDTopAppBar:
                 title: "Settings"
-                left_action_items: [["arrow-left", lambda x: app.backto_main_menu()]]
+                left_action_items: [["arrow-left", lambda x: app.main_menu()]]
                 md_bg_color: 0.82, 0.78, 0.69, 1
                 specific_text_color: "black"
 
             MDLabel:
                 text: "Settings Page"
+                halign: "center"
+
+<LanguageScreen>:
+    name: "language"
+    MDScreen:
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDTopAppBar:
+                title: "Sprache Auswählen"
+                left_action_items: [["arrow-left", lambda x: app.main_menu()]]
+                md_bg_color: 0.82, 0.78, 0.69, 1
+                specific_text_color: "black"
+
+            MDLabel:
+                text: "Language Page"
                 halign: "center"
