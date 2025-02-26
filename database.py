@@ -29,12 +29,13 @@ class Database:
         }
         response = requests.post(url, json=data)
         print(response.json())
+        
 
     def create_user(self, name, pname, age, mlang):
         self.users[name] = {"name": pname, "age": age, "mlang": mlang}
 
-    def update_user(self):
-        pass
+    def update_user(self, name, pname, age, mlang):
+        self.users[name] = {"name": pname, "age": age, "mlang": mlang}
 
     def push_to_database(self):
         response = requests.patch(url=self.firebase_url, json=self.users)
