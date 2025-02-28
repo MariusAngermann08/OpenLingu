@@ -12,6 +12,17 @@ from database import Database
 Builder.load_file('kivy/main_ui.kv')
 Builder.load_file('kivy/auth_pages.kv')
 
+#Read firebase data from file
+
+APIKEY = ""
+URL = ""
+
+with open("server/firebase_data.json", "r") as data:
+    temp = json.load(data)
+    APIKEY = temp["APIKEY"]
+    URL = temp["URL"]
+
+
 class WelcomeScreen(Screen):
     pass
 class SignInScreen(Screen):
@@ -31,6 +42,14 @@ class LanguageScreen(Screen):
 class OpenLinguApp(MDApp):
     #Hallo Jonas
     transition_type = "settings"
+    db = None
+
+    def __init__(self, **kwargs):
+        super(OpenLinguApp,self).__init__(**kwargs)
+        global APIKEY
+        global URL
+        self.db = Database(apikey=APIKEY,database_url=URL)
+
     def build(self, **kwargs):
         self.sm = ScreenManager()
         self.sm.add_widget(MainScreen(name="main"))
