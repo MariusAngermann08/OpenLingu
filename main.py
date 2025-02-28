@@ -12,6 +12,8 @@ from database import Database
 Builder.load_file('kivy/main_ui.kv')
 Builder.load_file('kivy/auth_pages.kv')
 
+class WelcomeScreen(Screen):
+    pass
 class SignInScreen(Screen):
     pass
 
@@ -36,7 +38,8 @@ class OpenLinguApp(MDApp):
         self.sm.add_widget(LanguageScreen(name="language"))
         self.sm.add_widget(SignInScreen(name="signin"))
         self.sm.add_widget(SignUpScreen(name="signup"))
-        self.sm.current = "signin"
+        self.sm.add_widget(WelcomeScreen(name="Welcome"))
+        self.sm.current = "Welcome"
         return self.sm
     
     def open_settings_menu(self, **kwargs):
