@@ -1,0 +1,60 @@
+
+
+<SignInScreen>:
+    name: "signin"
+    MDScreen:
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDTopAppBar:
+                title: "Anmelden"
+                md_bg_color: 0.82, 0.78, 0.69, 1
+                specific_text_color: "black"
+                right_action_items: [["icons/signup.png", lambda x: app.sign_up_menu()]]
+
+            GridLayout:
+                rows: 3
+                cols: 1
+                padding: 45,175
+
+                MDTextField:
+                    hint_text: "Email"
+                    halign: "left"
+                
+                MDTextField:
+                    hint_text: "Passwort"
+                    halign: "left"
+
+                MDRoundFlatButton:
+                    text: "Anmelden"
+                    halign: "left"
+                    on_press: app.main_menu()
+
+<SignUpScreen>:
+    name: "signup"
+    MDScreen:
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDTopAppBar:
+                title: "Registrieren"
+                md_bg_color: 0.82, 0.78, 0.69, 1
+                specific_text_color: "black"
+                left_action_items: [["arrow-left", lambda x: app.sign_in_menu()]]
+
+            GridLayout:
+                rows: 3
+                cols: 1
+                padding: 45,175
+
+                MDTextField:
+                    hint_text: "Email"
+                    halign: "left"
+                
+                MDTextField:
+                    hint_text: "Passwort"
+                    halign: "left"
+
+                MDRoundFlatButton:
+                    text: "Registrieren"
+                    halign: "left"
