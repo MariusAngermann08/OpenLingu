@@ -7,6 +7,7 @@
         orientation: 'vertical'
         
         MDTopAppBar:
+            id: top_app_bar
             title: "Openlingu"
             anchor_title: "left"
             right_action_items: [["icons/language.png", lambda x: app.language_menu()], ["cog", lambda x: app.open_settings_menu()]]
@@ -53,12 +54,7 @@
                 text: 'Konto'
                 icon: 'account'
                 
-                MDTopAppBar:
-                    title: "Title"
-                    icon: "cog"
-                    type: "bottom"
-                    left_action_items: [["menu", lambda x: x]]
-                    mode: "end"
+            
                         
 
 <SettingsScreen>:
