@@ -59,7 +59,8 @@
 
             MDTopAppBar:
                 title: "Anmelden"
-                left_action_items: [["arrow-left", lambda x: app.welcome_menu()]]
+                anchor_title: "left"
+                right_action_items: [["arrow-right", lambda x: app.welcome_menu()]]
                 md_bg_color: 1, 1, 1, 1
                 specific_text_color: "black"
 
@@ -67,29 +68,53 @@
                 cols: 1
                 rows: 4
 
-                padding: 45, 100
+                padding: 200, 100
+                MDBoxLayout:
+                    orientation: "vertical"
+                    canvas:
+                        Color:
+                            rgba: 0.82, 0.78, 0.69, 1
+                        RoundedRectangle:
+                            size: self.size
+                            pos: self.pos
+                            radius: [25]
 
-                MDTextField:
-                    hint_text: "Email"
-                    cursor_color: 0, 0, 0, 1
-                    cursor_width: "2sp"
-                    multiline: False
-                
-                MDTextField:
-                    hint_text: "Passwort"
-                    password: True
-                    cursor_color: 0, 0, 0, 1
-                    cursor_width: "2sp"
-                    multiline: False
-                    padding: 15
+                    TextInput:
+                        hint_text: "Email"
+                        cursor_color: 0, 0, 0, 1
+                        cursor_width: "2sp"
+                        multiline: False
+                        background_color: 0, 0, 0, 0
+                        padding: 10, 30
+                MDBoxLayout:
+                    orientation: "vertical"
+                    canvas:
+                        Color:
+                            rgba: 0.82, 0.78, 0.69, 1
+                        RoundedRectangle:
+                            size: self.size
+                            pos: self.pos
+                            radius: [25]   
+                    TextInput:
+                        hint_text: "Passwort"
+                        password: True
+                        cursor_color: 0, 0, 0, 1
+                        cursor_width: "2sp"
+                        multiline: False
+                        background_color: 0, 0, 0, 0
+                        padding: 10, 30
 
                 MDTextButton:
                     text: "Passwort vergessen?"
                     text_color: 0.82, 0.78, 0.69, 1
+                    padding: 10, 30
+                    halign: "center"
                 
                 MDRectangleFlatButton:
                     text: "Anmelden"
                     on_press: app.main_menu()
+                    padding: 10, 30
+                    halign: "center"
        
             
                 
