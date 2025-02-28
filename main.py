@@ -38,8 +38,8 @@ class OpenLinguApp(MDApp):
         self.sm.add_widget(LanguageScreen(name="language"))
         self.sm.add_widget(SignInScreen(name="signin"))
         self.sm.add_widget(SignUpScreen(name="signup"))
-        self.sm.add_widget(WelcomeScreen(name="Welcome"))
-        self.sm.current = "Welcome"
+        self.sm.add_widget(WelcomeScreen(name="welcome"))
+        self.sm.current = "welcome"
         return self.sm
     
     def open_settings_menu(self, **kwargs):
@@ -55,11 +55,14 @@ class OpenLinguApp(MDApp):
         self.sm.transition.direction = "down"
         self.sm.current = "language"
     def sign_in_menu(self, **kwargs):
-        self.sm.transition.direction = "right"
+        self.sm.transition.direction = "left"
         self.sm.current = "signin"
     def sign_up_menu(self, **kwargs):
         self.sm.transition.direction = "left"
         self.sm.current = "signup"
+    def welcome_menu(self, **kwargs):
+        self.sm.transition.direction = "right"
+        self.sm.current = "welcome"
 
 
 if __name__ == "__main__":

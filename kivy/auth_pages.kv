@@ -42,7 +42,7 @@
                     text: "Registrieren"
                     size_hint: 1, None
                     pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                    on_press: app.sign_in_menu()
+                    on_press: app.sign_up_menu()
 
                 
 
@@ -54,60 +54,48 @@
 <SignInScreen>:
     name: "signin"
     MDScreen:
-        MDFloatLayout:
-            md_bg_color: 1, 1, 1, 1
-            MDLabel:
-                text: "Anmelden"
-                halign: "center"
-                font_size: "70sp"
-                pos_hint: {"center_x": 0.5, "center_y": 0.7}       
-            MDFloatLayout:
-                size_hint: 0.85, 0.08
+        MDBoxLayout:
+            orientation: "vertical"
+
+            MDTopAppBar:
+                title: "Anmelden"
+                left_action_items: [["arrow-left", lambda x: app.welcome_menu()]]
                 md_bg_color: 1, 1, 1, 1
-                pos_hint: {"center_x": 0.5, "center_y": 0.42} 
-                canvas:
-                    Color:
-                        rgba: 0.82, 0.78, 0.69, 1
-                    RoundedRectangle:
-                        size: self.size
-                        pos: self.pos
-                        radius: [25]
-                TextInput:
+                specific_text_color: "black"
+
+            GridLayout:
+                cols: 1
+                rows: 4
+
+                padding: 45, 100
+
+                MDTextField:
                     hint_text: "Email"
-                    size_hint: 1, None
-                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                    height: self.minimum_height
                     cursor_color: 0, 0, 0, 1
                     cursor_width: "2sp"
                     multiline: False
-                    padding: 15
-                    background_color: 0, 0, 0, 0
-            MDFloatLayout:
-                size_hint: 0.85, 0.08
-                md_bg_color: 1, 1, 1, 1
-                pos_hint: {"center_x": 0.5, "center_y": 0.32} 
-                canvas:
-                    Color:
-                        rgba: 0.82, 0.78, 0.69, 1
-                    RoundedRectangle:
-                        size: self.size
-                        pos: self.pos
-                        radius: [25]
-                TextInput:
+                
+                MDTextField:
                     hint_text: "Passwort"
                     password: True
-                    size_hint: 1, None
-                    pos_hint: {"center_x": 0.5, "center_y": 0.5}
-                    height: self.minimum_height
                     cursor_color: 0, 0, 0, 1
                     cursor_width: "2sp"
                     multiline: False
                     padding: 15
-                    background_color: 0, 0, 0, 0
-            MDTextButton:
-                text: "Passwort vergessen?"
-                pos_hint: {"center_x": 0.5, "center_y": 0.21}
-                text_color: 0.82, 0.78, 0.69, 1
+
+                MDTextButton:
+                    text: "Passwort vergessen?"
+                    text_color: 0.82, 0.78, 0.69, 1
+                
+                MDRectangleFlatButton:
+                    text: "Anmelden"
+                    on_press: app.main_menu()
+       
+            
+                
+           
+                
+            
 
 
             
@@ -120,23 +108,31 @@
 
             MDTopAppBar:
                 title: "Registrieren"
-                md_bg_color: 0.82, 0.78, 0.69, 1
+                left_action_items: [["arrow-left", lambda x: app.welcome_menu()]]
+                md_bg_color: 1, 1, 1, 1
                 specific_text_color: "black"
-                left_action_items: [["arrow-left", lambda x: app.sign_in_menu()]]
 
             GridLayout:
-                rows: 3
                 cols: 1
-                padding: 45,175
+                rows: 4
+
+                padding: 45, 100
 
                 MDTextField:
                     hint_text: "Email"
-                    halign: "left"
+                    cursor_color: 0, 0, 0, 1
+                    cursor_width: "2sp"
+                    multiline: False
                 
                 MDTextField:
                     hint_text: "Passwort"
-                    halign: "left"
-
-                MDRoundFlatButton:
+                    password: True
+                    cursor_color: 0, 0, 0, 1
+                    cursor_width: "2sp"
+                    multiline: False
+                    padding: 15
+                
+                MDRectangleFlatButton:
                     text: "Registrieren"
-                    halign: "left"
+
+                
