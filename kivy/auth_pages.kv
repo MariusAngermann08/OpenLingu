@@ -91,15 +91,7 @@
                 MDRectangleFlatButton:
                     text: "Anmelden"
                     on_press: app.main_menu()
-       
-            
-                
-           
-                
-            
-
-
-            
+                 
 
 <SignUpScreen>:
     name: "signup"
@@ -118,16 +110,36 @@
                 rows: 4
 
                 padding: 45, 100
+                
+                MDTextField:
+                    hint_text: "Benutzername"
+                    mode: "rectangle"
+                    cursor_color: 0, 0, 0, 1
+                    cursor_width: "2sp"
+                    multiline: False
+                
 
                 MDTextField:
                     hint_text: "Email"
+                    mode: "rectangle"
                     cursor_color: 0, 0, 0, 1
                     cursor_width: "2sp"
                     multiline: False
                 
                 MDTextField:
+                    id: register_password
                     hint_text: "Passwort"
                     password: True
+                    mode: "rectangle"
+                    cursor_color: 0, 0, 0, 1
+                    cursor_width: "2sp"
+                    multiline: False
+                    padding: 15
+                
+                MDTextField:
+                    hint_text: "Passwort wiederholen"
+                    password: True
+                    mode: "rectangle"
                     cursor_color: 0, 0, 0, 1
                     cursor_width: "2sp"
                     multiline: False
@@ -135,5 +147,6 @@
                 
                 MDRectangleFlatButton:
                     text: "Registrieren"
+                    on_press: app.main_menu()
 
                 
