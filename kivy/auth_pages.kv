@@ -44,12 +44,29 @@
                     pos_hint: {"center_x": 0.5, "center_y": 0.5}
                     on_press: app.sign_up_menu()
 
-                
+<Passwordfield>:
+    size_hint_y: None
+    height: login_password.height
+                    
+    MDTextField:
+        id: login_password
+        hint_text: "Passwort"
+        password: True
+        cursor_color: 0, 0, 0, 1
+        cursor_width: "2sp"
+        multiline: False
+        padding: 15
+        mode: "rectangle"
 
-            
-
-
-
+    MDIconButton:
+        icon: "eye-off"
+        pos_hint: {"center_y": .5}
+        pos: login_password.width - self.width + dp(8), 0
+        theme_text_color: "Hint"
+        on_release:
+            self.icon = "eye" if self.icon == "eye-off" else "eye-off"
+            login_password.password = False if login_password.password is True else True
+                         
 
 <SignInScreen>:
     name: "signin"
@@ -75,14 +92,9 @@
                     cursor_color: 0, 0, 0, 1
                     cursor_width: "2sp"
                     multiline: False
+                    mode: "rectangle"
                 
-                MDTextField:
-                    hint_text: "Passwort"
-                    password: True
-                    cursor_color: 0, 0, 0, 1
-                    cursor_width: "2sp"
-                    multiline: False
-                    padding: 15
+                Passwordfield:
 
                 MDTextButton:
                     text: "Passwort vergessen?"
