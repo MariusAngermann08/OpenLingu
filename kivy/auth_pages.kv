@@ -69,10 +69,12 @@
 
 <Passwordregisterfield>:
     size_hint_y: None
-    height: register_password.height
+    
+    register_password: kv_register_password
+    height: kv_register_password.height
                     
     MDTextField:
-        id: register_password
+        id: kv_register_password
         hint_text: "Passwort"
         password: True
         cursor_color: 0, 0, 0, 1
@@ -84,18 +86,20 @@
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: register_password.width - self.width + dp(8), 0
+        pos: kv_register_password.width - self.width + dp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
-            register_password.password = False if register_password.password is True else True
+            kv_register_password.password = False if kv_register_password.password is True else True
 
 <Passwordconfirmfield>:
     size_hint_y: None
-    height: confirm_password.height
+    
+    confirm_password: kv_confirm_password
+    height: kv_confirm_password.height
                     
     MDTextField:
-        id: confirm_password
+        id: kv_confirm_password
         hint_text: "Passwort"
         password: True
         cursor_color: 0, 0, 0, 1
@@ -107,11 +111,11 @@
     MDIconButton:
         icon: "eye-off"
         pos_hint: {"center_y": .5}
-        pos: confirm_password.width - self.width + dp(8), 0
+        pos: kv_confirm_password.width - self.width + dp(8), 0
         theme_text_color: "Hint"
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
-            confirm_password.password = False if confirm_password.password is True else True
+            kv_confirm_password.password = False if kv_confirm_password.password is True else True
                          
 
 <SignInScreen>:

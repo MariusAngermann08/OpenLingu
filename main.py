@@ -41,7 +41,7 @@ class SignUpScreen(Screen):
         super(SignUpScreen,self).__init__(**kwargs)
 
     def get_data(self):
-        data = [self.username.text,self.email.text,self.password1.text,self.password2.text]
+        data = [self.username.text,self.email.text,self.password1.register_password.text,self.password2.confirm_password.text]
         self.test_label.text = f"Click Sign Up to display data from input fields\n{str(data)}"
         return data
     
