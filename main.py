@@ -110,6 +110,7 @@ class OpenLinguApp(MDApp):
         self.sm.current = "signup"
     def welcome_menu(self, **kwargs):
         self.sm.transition.direction = "left"
+        self.sm.current = "welcome"
     
 
     def sign_up(self, **kwargs):
