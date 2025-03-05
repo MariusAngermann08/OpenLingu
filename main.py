@@ -39,8 +39,13 @@ class SettingsScreen(Screen):
 
 class LanguageScreen(Screen):
     pass
-class Passwordfield(MDRelativeLayout):
-    cutom_field_password = ObjectProperty(None)  
+class Passwordloginfield(MDRelativeLayout):
+    pass
+class Passwordregisterfield(MDRelativeLayout):
+    pass
+
+class Passwordconfirmfield(MDRelativeLayout):
+    pass 
 
 class OpenLinguApp(MDApp):
     #Hallo Jonas
