@@ -2,6 +2,7 @@ import kivy
 from kivymd.app import MDApp # type: ignore
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.properties import ObjectProperty
 import json
 import requests
 
@@ -29,7 +30,20 @@ class SignInScreen(Screen):
     pass
 
 class SignUpScreen(Screen):
-    pass
+    username = ObjectProperty(None)
+    email = ObjectProperty(None)
+    password1 = ObjectProperty(None)
+    password2 = ObjectProperty(None)
+    test_label = ObjectProperty(None)
+
+    def __init__(self, **kwargs):
+        super(SignUpScreen,self).__init__(**kwargs)
+
+    def get_data(self):
+        data = [self.username.text,self.email.text,self.password1.text,self.password2.text]
+        self.test_label.text = f"Click Sign Up to display data from input fields\n{str(data)}"
+        return data
+    
 class MainScreen(Screen):
     pass
 
@@ -51,13 +65,20 @@ class OpenLinguApp(MDApp):
         self.db = Database(apikey=APIKEY,database_url=URL)
 
     def build(self, **kwargs):
+        self.main_screen = MainScreen(name="main")
+        self.settings_screen = SettingsScreen(name="settings")
+        self.language_screen = LanguageScreen(name="language")
+        self.signin_screen = SignInScreen(name="signin")
+        self.signup_screen = SignUpScreen(name="signup")
+        self.welcome_screen = WelcomeScreen(name="welcome")
+
         self.sm = ScreenManager()
-        self.sm.add_widget(MainScreen(name="main"))
-        self.sm.add_widget(SettingsScreen(name="settings"))
-        self.sm.add_widget(LanguageScreen(name="language"))
-        self.sm.add_widget(SignInScreen(name="signin"))
-        self.sm.add_widget(SignUpScreen(name="signup"))
-        self.sm.add_widget(WelcomeScreen(name="welcome"))
+        self.sm.add_widget(self.main_screen)
+        self.sm.add_widget(self.settings_screen)
+        self.sm.add_widget(self.language_screen)
+        self.sm.add_widget(self.signin_screen)
+        self.sm.add_widget(self.signup_screen)
+        self.sm.add_widget(self.welcome_screen)
         self.sm.current = "welcome"
         return self.sm
     
@@ -81,54 +102,11 @@ class OpenLinguApp(MDApp):
         self.sm.current = "signup"
     def welcome_menu(self, **kwargs):
         self.sm.transition.direction = "left"
-class OpenLinguApp(MDApp):
-    # Hallo Jonas
-    transition_type = "settings"
-    db = None
+    
 
-    def __init__(self, **kwargs):
-        super(OpenLinguApp, self).__init__(**kwargs)
-        global APIKEY
-        global URL
-        self.db = Database(apikey=APIKEY, database_url=URL)
-
-    def build(self, **kwargs):
-        self.sm = ScreenManager()
-        self.sm.add_widget(WelcomeScreen(name="welcome"))
-        self.sm.add_widget(SignInScreen(name="signin"))
-        self.sm.add_widget(SignUpScreen(name="signup"))
-        self.sm.add_widget(MainScreen(name="main"))
-        self.sm.add_widget(SettingsScreen(name="settings"))
-        self.sm.add_widget(LanguageScreen(name="language"))
-        self.sm.current = "welcome"
-        return self.sm
-
-    def navigate_to(self, screen_name, transition_direction):
-        self.sm.transition.direction = transition_direction
-        self.sm.current = screen_name
-
-    def open_settings_menu(self, **kwargs):
-        self.navigate_to("settings", "left")
-
-    def main_menu(self, **kwargs):
-        if self.transition_type == "settings":
-            self.navigate_to("main", "right")
-        elif self.transition_type == "language":
-            self.navigate_to("main", "up")
-
-    def language_menu(self, **kwargs):
-        self.transition_type = "language"
-        self.navigate_to("language", "down")
-
-    def sign_in_menu(self, **kwargs):
-        self.navigate_to("signin", "right")
-
-    def sign_up_menu(self, **kwargs):
-        self.navigate_to("signup", "right")
-
-    def welcome_menu(self, **kwargs):
-        self.navigate_to("welcome", "left")        
-        self.sm.current = "welcome"
+    def sign_up(self, **kwargs):
+        data = self.signup_screen.get_data()
+        print(data)
 
 
 if __name__ == "__main__":
