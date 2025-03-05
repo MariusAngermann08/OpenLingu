@@ -5,6 +5,7 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.properties import ObjectProperty
 import json
 import requests
+from kivymd.uix.relativelayout import MDRelativeLayout
 
 #Import Database Module
 from database import Database
@@ -52,6 +53,13 @@ class SettingsScreen(Screen):
 
 class LanguageScreen(Screen):
     pass
+class Passwordloginfield(MDRelativeLayout):
+    pass
+class Passwordregisterfield(MDRelativeLayout):
+    pass
+
+class Passwordconfirmfield(MDRelativeLayout):
+    pass 
 
 class OpenLinguApp(MDApp):
     #Hallo Jonas
