@@ -53,6 +53,40 @@
                 name: 'screen 2'
                 text: 'Konto'
                 icon: 'account'
+
+                MDBoxLayout:
+                    orientation: 'vertical'
+                    md_bg_color: 0.82, 0.78, 0.69, 1
+                    size_hint: 1, 1
+
+                    MDBoxLayout:
+                        orientation: "horizontal"
+                        size_hint: 1, 0.3
+                        md_bg_color: "lightblue"
+                        
+                        MDRoundFlatButton:
+                            md_bg_color: "lightblue"
+                            size_hint: 0.4, 1
+                            rounded_button: True
+                            border_color: "lightblue"
+
+                            FitImage:
+                                id: profile_picture
+                                source: "icons/Test_Profile.jpg"
+                                size_hint: 1, 1
+                                pos_hint: {"center_x": 0.5, "center_y": 0.5}
+                                radius: 50, 50, 50, 50
+                        
+                        MDLabel:
+                            id: user_welcome
+                            text: "Placeholder"
+                            halign: "center"
+                            size_hint: 0.6, 1
+                    
+                    GridLayout:
+                        size_hint: 1, 0.7
+                        md_bg_color: "white"
+
                 
             
                         
