@@ -10,11 +10,11 @@
                 text: "Welcome to OpenLingu"
                 halign: "center"
                 font_size: "40sp"
-                pos_hint: {"center_x": 0.5, "center_y": 0.48}       
+                pos_hint: {"center_x": 0.5, "center_y": 0.48}
             MDFloatLayout:
                 size_hint: 0.85, 0.08
                 md_bg_color: 1, 1, 1, 1
-                pos_hint: {"center_x": 0.5, "center_y": 0.32} 
+                pos_hint: {"center_x": 0.5, "center_y": 0.32}
                 canvas:
                     Color:
                         rgba: 0.82, 0.78, 0.69, 1
@@ -30,7 +30,7 @@
             MDFloatLayout:
                 size_hint: 0.85, 0.08
                 md_bg_color: 1, 1, 1, 1
-                pos_hint: {"center_x": 0.5, "center_y": 0.22} 
+                pos_hint: {"center_x": 0.5, "center_y": 0.22}
                 canvas:
                     Color:
                         rgba: 0.82, 0.78, 0.69, 1
@@ -47,7 +47,7 @@
 <Passwordloginfield>:
     size_hint_y: None
     height: login_password.height
-                    
+
     MDTextField:
         id: login_password
         hint_text: "Passwort"
@@ -69,10 +69,10 @@
 
 <Passwordregisterfield>:
     size_hint_y: None
-    
+
     register_password: kv_register_password
     height: kv_register_password.height
-                    
+
     MDTextField:
         id: kv_register_password
         hint_text: "Passwort"
@@ -94,10 +94,10 @@
 
 <Passwordconfirmfield>:
     size_hint_y: None
-    
+
     confirm_password: kv_confirm_password
     height: kv_confirm_password.height
-                    
+
     MDTextField:
         id: kv_confirm_password
         hint_text: "Passwort"
@@ -116,7 +116,7 @@
         on_release:
             self.icon = "eye" if self.icon == "eye-off" else "eye-off"
             kv_confirm_password.password = False if kv_confirm_password.password is True else True
-                         
+
 
 <SignInScreen>:
     name: "signin"
@@ -144,17 +144,17 @@
                     cursor_width: "2sp"
                     multiline: False
                     mode: "rectangle"
-                
+
                 Passwordloginfield:
 
                 MDTextButton:
                     text: "Passwort vergessen?"
                     text_color: 0.82, 0.78, 0.69, 1
-                
+
                 MDRectangleFlatButton:
                     text: "Anmelden"
                     on_press: app.main_menu()
-                 
+
 
 <SignUpScreen>:
     name: "signup"
@@ -180,7 +180,7 @@
 
                 padding: 45, 100
                 spacing: 12
-                
+
                 MDTextField:
                     hint_text: "Benutzername"
                     mode: "rectangle"
@@ -188,7 +188,7 @@
                     cursor_width: "2sp"
                     multiline: False
                     id: kv_username
-                
+
 
                 MDTextField:
                     hint_text: "Email"
@@ -197,20 +197,20 @@
                     cursor_width: "2sp"
                     multiline: False
                     id: kv_email
-                
 
 
-                    
 
-                    
+
+
+
 
                 Passwordregisterfield:
                     id: kv_password1
-            
+
                 Passwordconfirmfield:
                     id: kv_password2
 
-                
+
                 MDRectangleFlatButton:
                     text: "Registrieren"
                     on_press: app.sign_up()
@@ -219,5 +219,3 @@
                     text: "Click Sign Up to display data from input fields"
                     multiline: True
                     id: kv_test_label
-
-                

@@ -6,6 +6,7 @@ from kivy.properties import ObjectProperty
 import json
 import requests
 from kivymd.uix.relativelayout import MDRelativeLayout
+from kivy.core.window import Window
 
 #AtomTest
 
@@ -75,6 +76,7 @@ class OpenLinguApp(MDApp):
         self.db = Database(apikey=APIKEY,database_url=URL)
 
     def build(self, **kwargs):
+        Window.size = (412,600)
         self.main_screen = MainScreen(name="main")
         self.settings_screen = SettingsScreen(name="settings")
         self.language_screen = LanguageScreen(name="language")
