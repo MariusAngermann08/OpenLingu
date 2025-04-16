@@ -7,6 +7,8 @@ import json
 import requests
 from kivymd.uix.relativelayout import MDRelativeLayout
 
+#AtomTest
+
 #Import Database Module
 from database import Database
 
@@ -44,7 +46,7 @@ class SignUpScreen(Screen):
         data = [self.username.text,self.email.text,self.password1.register_password.text,self.password2.confirm_password.text]
         self.test_label.text = f"Click Sign Up to display data from input fields\n{str(data)}"
         return data
-    
+
 class MainScreen(Screen):
     pass
 
@@ -59,7 +61,7 @@ class Passwordregisterfield(MDRelativeLayout):
     pass
 
 class Passwordconfirmfield(MDRelativeLayout):
-    pass 
+    pass
 
 class OpenLinguApp(MDApp):
     #Hallo Jonas
@@ -89,7 +91,7 @@ class OpenLinguApp(MDApp):
         self.sm.add_widget(self.welcome_screen)
         self.sm.current = "welcome"
         return self.sm
-    
+
     def open_settings_menu(self, **kwargs):
         self.transition_type = "settings"
         self.sm.transition.direction = "left"
@@ -111,7 +113,7 @@ class OpenLinguApp(MDApp):
     def welcome_menu(self, **kwargs):
         self.sm.transition.direction = "left"
         self.sm.current = "welcome"
-    
+
 
     def sign_up(self, **kwargs):
         data = self.signup_screen.get_data()
@@ -119,5 +121,5 @@ class OpenLinguApp(MDApp):
 
 
 if __name__ == "__main__":
-    
+
     OpenLinguApp().run()
