@@ -2,11 +2,17 @@ import kivy
 from kivymd.app import MDApp # type: ignore
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
-from kivy.properties import ObjectProperty
+from kivy.properties import ListProperty, StringProperty, DictProperty, NumericProperty, ObjectProperty
 import json
 import requests
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivy.core.window import Window
+from kivy.uix.widget import Widget
+from kivymd.uix.menu import MDDropdownMenu
+from kivymd.uix.textfield import MDTextField
+from kivy.factory import Factory
+from kivy.metrics import dp
+
 
 #AtomTest
 
@@ -16,6 +22,7 @@ from database import Database
 #Importing custom modules
 Builder.load_file('kivy/main_ui.kv')
 Builder.load_file('kivy/auth_pages.kv')
+Builder.load_file('kivy/new_user.kv')
 
 #Read firebase data from file
 
@@ -26,6 +33,8 @@ with open("server/firebase_data.json", "r") as data:
     temp = json.load(data)
     APIKEY = temp["APIKEY"]
     URL = temp["URL"]
+
+
 
 
 class WelcomeScreen(Screen):
@@ -39,14 +48,17 @@ class SignUpScreen(Screen):
     password1 = ObjectProperty(None)
     password2 = ObjectProperty(None)
     test_label = ObjectProperty(None)
+    app_link = None
 
     def __init__(self, **kwargs):
         super(SignUpScreen,self).__init__(**kwargs)
 
     def get_data(self):
         data = [self.username.text,self.email.text,self.password1.register_password.text,self.password2.confirm_password.text]
-        self.test_label.text = f"Click Sign Up to display data from input fields\n{str(data)}"
         return data
+    
+    def passwordsDontMatch(self):
+        self.test_label.text = "The passwords dont match!"
 
 class MainScreen(Screen):
     pass
@@ -64,10 +76,27 @@ class Passwordregisterfield(MDRelativeLayout):
 class Passwordconfirmfield(MDRelativeLayout):
     pass
 
+#NickName *optional Profile Picture
+class NewUserPage1(Screen):
+    pass
+
+#Age
+class NewUserPage2(Screen):
+    pass
+
+#First Language to learn
+class NewUserPage3(Screen):
+    pass
+
+
+
+
 class OpenLinguApp(MDApp):
     #Hallo Jonas
     transition_type = "settings"
     db = None
+    user_token = None
+    user_data = []
 
     def __init__(self, **kwargs):
         super(OpenLinguApp,self).__init__(**kwargs)
@@ -82,16 +111,27 @@ class OpenLinguApp(MDApp):
         self.language_screen = LanguageScreen(name="language")
         self.signin_screen = SignInScreen(name="signin")
         self.signup_screen = SignUpScreen(name="signup")
+        self.signup_screen.app_link = self
         self.welcome_screen = WelcomeScreen(name="welcome")
 
+        #New User Pages
+        self.newuserpage1 = NewUserPage1(name="newuser1")
+        self.newuserpage2 = NewUserPage2(name="newuser2")
+        self.newuserpage3 = NewUserPage3(name="newuser3") 
+
         self.sm = ScreenManager()
+        self.sm.add_widget(self.newuserpage1)
+        self.sm.add_widget(self.newuserpage2)
+        self.sm.add_widget(self.newuserpage3)
+
+
         self.sm.add_widget(self.main_screen)
         self.sm.add_widget(self.settings_screen)
         self.sm.add_widget(self.language_screen)
         self.sm.add_widget(self.signin_screen)
         self.sm.add_widget(self.signup_screen)
         self.sm.add_widget(self.welcome_screen)
-        self.sm.current = "welcome"
+        self.sm.current = "newuser2"
         return self.sm
 
     def open_settings_menu(self, **kwargs):
@@ -119,7 +159,17 @@ class OpenLinguApp(MDApp):
 
     def sign_up(self, **kwargs):
         data = self.signup_screen.get_data()
-        print(data)
+        if data[2] == data[3]:
+            self.db.sign_up(data[1],data[2])
+            self.user_data = [data[1],data[2]] 
+            self.sm.transition.direction = "right"
+            self.sm.current = "newuser1"          
+        else:
+            self.signup_screen.passwordsDontMatch()
+    
+    def sign_in(self, **kwargs):
+        pass
+
 
 
 if __name__ == "__main__":
