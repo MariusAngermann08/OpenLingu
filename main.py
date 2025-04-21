@@ -14,6 +14,7 @@ from kivy.factory import Factory
 from kivy.metrics import dp
 from kivymd.uix.expansionpanel import MDExpansionPanel, MDExpansionPanelOneLine
 from kivy.uix.boxlayout import BoxLayout
+from kivy.properties import StringProperty, OptionProperty
 
 
 #AtomTest
@@ -43,32 +44,21 @@ class ChooseFieldItem(BoxLayout):
         super(ChooseFieldItem,self).__init__(**kwargs)
 
 class ChooseField(BoxLayout):
-    def __init__(self, **kwargs):
+    def __init__(self, items=[], **kwargs):
         super().__init__(**kwargs)
         self.orientation = "vertical"
         self.spacing = dp(10)
 
         # Der BoxLayout-Inhalt des Panels
-        self.panel_content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(10))
+        self.content_layout = BoxLayout() 
 
         # Jetzt definieren wir das Expansion Panel richtig
         self.panel = MDExpansionPanel(
             icon="translate",
-            content=self.panel_content,
+            content=self.content_layout,
             panel_cls=MDExpansionPanelOneLine(text="Muttersprache auswählen"))
         
-        language_chooser = ChooseField(BoxLayout)
-        screen = self.root.get_screen("newuser2")
-        main_panel = screen.ids.newuserpagetwo_main_panel
-        main_panel.add_widget(language_chooser)
-    
-    def addItems(self,items=[]):
-        pass
-        #[["Deutsch","icon.png"]]
-
-    def getSelected(self,**kwargs):
-        return None
-    
+        self.add_widget(self.panel)
 
 
 class WelcomeScreen(Screen):
@@ -151,6 +141,9 @@ class OpenLinguApp(MDApp):
         #New User Pages
         self.newuserpage1 = NewUserPage1(name="newuser1")
         self.newuserpage2 = NewUserPage2(name="newuser2")
+        language_chooser = ChooseField()
+        main_panel = self.newuserpage2.ids.layout1
+        main_panel.add_widget(language_chooser)
         self.newuserpage3 = NewUserPage3(name="newuser3") 
 
         self.sm = ScreenManager()
