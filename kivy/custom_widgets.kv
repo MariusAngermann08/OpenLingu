@@ -1,7 +1,27 @@
 <ChooseField>:
+    id: language_panel
+    
+    MDExpansionpanelHeader:
+        text: "Muttersprache auswählen"
+        icon: "chevron-down"
+
+    MDExpansionPanelContent:
+        BoxLayout:
+            id: panel_content
+            orientation: "vertical"
+        
+
 
 <ChooseFieldItem>:
+    flag: flag_icon
+    language_name: language_name
+    orientation: "horizontal"
+    id: choose_field_item
+    padding: dp(20)
+    margin: dp(10)
     Image:
+        id: flag_icon
         src: ""
     Label:
+        id: language_name
         text: "Placeholder"

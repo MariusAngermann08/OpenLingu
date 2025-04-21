@@ -12,7 +12,8 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.textfield import MDTextField
 from kivy.factory import Factory
 from kivy.metrics import dp
-from kivymd.uix.expansionpanel import MDExpansionPanel
+from kivymd.uix.expansionpanel import MDExpansionPanel, MDExpansionPanelOneLine
+from kivy.uix.boxlayout import BoxLayout
 
 
 #AtomTest
@@ -21,10 +22,10 @@ from kivymd.uix.expansionpanel import MDExpansionPanel
 from database import Database
 
 #Importing custom modules
+Builder.load_file('kivy/custom_widgets.kv')
 Builder.load_file('kivy/main_ui.kv')
 Builder.load_file('kivy/auth_pages.kv')
 Builder.load_file('kivy/new_user.kv')
-Builder.load_file('kivy/custom_widgets.kv')
 
 #Read firebase data from file
 
@@ -41,9 +42,25 @@ class ChooseFieldItem(BoxLayout):
     def __init__(self,**kwargs):
         super(ChooseFieldItem,self).__init__(**kwargs)
 
-class ChooseField(MDExpansionPanel):
-    def __init__(self,**kwargs):
-        super(ChooseField,self).__init__(**kwargs)
+class ChooseField(BoxLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.orientation = "vertical"
+        self.spacing = dp(10)
+
+        # Der BoxLayout-Inhalt des Panels
+        self.panel_content = BoxLayout(orientation="vertical", padding=dp(10), spacing=dp(10))
+
+        # Jetzt definieren wir das Expansion Panel richtig
+        self.panel = MDExpansionPanel(
+            icon="translate",
+            content=self.panel_content,
+            panel_cls=MDExpansionPanelOneLine(text="Muttersprache auswählen"))
+        
+        language_chooser = ChooseField(BoxLayout)
+        screen = self.root.get_screen("newuser2")
+        main_panel = screen.ids.newuserpagetwo_main_panel
+        main_panel.add_widget(language_chooser)
     
     def addItems(self,items=[]):
         pass
@@ -185,6 +202,7 @@ class OpenLinguApp(MDApp):
             self.signup_screen.passwordsDontMatch()
     
     def sign_in(self, **kwargs):
+        # yet to be added
         pass
 
 
