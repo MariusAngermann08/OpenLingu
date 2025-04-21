@@ -38,27 +38,8 @@ with open("server/firebase_data.json", "r") as data:
     APIKEY = temp["APIKEY"]
     URL = temp["URL"]
 
-
-class ChooseFieldItem(BoxLayout):
-    def __init__(self,**kwargs):
-        super(ChooseFieldItem,self).__init__(**kwargs)
-
-class ChooseField(BoxLayout):
-    def __init__(self, items=[], **kwargs):
-        super().__init__(**kwargs)
-        self.orientation = "vertical"
-        self.spacing = dp(10)
-
-        # Der BoxLayout-Inhalt des Panels
-        self.content_layout = BoxLayout() 
-
-        # Jetzt definieren wir das Expansion Panel richtig
-        self.panel = MDExpansionPanel(
-            icon="translate",
-            content=self.content_layout,
-            panel_cls=MDExpansionPanelOneLine(text="Muttersprache auswählen"))
-        
-        self.add_widget(self.panel)
+class Language_chooser_content(BoxLayout):
+    pass
 
 
 class WelcomeScreen(Screen):
@@ -141,9 +122,11 @@ class OpenLinguApp(MDApp):
         #New User Pages
         self.newuserpage1 = NewUserPage1(name="newuser1")
         self.newuserpage2 = NewUserPage2(name="newuser2")
-        language_chooser = ChooseField()
         main_panel = self.newuserpage2.ids.layout1
-        main_panel.add_widget(language_chooser)
+        main_panel.add_widget(MDExpansionPanel(
+        icon="logo.png",  # panel icon
+        content=Language_chooser_content(),  # panel content
+        panel_cls=MDExpansionPanelOneLine(text="Whats your native language?")))
         self.newuserpage3 = NewUserPage3(name="newuser3") 
 
         self.sm = ScreenManager()

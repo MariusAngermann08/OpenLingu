@@ -47,22 +47,27 @@
                 specific_text_color: "black"
             
             GridLayout:
-                id: layout1
                 cols: 1
                 rows: 3
 
-                padding: 45, 100
+                padding: 30, 30
                 spacing: 12
 
                 MDLabel:
                     text: "RUF MICH AN BEVOR DU WAS AENDERST"
                     multiline: False
+                    halign: "center"
+
+                BoxLayout:
+                    id: layout1
+                    halign: "center"
 
                 
 
 
                 MDRectangleFlatButton:
                     text: "Continue"
+                    halign: "center"
 
             
 
