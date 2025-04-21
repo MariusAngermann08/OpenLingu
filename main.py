@@ -12,6 +12,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.textfield import MDTextField
 from kivy.factory import Factory
 from kivy.metrics import dp
+from kivymd.uix.expansionpanel import MDExpansionPanel
 
 
 #AtomTest
@@ -23,6 +24,7 @@ from database import Database
 Builder.load_file('kivy/main_ui.kv')
 Builder.load_file('kivy/auth_pages.kv')
 Builder.load_file('kivy/new_user.kv')
+Builder.load_file('kivy/custom_widgets.kv')
 
 #Read firebase data from file
 
@@ -35,6 +37,21 @@ with open("server/firebase_data.json", "r") as data:
     URL = temp["URL"]
 
 
+class ChooseFieldItem(BoxLayout):
+    def __init__(self,**kwargs):
+        super(ChooseFieldItem,self).__init__(**kwargs)
+
+class ChooseField(MDExpansionPanel):
+    def __init__(self,**kwargs):
+        super(ChooseField,self).__init__(**kwargs)
+    
+    def addItems(self,items=[]):
+        pass
+        #[["Deutsch","icon.png"]]
+
+    def getSelected(self,**kwargs):
+        return None
+    
 
 
 class WelcomeScreen(Screen):
