@@ -1,26 +1,45 @@
 import flet as ft
 
+#Import App Pages
+from pages.authpages import *
+from pages.mainpages import *
+
+def route_change(e):
+    page = e.page
+    page.views.clear()
+    route = page.route
+
+    if route == "/":
+        page.go("/sign-in")
+    
+    elif route == "/sign-in":
+        page.views.append(
+            ft.View(
+                route="/sign-in",
+                controls=[SignInPage(page, route)]
+            )
+        )
+
+    elif route == "/sign-up":
+        page.views.append(
+            ft.View(
+                route="/sign-up",
+                controls=[SignUpPage(page, route)]
+            )
+        )
+    
+    elif route == "/main":
+        page.views.append(
+            ft.View(
+                route="/main",
+                controls=[MainPage(page, route)]
+            )
+        )
+    page.update()
 
 def main(page: ft.Page):
-    counter = ft.Text("0", size=50, data=0)
+    page.title = "OpenLingu Legacy"
+    page.on_route_change = route_change
+    page.go("/")
 
-    def increment_click(e):
-        counter.data += 1
-        counter.value = str(counter.data)
-        counter.update()
-
-    page.floating_action_button = ft.FloatingActionButton(
-        icon=ft.Icons.ADD, on_click=increment_click
-    )
-    page.add(
-        ft.SafeArea(
-            ft.Container(
-                counter,
-                alignment=ft.alignment.center,
-            ),
-            expand=True,
-        )
-    )
-
-
-ft.app(main)
+ft.app(target=main, view=ft.AppView.FLET_APP)
