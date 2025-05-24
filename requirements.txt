@@ -1,2 +1,8 @@
-kivy
-kivymd
+fastapi 
+uvicorn 
+python-jose[cryptography] 
+passlib[bcrypt] 
+python-multipart
+sqlalchemy 
+databases
+flet
