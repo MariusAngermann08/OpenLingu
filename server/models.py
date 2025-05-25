@@ -1,29 +1,16 @@
-from pydantic import BaseModel, EmailStr
-from sqlalchemy import Boolean, Column, String
-from server.database import Base
+from sqlalchemy import Boolean, Column, String, DateTime
 
-# Pydantic models
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+from datetime import datetime, timedelta
 
-class TokenData(BaseModel):
-    username: str | None = None
+try:
+    # Try absolute imports first (when running as a module)
+    from server.database import Base
+except ImportError:
+    # Fall back to relative imports (when running directly)
+    from database import Base
 
-class UserBase(BaseModel):
-    username: str
-    email: str | None = None
-    disabled: bool | None = None
 
-class UserCreate(UserBase):
-    password: str
 
-class User(UserBase):
-    class Config:
-        from_attributes = True
-
-class UserInDB(User):
-    hashed_password: str
 
 # SQLAlchemy models
 class DBUser(Base):
@@ -33,3 +20,8 @@ class DBUser(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     disabled = Column(Boolean, default=False)
+
+class Token(Base):
+    __tablename__ = "tokens"
+    token = Column(String, primary_key=True, index=True)
+    expires = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(days=1))
