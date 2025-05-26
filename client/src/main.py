@@ -10,21 +10,21 @@ from pages.connectingpage import *
 
 
 
-
-
 def route_change(e):
     page = e.page
     page.views.clear()
     route = page.route
 
     if route == "/":
+        page.go("/main")
         # Check if server url is saved
-        server_url = page.client_storage.get("server_url")
-        if server_url:
+        #server_url = page.client_storage.get("server_url")
+        #if server_url:
             # Go to connecting page to validate the server
-            page.go(f"/connecting?url={server_url}")
-        else:
-            page.go("/server")
+            #page.go(f"/connecting?url={server_url}")
+        #else:
+            #page.go("/server")
+    
     
     def create_server_appbar(page):
         server_url = page.client_storage.get("server_url") or "No server selected"
@@ -101,12 +101,34 @@ def route_change(e):
                 controls=[SignUpPage(page, route)]
             )
         )
-    
     elif route == "/main":
+        mainpage = MainPage(page, route)
+        drawer = mainpage.drawer
+        page.drawer = drawer  # <-- This is correct
         page.views.append(
             ft.View(
                 route="/main",
-                controls=[MainPage(page, route)]
+                appbar=ft.AppBar(
+                    leading=ft.IconButton(
+                        icon="cancel",
+                        icon_color="#929292",
+                        icon_size=40,
+                        tooltip="Nope",
+                        on_click=lambda e: (
+                            setattr(page.drawer, "open", True),
+                            page.drawer.update()
+                        )
+                    ),
+                    title=ft.Text("Main Page"),
+                    bgcolor="#1a73e8",
+                    actions=[
+                        ft.IconButton(
+                            icon="logout",
+                            tooltip="Sign Out",
+                        )
+                    ],
+                ),
+                controls=[mainpage]
             )
         )
     page.update()
@@ -117,3 +139,4 @@ def main(page: ft.Page):
     page.go("/")
 
 ft.app(target=main, view=ft.AppView.FLET_APP)
+

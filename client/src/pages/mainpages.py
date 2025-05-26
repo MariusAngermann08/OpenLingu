@@ -10,18 +10,36 @@ class MainPage(ft.Container):
         super().__init__()
         self.page = page
         self.route = route
-
-        self.content = ft.Column(
-            [
-                ft.Text("This is the main page of the app a users encounters after login", size=28, weight=ft.FontWeight.BOLD, color="#1565C0"),
-                ft.ElevatedButton(
-                    "Sign Out",
-                    on_click=self.sign_out,
+        self.drawer = ft.NavigationDrawer(
+            on_dismiss=self.handle_dismissal,
+            on_change=self.handle_change,
+            controls=[
+                ft.Container(height=12),
+                ft.NavigationDrawerDestination(
+                    label="Item 1",
+                    icon=ft.Icons.DOOR_BACK_DOOR_OUTLINED,
+                    selected_icon=ft.Icon(ft.Icons.DOOR_BACK_DOOR),
+                ),
+                ft.Divider(thickness=2),
+                ft.NavigationDrawerDestination(
+                    icon=ft.Icon(ft.Icons.MAIL_OUTLINED),
+                    label="Item 2",
+                    selected_icon=ft.Icons.MAIL,
+                ),
+                ft.NavigationDrawerDestination(
+                    icon=ft.Icon(ft.Icons.PHONE_OUTLINED),
+                    label="Item 3",
+                    selected_icon=ft.Icons.PHONE,
                 ),
             ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=15,
         )
+    def handle_dismissal(self, e):
+        print("Drawer dismissed!")
+
+    def handle_change(self, e):
+        print(f"Selected Index changed: {e.control.selected_index}")
+        self.page.close(self.drawer)
+        self.page.update()
     
     async def sign_out(self, e):
         try:
