@@ -102,35 +102,67 @@ def route_change(e):
             )
         )
     elif route == "/main":
-        mainpage = MainPage(page, route)
-        drawer = mainpage.drawer
-        page.drawer = drawer  # <-- This is correct
-        page.views.append(
-            ft.View(
-                route="/main",
-                appbar=ft.AppBar(
-                    leading=ft.IconButton(
-                        icon="cancel",
-                        icon_color="#929292",
-                        icon_size=40,
-                        tooltip="Nope",
-                        on_click=lambda e: (
-                            setattr(page.drawer, "open", True),
-                            page.drawer.update()
-                        )
-                    ),
-                    title=ft.Text("Main Page"),
-                    bgcolor="#1a73e8",
-                    actions=[
-                        ft.IconButton(
-                            icon="logout",
-                            tooltip="Sign Out",
-                        )
-                    ],
+        # Create the drawer first
+        drawer = ft.NavigationDrawer(
+            controls=[
+                ft.Container(height=12),
+                ft.NavigationDrawerDestination(
+                    label="Item 1",
+                    icon="home_outlined",
+                    selected_icon="home"
                 ),
-                controls=[mainpage]
-            )
+                ft.Divider(thickness=1),
+                ft.NavigationDrawerDestination(
+                    icon="mail_outline",
+                    label="Item 2",
+                    selected_icon="mail"
+                ),
+                ft.NavigationDrawerDestination(
+                    icon="phone_outlined",
+                    label="Item 3",
+                    selected_icon="phone"
+                ),
+                ft.Divider(thickness=1),
+                ft.Container(
+                    padding=ft.padding.all(16),
+                    content=ft.Text("Version 1.0.0", size=12, color="grey")
+                )
+            ],
         )
+        
+        # Create main page instance
+        mainpage = MainPage(page, route, drawer)
+        
+        # Create app bar with menu button
+        appbar = ft.AppBar(
+            leading=ft.IconButton(
+                icon="menu",
+                icon_color="white",
+                tooltip="Open menu",
+                on_click=lambda e: mainpage.toggle_drawer()
+            ),
+            title=ft.Text("Main Page", color="white"),
+            bgcolor="#1a73e8",
+            actions=[
+                ft.IconButton(
+                    icon="logout",
+                    icon_color="white",
+                    tooltip="Sign Out",
+                    on_click=mainpage.sign_out
+                )
+            ],
+        )
+        
+        # Create view with drawer
+        view = ft.View(
+            route="/main",
+            appbar=appbar,
+            drawer=drawer,
+            controls=[mainpage]
+        )
+        
+        # Add the view to page
+        page.views.append(view)
     page.update()
 
 def main(page: ft.Page):

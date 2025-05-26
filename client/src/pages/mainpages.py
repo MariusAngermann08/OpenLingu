@@ -6,39 +6,43 @@ def remove_access_token(page):
     page.client_storage.remove("access_token")
 
 class MainPage(ft.Container):
-    def __init__(self, page, route):
+    def __init__(self, page, route, drawer):
         super().__init__()
         self.page = page
         self.route = route
-        self.drawer = ft.NavigationDrawer(
-            on_dismiss=self.handle_dismissal,
-            on_change=self.handle_change,
+        self.drawer = drawer
+        
+        # Set up drawer events
+        self.drawer.on_dismiss = self.handle_dismissal
+        self.drawer.on_change = self.handle_change
+        
+        # Main content
+        self.content = ft.Column(
             controls=[
-                ft.Container(height=12),
-                ft.NavigationDrawerDestination(
-                    label="Item 1",
-                    icon=ft.Icons.DOOR_BACK_DOOR_OUTLINED,
-                    selected_icon=ft.Icon(ft.Icons.DOOR_BACK_DOOR),
-                ),
-                ft.Divider(thickness=2),
-                ft.NavigationDrawerDestination(
-                    icon=ft.Icon(ft.Icons.MAIL_OUTLINED),
-                    label="Item 2",
-                    selected_icon=ft.Icons.MAIL,
-                ),
-                ft.NavigationDrawerDestination(
-                    icon=ft.Icon(ft.Icons.PHONE_OUTLINED),
-                    label="Item 3",
-                    selected_icon=ft.Icons.PHONE,
-                ),
+                ft.Text("Welcome to OpenLingu Legacy!", size=24, weight="bold"),
+                ft.Text("Select an option from the menu to get started.", size=16, color="grey"),
             ],
+            alignment="center",
+            horizontal_alignment="center",
+            expand=True
         )
+        
     def handle_dismissal(self, e):
-        print("Drawer dismissed!")
-
+        # This is called when the drawer is dismissed (e.g., by tapping outside)
+        pass
+        
     def handle_change(self, e):
-        print(f"Selected Index changed: {e.control.selected_index}")
-        self.page.close(self.drawer)
+        # Handle navigation when a drawer item is selected
+        selected_index = e.control.selected_index
+        print(f"Selected Index changed: {selected_index}")
+        
+        # Close the drawer after selection
+        self.drawer.open = False
+        self.page.update()
+        
+    def toggle_drawer(self, e=None):
+        # Toggle the drawer open/closed
+        self.drawer.open = not self.drawer.open
         self.page.update()
     
     async def sign_out(self, e):
