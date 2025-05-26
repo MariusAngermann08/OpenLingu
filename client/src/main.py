@@ -16,14 +16,14 @@ def route_change(e):
     route = page.route
 
     if route == "/":
-        page.go("/main")
+        #page.go("/main") Jonas changes this if needed
         # Check if server url is saved
-        #server_url = page.client_storage.get("server_url")
-        #if server_url:
+        server_url = page.client_storage.get("server_url")
+        if server_url:
             # Go to connecting page to validate the server
-            #page.go(f"/connecting?url={server_url}")
-        #else:
-            #page.go("/server")
+            page.go(f"/connecting?url={server_url}")
+        else:
+            page.go("/server")
     
     
     def create_server_appbar(page):
@@ -102,62 +102,14 @@ def route_change(e):
             )
         )
     elif route == "/main":
-        # Create the drawer first
-        drawer = ft.NavigationDrawer(
-            controls=[
-                ft.Container(height=12),
-                ft.NavigationDrawerDestination(
-                    label="Item 1",
-                    icon="home_outlined",
-                    selected_icon="home"
-                ),
-                ft.Divider(thickness=1),
-                ft.NavigationDrawerDestination(
-                    icon="mail_outline",
-                    label="Item 2",
-                    selected_icon="mail"
-                ),
-                ft.NavigationDrawerDestination(
-                    icon="phone_outlined",
-                    label="Item 3",
-                    selected_icon="phone"
-                ),
-                ft.Divider(thickness=1),
-                ft.Container(
-                    padding=ft.padding.all(16),
-                    content=ft.Text("Version 1.0.0", size=12, color="grey")
-                )
-            ],
-        )
+        # Create main page instance with integrated NavigationDrawer and app bar
+        mainpage = MainPage(page, route)
         
-        # Create main page instance
-        mainpage = MainPage(page, route, drawer)
-        
-        # Create app bar with menu button
-        appbar = ft.AppBar(
-            leading=ft.IconButton(
-                icon="menu",
-                icon_color="white",
-                tooltip="Open menu",
-                on_click=lambda e: mainpage.toggle_drawer()
-            ),
-            title=ft.Text("Main Page", color="white"),
-            bgcolor="#1a73e8",
-            actions=[
-                ft.IconButton(
-                    icon="logout",
-                    icon_color="white",
-                    tooltip="Sign Out",
-                    on_click=mainpage.sign_out
-                )
-            ],
-        )
-        
-        # Create view with drawer
+        # Create view with drawer and app bar
         view = ft.View(
             route="/main",
-            appbar=appbar,
-            drawer=drawer,
+            appbar=mainpage.create_app_bar(),
+            drawer=mainpage.drawer,
             controls=[mainpage]
         )
         
