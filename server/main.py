@@ -1,25 +1,32 @@
 from fastapi import FastAPI, status, Depends, HTTPException
-from typing import Annotated
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-import os
-import sys
-from pathlib import Path
+from typing import Annotated
 
+# Import from server modules
 try:
-    # Try absolute imports first (when running as a module)
-    from server.models import *
-    from server.parameters import *
-    from server.auth import *
-    from server.database import *
+    from server.database import engine, get_db
+    from server.models import Base, DBUser, Token
+    from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+    from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
+    from server.services.user_service import get_user_profile
+    from server.services.token_service import generate_token, verify_token, remove_expired_tokens
 except ImportError:
-    # Fall back to relative imports (when running directly)
-    from models import *
-    from parameters import *
-    from auth import *
-    from database import *
+    # Fall back to direct imports when running directly
+    from database import engine, get_db
+    from models import Base, DBUser, Token
+    from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+    from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
+    from services.user_service import get_user_profile
+    from services.token_service import generate_token, verify_token, remove_expired_tokens
+    
+    # Add the current directory to the path for direct execution
+    import os
+    import sys
+    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 #Used for password hashing
 from passlib.context import CryptContext
@@ -96,79 +103,10 @@ async def logout(token: str):
 
 @app.get("/users/{username}")
 async def get_user(username: str, token: str):
-    db = None
-    try:
-        # Verify the token and get the username from it
-        token_username = await verify_token(token)
-        
-        # Check if the token username matches the requested username
-        if token_username != username:
-            print(f"Token username '{token_username}' does not match requested username '{username}'")
-            raise HTTPException(
-                status_code=403,
-                detail="Not authorized to access this user's data"
-            )
-            
-        # Get the user from the database
-        db = next(get_db())
-        user = db.query(DBUser).filter(DBUser.username == username).first()
-        
-        if not user:
-            print(f"User '{username}' not found in database")
-            raise HTTPException(status_code=404, detail="User not found")
-            
-        print(f"Successfully retrieved user: {username}")
-        return {
-            "username": user.username, 
-            "email": user.email
-        }
-        
-    except HTTPException as e:
-        # Re-raise HTTP exceptions
-        raise e
-        
-    except Exception as e:
-        # Log the error and return a 500 response
-        print(f"Error in get_user endpoint: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail="An error occurred while retrieving user data"
-        )
-        
-    finally:
-        # Ensure database connection is closed
-        if db:
-            db.close()
+    return await get_user_profile(username, token)
 
 @app.delete("/users/{username}/delete")
-async def delete_user(username: str, token:str):
-    #Check if token is valid
-    try:
-        token_username = await verify_token(token)
-    except HTTPException as e:
-        raise e
-    
-    #Check if token username matches requested username
-    if token_username != username:
-        print("Token username does not match requested username")
-        raise HTTPException(
-            status_code = 403,
-            detail = "Not authorized to delete this User"
-        )
-    
-    #Delete user
-    try:
-        await remove_user(username)
-        return {"msg": "User deleted successfully"}
-    except HTTPException as e:
-        raise e
-    
-    except Exception as e:
-        print(f"Error deleting user: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error deleting user: {str(e)}"
-        )
+
     
 
 
