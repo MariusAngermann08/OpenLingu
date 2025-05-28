@@ -7,7 +7,7 @@ def remove_access_token(page):
 
 class MainPage(ft.Container):
     def __init__(self, page, route):
-        super().__init__()
+        super().__init__(expand=True, alignment=ft.alignment.center)
         self.page = page
         self.route = route
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
@@ -127,8 +127,8 @@ class MainPage(ft.Container):
                 ft.Text("Welcome to OpenLingu!", size=24, weight="bold"),
                 ft.Text("Select an option from the menu to get started.", size=16, color="grey"),
             ],
-            alignment="center",
-            horizontal_alignment="center",
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             expand=True
         )
         
