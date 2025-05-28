@@ -5,10 +5,14 @@ try:
     #Try relative import
     from mainpages.learningpage import LearningPage
     from mainpages.dailytaskspage import DailyTasksPage
+    from mainpages.vocabs import VocabsPage
+    from mainpages.dictionary import DictionaryPage
 except ImportError:
     #Do absolute import instead
     from pages.mainpages.learningpage import LearningPage
     from pages.mainpages.dailytaskspage import DailyTasksPage
+    from pages.mainpages.vocabs import VocabsPage
+    from pages.mainpages.dictionary import DictionaryPage
 
 #Function to remove the access token from the client storage
 def remove_access_token(page):
@@ -133,6 +137,8 @@ class MainPage(ft.Container):
         # Initialize Pages
         self.learning_page = LearningPage(self.page)
         self.daily_tasks_page = DailyTasksPage(self.page)
+        self.vocabs_page = VocabsPage(self.page)
+        self.dictionary_page = DictionaryPage(self.page)
         
         # Main content
         self.content = self.daily_tasks_page
@@ -152,6 +158,16 @@ class MainPage(ft.Container):
             self.page.update()
         elif selected_index == 1:
             self.content = self.learning_page
+            #Close drawer
+            self.drawer.open = False
+            self.page.update()
+        elif selected_index == 2:
+            self.content = self.vocabs_page
+            #Close drawer
+            self.drawer.open = False
+            self.page.update()
+        elif selected_index == 3:
+            self.content = self.dictionary_page
             #Close drawer
             self.drawer.open = False
             self.page.update()
