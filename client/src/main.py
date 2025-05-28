@@ -3,10 +3,10 @@ import requests
 
 #Import App Pages
 from pages.authpages import *
-from pages.mainpages import *
+from pages.mainpage import *
 from pages.serverpage import *
 from pages.connectingpage import *
-from pages.learningpage import *
+
 
 
 
@@ -115,17 +115,7 @@ def route_change(e):
         )
 
         page.views.append(view)
-    
-    elif route == "/learning-page":
-        learning_page = LearningPage(page, route)
-        page.drawer = learning_page.drawer
-        view = ft.View(
-            route="/learning-page",
-            appbar=learning_page.create_app_bar(),
-            drawer=learning_page.drawer,
-            controls=[learning_page]
-        )
-        page.views.append(view)
+
     
     page.update()
 

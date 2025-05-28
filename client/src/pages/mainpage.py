@@ -1,6 +1,15 @@
 import flet as ft
 import requests
 
+try:
+    #Try relative import
+    from mainpages.learningpage import LearningPage
+    from mainpages.dailytaskspage import DailyTasksPage
+except ImportError:
+    #Do absolute import instead
+    from pages.mainpages.learningpage import LearningPage
+    from pages.mainpages.dailytaskspage import DailyTasksPage
+
 #Function to remove the access token from the client storage
 def remove_access_token(page):
     page.client_storage.remove("access_token")
@@ -121,16 +130,12 @@ class MainPage(ft.Container):
         self.drawer.on_dismiss = self.handle_dismissal
         self.drawer.on_change = self.handle_change
         
+        # Initialize Pages
+        self.learning_page = LearningPage(self.page)
+        self.daily_tasks_page = DailyTasksPage(self.page)
+        
         # Main content
-        self.content = ft.Column(
-            controls=[
-                ft.Text("Welcome to OpenLingu!", size=24, weight="bold"),
-                ft.Text("Select an option from the menu to get started.", size=16, color="grey"),
-            ],
-            alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            expand=True
-        )
+        self.content = self.daily_tasks_page
         
     def handle_dismissal(self, e):
         # This is called when the drawer is dismissed (e.g., by tapping outside)
@@ -141,13 +146,16 @@ class MainPage(ft.Container):
         selected_index = e.control.selected_index
         print(f"Selected Index changed: {selected_index}")
         if selected_index == 0:
-            e.page.go("/main")
+            self.content = self.daily_tasks_page
+            #Close drawer
+            self.drawer.open = False
+            self.page.update()
         elif selected_index == 1:
-            e.page.go("/learning-page")
-
-        
-        self.page.update()
-        
+            self.content = self.learning_page
+            #Close drawer
+            self.drawer.open = False
+            self.page.update()
+    
     def toggle_drawer(self, e=None):
         # Toggle the drawer open/closed
         self.drawer.open = not self.drawer.open
