@@ -10,6 +10,8 @@ class MainPage(ft.Container):
         super().__init__()
         self.page = page
         self.route = route
+        page.vertical_alignment = ft.MainAxisAlignment.CENTER
+        page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         
         # Default language (can be loaded from user preferences later)
         self.current_language = "English"
