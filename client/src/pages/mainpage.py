@@ -7,12 +7,16 @@ try:
     from mainpages.dailytaskspage import DailyTasksPage
     from mainpages.vocabs import VocabsPage
     from mainpages.dictionary import DictionaryPage
+    from pages.mainpages.account import AccountPage
+    from pages.mainpages.settings import SettingsPage
 except ImportError:
     #Do absolute import instead
     from pages.mainpages.learningpage import LearningPage
     from pages.mainpages.dailytaskspage import DailyTasksPage
     from pages.mainpages.vocabs import VocabsPage
     from pages.mainpages.dictionary import DictionaryPage
+    from pages.mainpages.account import AccountPage
+    from pages.mainpages.settings import SettingsPage
 
 #Function to remove the access token from the client storage
 def remove_access_token(page):
@@ -139,6 +143,8 @@ class MainPage(ft.Container):
         self.daily_tasks_page = DailyTasksPage(self.page)
         self.vocabs_page = VocabsPage(self.page)
         self.dictionary_page = DictionaryPage(self.page)
+        self.account_page = AccountPage(self.page)
+        self.settings_page = SettingsPage(self.page)
         
         # Main content
         self.content = self.daily_tasks_page
@@ -168,6 +174,16 @@ class MainPage(ft.Container):
             self.page.update()
         elif selected_index == 3:
             self.content = self.dictionary_page
+            #Close drawer
+            self.drawer.open = False
+            self.page.update()
+        elif selected_index == 4:
+            self.content = self.account_page
+            #Close drawer
+            self.drawer.open = False
+            self.page.update()
+        elif selected_index == 5:
+            self.content = self.settings_page
             #Close drawer
             self.drawer.open = False
             self.page.update()
