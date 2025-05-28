@@ -17,14 +17,14 @@ def route_change(e):
     route = page.route
 
     if route == "/":
-        page.go("/main")
+        #page.go("/main")
         # Check if server url is saved
-        #server_url = page.client_storage.get("server_url")
-        #if server_url:
-            # Go to connecting page to validate the server
-            #page.go(f"/connecting?url={server_url}")
-        #else:
-            #page.go("/server")
+        server_url = page.client_storage.get("server_url")
+        if server_url:
+            #Go to connecting page to validate the server
+            page.go(f"/connecting?url={server_url}")
+        else:
+            page.go("/server")
     
     
     def create_server_appbar(page):
