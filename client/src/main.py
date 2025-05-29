@@ -7,10 +7,6 @@ from pages.mainpage import *
 from pages.serverpage import *
 from pages.connectingpage import *
 
-
-
-
-
 def route_change(e):
     page = e.page
     page.views.clear()
@@ -25,8 +21,7 @@ def route_change(e):
             page.go(f"/connecting?url={server_url}")
         else:
             page.go("/server")
-    
-    
+
     def create_server_appbar(page):
         server_url = page.client_storage.get("server_url") or "No server selected"
         # Extract domain from URL
@@ -116,7 +111,6 @@ def route_change(e):
 
         page.views.append(view)
 
-    
     page.update()
 
 def main(page: ft.Page):
@@ -125,5 +119,3 @@ def main(page: ft.Page):
     page.go("/")
 
 ft.app(target=main, view=ft.AppView.FLET_APP)
-
-
