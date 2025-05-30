@@ -10,8 +10,36 @@ class LearningPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
-                ft.Text("Welcome to the Learningpage!", size=24, weight="bold"),
-                ft.Text("Fresh Content to learn will be added soon", size=16, color="grey"),
+                ft.Container(
+                    content=ft.Text("Spanish", size=30, weight="w600",),
+                    margin=10,
+                    padding=10,
+                    alignment=ft.alignment.center,
+                    bgcolor="#d65b09",
+                    expand=True,
+                    border_radius=10,
+                    ink=True,
+                    on_click=lambda e: print("Clickable with Ink clicked!"),
+                ),
+
+                ft.Container(
+                    content=ft.Text("English",size=30, weight="w600"),
+                    margin=10,
+                    padding=10,
+                    alignment=ft.alignment.center,
+                    bgcolor="#1059e0",
+                    expand=True,
+                    border_radius=10,
+                    ink=True,
+                    on_click=lambda e: print("Clickable with Ink clicked!"),
+                ),
+
+                ft.Image(
+                    src="assets/flags/Spain.png",
+                    width=100,
+                    height=60
+                    fit=ft.ImageFit.CONTAIN
+                ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
