@@ -106,7 +106,7 @@ def route_change(e):
         # Create view with drawer and app bar
         view = ft.View(
             route="/main",
-            appbar=mainpage.create_app_bar(),
+            appbar=mainpage.create_app_bar(mainpage.appbar_title),
             drawer=mainpage.drawer,
             controls=[mainpage]
         )

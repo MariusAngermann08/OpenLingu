@@ -27,6 +27,7 @@ class MainPage(ft.Container):
         super().__init__(expand=True, alignment=ft.alignment.center)
         self.page = page
         self.route = route
+        self.appbar_title = "Daily Tasks"
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         
@@ -146,6 +147,7 @@ class MainPage(ft.Container):
         self.account_page = AccountPage(self.page)
         self.settings_page = SettingsPage(self.page)
         
+        
         # Main content
         self.content = self.daily_tasks_page
         
@@ -153,40 +155,51 @@ class MainPage(ft.Container):
         # This is called when the drawer is dismissed (e.g., by tapping outside)
         pass
         
-    def handle_change(self, e):
+    def handle_change(self, e,):
         # Handle navigation when a drawer item is selected
         selected_index = e.control.selected_index
         print(f"Selected Index changed: {selected_index}")
         if selected_index == 0:
             self.content = self.daily_tasks_page
-            #Close drawer
+            self.appbar_title = "Daily Tasks"
             self.drawer.open = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 1:
             self.content = self.learning_page
+            self.appbar_title = "Learning Page"
             #Close drawer
             self.drawer.open = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 2:
             self.content = self.vocabs_page
+            self.appbar_title = "Vocabulary Trainer"
             #Close drawer
             self.drawer.open = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 3:
             self.content = self.dictionary_page
+            self.appbar_title = "Dictionary"
             #Close drawer
             self.drawer.open = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 4:
             self.content = self.account_page
+            self.appbar_title = "Account"
             #Close drawer
             self.drawer.open = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 5:
-            self.content = self.settings_page
+            self.appbar_title = "Settings"
             #Close drawer
             self.drawer.open = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
+
     
     def toggle_drawer(self, e=None):
         # Toggle the drawer open/closed
@@ -225,7 +238,7 @@ class MainPage(ft.Container):
         self.server_info_dialog.open = False
         self.page.update()
         
-    def create_app_bar(self):
+    def create_app_bar(self, appbar_title):
         # Get server URL or default text
         server_url = self.page.client_storage.get("server_url") or "No server"
         server_display = server_url.replace("https://", "").replace("http://", "").split("/")[0]
@@ -239,7 +252,7 @@ class MainPage(ft.Container):
                 tooltip="Open menu",
                 on_click=self.toggle_drawer
             ),
-            title=ft.Text("OpenLingu", color="white"),
+            title=ft.Text(f"{appbar_title}", color="white"),
             bgcolor="#1a73e8",
             center_title=False,
             actions=[
