@@ -6,6 +6,7 @@ from pages.authpages import *
 from pages.mainpage import *
 from pages.serverpage import *
 from pages.connectingpage import *
+from pages.setuppage import SetupPage
 
 def route_change(e):
     page = e.page
@@ -14,13 +15,14 @@ def route_change(e):
 
     if route == "/":
         #page.go("/main")
+        page.go("/setup")
         # Check if server url is saved
-        server_url = page.client_storage.get("server_url")
-        if server_url:
+        #server_url = page.client_storage.get("server_url")
+        #if server_url:
             #Go to connecting page to validate the server
-            page.go(f"/connecting?url={server_url}")
-        else:
-            page.go("/server")
+            #page.go(f"/connecting?url={server_url}")
+        #else:
+            #page.go("/server")
 
     def create_server_appbar(page):
         server_url = page.client_storage.get("server_url") or "No server selected"
@@ -110,6 +112,15 @@ def route_change(e):
         )
 
         page.views.append(view)
+    
+    elif route == "/setup":
+        setuppage = SetupPage(page, route)
+        page.views.append(
+            ft.View(
+                route="/setup",
+                controls=[setuppage],
+            )
+        )
 
     page.update()
 
