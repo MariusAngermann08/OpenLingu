@@ -1,5 +1,6 @@
 import flet as ft
 import requests
+import os
 
 class LearningPage(ft.Container):
     def __init__(self, page):
@@ -35,9 +36,9 @@ class LearningPage(ft.Container):
                 ),
 
                 ft.Image(
-                    src="assets/flags/Spain.png",
+                    src=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "flags", "Spain.png")),
                     width=100,
-                    height=60
+                    height=60,
                     fit=ft.ImageFit.CONTAIN
                 ),
             ],
