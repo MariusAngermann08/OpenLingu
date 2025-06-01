@@ -10,6 +10,7 @@ try:
     from pages.mainpages.account import AccountPage
     from pages.mainpages.settings import SettingsPage
     from pages.lectionhomepages.spanish_main import SpanishMainPage
+    from pages.lectionhomepages.english_main import EnglishMainPage
 except ImportError:
     #Do absolute import instead
     from pages.mainpages.learningpage import LearningPage
@@ -19,6 +20,7 @@ except ImportError:
     from pages.mainpages.account import AccountPage
     from pages.mainpages.settings import SettingsPage
     from pages.lectionhomepages.spanish_main import SpanishMainPage
+    from pages.lectionhomepages.english_main import EnglishMainPage
 
 #Function to remove the access token from the client storage
 def remove_access_token(page):
@@ -149,6 +151,7 @@ class MainPage(ft.Container):
         self.account_page = AccountPage(self.page)
         self.settings_page = SettingsPage(self.page)
         self.spanish_main_page = SpanishMainPage(self.page, self)
+        self.english_main_page = EnglishMainPage(self.page, self)
         
         
         # Main content
@@ -354,5 +357,12 @@ class MainPage(ft.Container):
         # Handle navigation to the Spanish main page
         self.content = self.spanish_main_page
         self.appbar_title = "Spanish"
+        self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+        self.page.update()
+    
+    def handle_englishhomepage(self, e):
+        # Handle navigation to the English main page
+        self.content = self.english_main_page
+        self.appbar_title = "English"
         self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
         self.page.update()

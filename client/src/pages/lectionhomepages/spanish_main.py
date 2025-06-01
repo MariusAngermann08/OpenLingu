@@ -16,4 +16,7 @@ class SpanishMainPage(ft.Container):
                 ft.Text("Welcome to the Spanish Page", size=24, weight="bold"),
                 ft.Text("Youll be able to practice soon", size=16, color="grey"),
             ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True
         )

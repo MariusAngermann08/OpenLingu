@@ -56,7 +56,7 @@ class LearningPage(ft.Container):
                     expand=True,
                     border_radius=10,
                     ink=True,
-                    on_click=lambda e: print("Clickable with Ink clicked!"),
+                    on_click= self.main_page.handle_englishhomepage,
                 ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
