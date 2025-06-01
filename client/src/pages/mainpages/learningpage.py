@@ -12,9 +12,20 @@ class LearningPage(ft.Container):
         self.content = ft.Column(
             controls=[
                 ft.Container(
-                    content=ft.Text("Spanish", size=30, weight="w600",),
-                    margin=10,
-                    padding=10,
+                    content=ft.Row(
+                    controls=[
+                        ft.Text("Spanish", size=90, weight="w600",),
+                        ft.Image(
+                        src=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "flags", "Spain.png")),
+                        width=200,
+                        height=120,
+                        fit=ft.ImageFit.CONTAIN
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                    ),
+                    margin=20,
+                    padding=20,
                     alignment=ft.alignment.center,
                     bgcolor="#d65b09",
                     expand=True,
@@ -24,22 +35,26 @@ class LearningPage(ft.Container):
                 ),
 
                 ft.Container(
-                    content=ft.Text("English",size=30, weight="w600"),
-                    margin=10,
-                    padding=10,
+                    content=ft.Row(
+                    controls=[
+                        ft.Text("English", size=90, weight="w600",),
+                        ft.Image(
+                        src=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "flags", "England.png")),
+                        width=200,
+                        height=120,
+                        fit=ft.ImageFit.CONTAIN
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                    ),
+                    margin=20,
+                    padding=20,
                     alignment=ft.alignment.center,
-                    bgcolor="#1059e0",
+                    bgcolor="#726362",
                     expand=True,
                     border_radius=10,
                     ink=True,
                     on_click=lambda e: print("Clickable with Ink clicked!"),
-                ),
-
-                ft.Image(
-                    src=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "flags", "Spain.png")),
-                    width=100,
-                    height=60,
-                    fit=ft.ImageFit.CONTAIN
                 ),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
