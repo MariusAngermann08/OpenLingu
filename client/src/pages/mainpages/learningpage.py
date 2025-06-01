@@ -2,10 +2,12 @@ import flet as ft
 import requests
 import os
 
+
 class LearningPage(ft.Container):
-    def __init__(self, page):
+    def __init__(self, page, mainpage):
         super().__init__(expand=True, alignment=ft.alignment.center)
         self.page = page
+        self.main_page = mainpage
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
@@ -31,7 +33,7 @@ class LearningPage(ft.Container):
                     expand=True,
                     border_radius=10,
                     ink=True,
-                    on_click=lambda e: print("Clickable with Ink clicked!"),
+                    on_click= self.main_page.handle_spanishhomepage
                 ),
 
                 ft.Container(
