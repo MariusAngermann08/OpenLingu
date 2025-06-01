@@ -49,6 +49,9 @@ class MainPage(ft.Container):
         self.sign_out_button = None
         self.is_signing_out = False
         
+        # Track if we are on a language home page
+        self.on_language_home = False 
+        
         # Create the NavigationDrawer
         self.drawer = ft.NavigationDrawer(
             controls=[
@@ -250,14 +253,23 @@ class MainPage(ft.Container):
         server_display = server_url.replace("https://", "").replace("http://", "").split("/")[0]
         
         # Server info dialog is now created in show_server_info method
-        
-        return ft.AppBar(
-            leading=ft.IconButton(
+        if self.on_language_home:
+            leading = ft.IconButton(
+                icon="arrow_back",
+                icon_color="white",
+                tooltip="Go back",
+                on_click=self.go_back_from_language_home
+            )
+        else:
+            leading = ft.IconButton(
                 icon="menu",
                 icon_color="white",
                 tooltip="Open menu",
                 on_click=self.toggle_drawer
-            ),
+            )
+
+        return ft.AppBar(
+            leading=leading,
             title=ft.Text(f"{appbar_title}", color="white"),
             bgcolor="#1a73e8",
             center_title=False,
@@ -353,9 +365,11 @@ class MainPage(ft.Container):
             self.page.snack_bar.open = True
             self._reset_sign_out_button()
     
+    
     def handle_spanishhomepage(self, e):
         # Handle navigation to the Spanish main page
         self.content = self.spanish_main_page
+        self.on_language_home = True
         self.appbar_title = "Spanish"
         self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
         self.page.update()
@@ -363,6 +377,15 @@ class MainPage(ft.Container):
     def handle_englishhomepage(self, e):
         # Handle navigation to the English main page
         self.content = self.english_main_page
+        self.on_language_home = True
         self.appbar_title = "English"
+        self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+        self.page.update()
+    
+    def go_back_from_language_home(self, e):
+        # Go back to the main section (e.g., Learning Page)
+        self.content = self.learning_page
+        self.appbar_title = "Learning Page"
+        self.on_language_home = False
         self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
         self.page.update()
