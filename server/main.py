@@ -6,27 +6,25 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from typing import Annotated
 
-# Import from server modules
+# Import modules
 try:
+    # When running from project root via run.py
     from server.database import engine, get_db
     from server.models import Base, DBUser, Token
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from server.services.user_service import get_user_profile
     from server.services.token_service import generate_token, verify_token, remove_expired_tokens
+    from server.language_handler.languageregistry import add_language
 except ImportError:
-    # Fall back to direct imports when running directly
+    # When running directly from server directory
     from database import engine, get_db
     from models import Base, DBUser, Token
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from services.user_service import get_user_profile
     from services.token_service import generate_token, verify_token, remove_expired_tokens
-    
-    # Add the current directory to the path for direct execution
-    import os
-    import sys
-    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+    from language_handler.languageregistry import add_language
 
 #Used for password hashing
 from passlib.context import CryptContext
@@ -107,7 +105,13 @@ async def get_user(username: str, token: str):
 
 @app.delete("/users/{username}/delete")
 
-    
+@app.post("/languages/add")
+async def add_language_to_db(language_name: str, username: str, token: str):
+    return await add_language(language_name, username, token)
+
+@app.delete("/languages/delete")
+async def delete_language_from_db(language_name: str, username: str, token: str):
+    return await delete_language(language_name, username, token)
 
 
 @app.on_event("startup")
