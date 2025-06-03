@@ -32,6 +32,7 @@ class MainPage(ft.Container):
         self.page = page
         self.route = route
         self.appbar_title = "Daily Tasks"
+        self.last_page = []
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         
@@ -49,8 +50,10 @@ class MainPage(ft.Container):
         self.sign_out_button = None
         self.is_signing_out = False
         
-        # Track if we are on a language home page
-        self.on_language_home = False 
+        # Track if we are on a nested Page
+        self.not_on_home = False
+
+
         
         # Create the NavigationDrawer
         self.drawer = ft.NavigationDrawer(
@@ -155,6 +158,9 @@ class MainPage(ft.Container):
         self.settings_page = SettingsPage(self.page)
         self.spanish_main_page = SpanishMainPage(self.page, self)
         self.english_main_page = EnglishMainPage(self.page, self)
+
+        self.current_shown_content = self.daily_tasks_page
+
         
         
         # Main content
@@ -170,11 +176,15 @@ class MainPage(ft.Container):
         print(f"Selected Index changed: {selected_index}")
         if selected_index == 0:
             self.content = self.daily_tasks_page
+            self.not_on_home = False
+            self.current_shown_content = self.daily_tasks_page
             self.appbar_title = "Daily Tasks"
             self.drawer.open = False
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 1:
+            self.not_on_home = False
+            self.current_shown_content = self.learning_page
             self.content = self.learning_page
             self.appbar_title = "Learning Page"
             #Close drawer
@@ -182,6 +192,8 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 2:
+            self.not_on_home = False
+            self.current_shown_content = self.vocabs_page
             self.content = self.vocabs_page
             self.appbar_title = "Vocabulary Trainer"
             #Close drawer
@@ -189,6 +201,8 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 3:
+            self.not_on_home = False
+            self.current_shown_content = self.dictionary_page
             self.content = self.dictionary_page
             self.appbar_title = "Dictionary"
             #Close drawer
@@ -196,6 +210,8 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 4:
+            self.not_on_home = False
+            self.current_shown_content = self.account_page
             self.content = self.account_page
             self.appbar_title = "Account"
             #Close drawer
@@ -203,6 +219,8 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 5:
+            self.not_on_home = True
+            self.current_shown_content = self.settings_page
             self.appbar_title = "Settings"
             #Close drawer
             self.drawer.open = False
@@ -253,7 +271,7 @@ class MainPage(ft.Container):
         server_display = server_url.replace("https://", "").replace("http://", "").split("/")[0]
         
         # Server info dialog is now created in show_server_info method
-        if self.on_language_home:
+        if self.not_on_home:
             leading = ft.IconButton(
                 icon="arrow_back",
                 icon_color="white",
@@ -367,25 +385,67 @@ class MainPage(ft.Container):
     
     
     def handle_spanishhomepage(self, e):
+        self.last_page.append(self.content)
+        self.current_shown_content = self.spanish_main_page
         # Handle navigation to the Spanish main page
         self.content = self.spanish_main_page
-        self.on_language_home = True
+        self.not_on_home = True
         self.appbar_title = "Spanish"
         self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
         self.page.update()
     
     def handle_englishhomepage(self, e):
+        self.last_page.append(self.content)
+        self.current_shown_content = self.english_main_page
         # Handle navigation to the English main page
         self.content = self.english_main_page
-        self.on_language_home = True
+        self.not_on_home = True
         self.appbar_title = "English"
         self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
         self.page.update()
     
     def go_back_from_language_home(self, e):
-        # Go back to the main section (e.g., Learning Page)
-        self.content = self.learning_page
-        self.appbar_title = "Learning Page"
-        self.on_language_home = False
-        self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
-        self.page.update()
+        if self.last_page:
+            self.content = self.last_page.pop()
+            self.current_shown_content = self.content
+            self.on_language_home = False  # Or set based on the restored content
+            self.set_appbar_title_by_content()
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+            self.page.update()
+        else:
+            # If stack is empty, fallback to main page
+            self.content = self.learning_page
+            self.current_shown_content = self.learning_page
+            self.appbar_title = "Learning Page"
+            self.on_language_home = False
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+            self.page.update()
+
+    def set_appbar_title_by_content(self):
+        if self.current_shown_content == self.daily_tasks_page:
+            self.appbar_title = "Daily Tasks"
+            self.not_on_home = False
+        elif self.current_shown_content == self.learning_page:
+            self.appbar_title = "Learning Page"
+            self.not_on_home = False
+        elif self.current_shown_content == self.vocabs_page:
+            self.appbar_title = "Vocabulary Trainer"
+            self.not_on_home = False
+        elif self.current_shown_content == self.dictionary_page:
+            self.appbar_title = "Dictionary"
+            self.not_on_home = False
+        elif self.current_shown_content == self.account_page:
+            self.appbar_title = "Account"
+            self.not_on_home = False
+        elif self.current_shown_content == self.settings_page:
+            self.appbar_title = "Settings"
+            self.not_on_home = False
+        elif self.current_shown_content == self.spanish_main_page:
+            self.appbar_title = "Spanish"
+            self.not_on_home = False
+        elif self.current_shown_content == self.english_main_page:
+            self.appbar_title = "English"
+            self.not_on_home = False
+        else:
+            self.appbar_title = "OpenLingu"
+            self.not_on_home = False
