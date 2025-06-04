@@ -28,12 +28,45 @@ class LearningPage(ft.Container):
         # Track currently centered lesson
         self.center_index = 0
 
+        self.lesson_widgets = []
+
         # List to hold all Flet containers
-        self.lessons = []
+        self.lessons = [
+            {
+                "title": "Lesson 1",
+                "color": "#d65b09",
+                "on_click": None
+            },
+            {
+                "title": "Lesson 2",
+                "color": "#098ad6",
+                "on_click": None
+            },
+            {
+                "title": "Lesson 3",
+                "color": "#0acb6f",
+                "on_click": None
+            },
+            {
+                "title": "Lesson 4",
+                "color": "#d65b09",
+                "on_click": None
+            },
+            {
+                "title": "Lesson 5",
+                "color": "#098ad6",
+                "on_click": None
+            },
+            {
+                "title": "Lesson 6",
+                "color": "#0acb6f",
+                "on_click": None
+            },
+        ]
 
 
         # Dynamically create containers from passed data
-        for i, lesson in enumerate(lessons):
+        for i, lesson in enumerate(self.lessons):
             container = ft.Container(
                 content=ft.Row(
                     controls=[ft.Text(lesson["title"], size=70, weight="w600")],
@@ -47,11 +80,11 @@ class LearningPage(ft.Container):
                 animate_position=ft.Animation(400, curve=ft.AnimationCurve.EASE_IN_OUT),
                 on_click=self.wrap_on_click(i, lesson["on_click"]),
             )
-            self.lessons.append(container)
+            self.lesson_widgets.append(container)
 
         # Stack them for animated layout
         self.stack = ft.Stack(
-            controls=self.lessons,
+            controls=self.lesson_widgets,
             width=page.width,
             height=self.HEIGHT,
         )
@@ -65,7 +98,7 @@ class LearningPage(ft.Container):
                 self.center_index = i
                 self.update_positions()
                 self.page.update()
-                user_callback()  # call custom function
+                #user_callback()   @Jonas what is this for? No such function exists
         return wrapped_click
 
     def update_positions(self):
@@ -75,7 +108,7 @@ class LearningPage(ft.Container):
         """
         center_x = (self.page.width - self.WIDTH) // 2
 
-        for i, container in enumerate(self.lessons):
+        for i, container in enumerate(self.lesson_widgets):
             diff = i - self.center_index
 
             if diff == 0:
@@ -88,29 +121,3 @@ class LearningPage(ft.Container):
                 container.left = self.page.width + 1000
             else:
                 container.left = -self.WIDTH - 1000
-
-if __name__ == "__main__":
-    # This code will only run when the file is executed directly, not when imported
-    def main(page: ft.Page):
-        # Step 1: Define on_click handlers for each lesson
-        def lesson1_click():
-            print("Lektion 1 wurde angeklickt!")
-
-        def lesson2_click():
-            print("Lektion 2 wurde angeklickt!")
-
-        def lesson3_click():
-            print("Lektion 3 wurde angeklickt!")
-
-        # Step 2: Create the lessons_data list with title, color, and callback
-        lessons_data = [
-            {"title": "Lektion 1", "color": "#d65b09", "on_click": lesson1_click},
-            {"title": "Lektion 2", "color": "#098ad6", "on_click": lesson2_click},
-            {"title": "Lektion 3", "color": "#0acb6f", "on_click": lesson3_click},
-        ]
-
-        # Create and return the LearningPage
-        return LearningPage(page, None, lessons_data)
-    
-    # Only run the app if this file is executed directly
-    ft.app(target=main)
