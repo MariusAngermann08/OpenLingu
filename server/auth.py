@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 
 # Import from server modules
 try:
-    from server.database import get_db
+    from server.database import get_users_db
     from server.models import DBUser, Token
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from server.services.token_service import generate_token, verify_token
 except ImportError:
     # Fall back to direct imports when running directly
-    from database import get_db
+    from database import get_users_db
     from models import DBUser, Token
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from services.token_service import generate_token, verify_token
@@ -28,11 +28,13 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-async def create_user(username: str, email: str, password: str):
-    db = None
+async def create_user(username: str, email: str, password: str, db: Session = None):
+    close_db = False
     try:
-        # Get database session
-        db = next(get_db())
+        # Get database session if not provided
+        if db is None:
+            db = next(get_users_db())
+            close_db = True
         
         # Check if user already exists by username or email
         existing_user = db.query(DBUser).filter(
@@ -77,15 +79,17 @@ async def create_user(username: str, email: str, password: str):
         
     finally:
         # Ensure database connection is closed
-        if db:
+        if db and close_db:
             db.close()
 
-async def remove_user(username: str):
-    db = None
+async def remove_user(username: str, token: str, db: Session = None):
+    close_db = False
     try:
         # Get database session
-        db = next(get_db())
-
+        if db is None:
+            db = next(get_users_db())
+            close_db = True
+        
         #Find user by username
         user = db.query(DBUser).filter(DBUser.username == username).first()
 
@@ -116,14 +120,16 @@ async def remove_user(username: str):
     
     finally:
         #Ensure database connection is closed
-        if db:
+        if db and close_db:
             db.close()
 
-async def authenticate_user(username: str, password: str):
-    db = None
+async def authenticate_user(username: str, password: str, db: Session = None):
+    close_db = False
     try:
         # Get database session
-        db = next(get_db())
+        if db is None:
+            db = next(get_users_db())
+            close_db = True
         
         # Find user by username (case-sensitive)
         user = db.query(DBUser).filter(DBUser.username == username).first()

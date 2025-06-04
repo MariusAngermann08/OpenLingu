@@ -1,37 +1,72 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine, MetaData
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from typing import Generator
-
 import os
 
-# Get the absolute path to the database file
+# Get the absolute path to the database files
 DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 os.makedirs(DB_DIR, exist_ok=True)
-DB_PATH = os.path.join(DB_DIR, 'users.db')
 
-URL_DATABASE = f"sqlite:///{os.path.abspath(DB_PATH)}"
+# Database URLs
+USERS_DB_PATH = os.path.join(DB_DIR, 'users.db')
+LANGUAGES_DB_PATH = os.path.join(DB_DIR, 'languages.db')
 
-LANGUAGE_DATABASE = f"sqlite:///{os.path.join(DB_DIR, 'languages.db')}"
+USERS_DATABASE_URL = f"sqlite:///{os.path.abspath(USERS_DB_PATH)}"
+LANGUAGES_DATABASE_URL = f"sqlite:///{os.path.abspath(LANGUAGES_DB_PATH)}"
 
-engine = create_engine(URL_DATABASE)
-language_engine = create_engine(LANGUAGE_DATABASE)
+# Create engines with different isolation levels to prevent table locking
+users_engine = create_engine(
+    USERS_DATABASE_URL, 
+    connect_args={"check_same_thread": False},
+    pool_pre_ping=True
+)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-language_session = sessionmaker(autocommit=False, autoflush=False, bind=language_engine)
+languages_engine = create_engine(
+    LANGUAGES_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    pool_pre_ping=True
+)
 
-Base = declarative_base()
+# Create session factories with autocommit=False for better transaction control
+UsersSessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=users_engine
+)
 
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
+LanguagesSessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=languages_engine
+)
+
+# Create separate metadata for each database
+users_metadata = MetaData()
+languages_metadata = MetaData()
+
+# Create base classes with separate metadata
+UsersBase = declarative_base(metadata=users_metadata)
+LanguagesBase = declarative_base(metadata=languages_metadata)
+
+def get_users_db() -> Generator[Session, None, None]:
+    """Dependency for getting users database session"""
+    db = UsersSessionLocal()
     try:
         yield db
     finally:
         db.close()
 
 def get_language_db() -> Generator[Session, None, None]:
-    language_db = language_session()
+    """Dependency for getting languages database session"""
+    db = LanguagesSessionLocal()
     try:
-        yield language_db
+        yield db
     finally:
-        language_db.close()
+        db.close()
+
+# Backward compatibility
+engine = users_engine
+language_engine = languages_engine
+SessionLocal = UsersSessionLocal
+language_session = LanguagesSessionLocal
+Base = UsersBase  # For backward compatibility
