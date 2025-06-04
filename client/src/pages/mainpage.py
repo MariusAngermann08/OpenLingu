@@ -1,18 +1,9 @@
 import flet as ft
 import requests
 
+# Handle imports for both direct execution and module import
 try:
-    #Try relative import
-    from mainpages.learningpage import LearningPage
-    from mainpages.dailytaskspage import DailyTasksPage
-    from mainpages.vocabs import VocabsPage
-    from mainpages.dictionary import DictionaryPage
-    from pages.mainpages.account import AccountPage
-    from pages.mainpages.settings import SettingsPage
-    from pages.Languagetrees.spanish_main import SpanishMainPage
-    from pages.Languagetrees.english_main import EnglishMainPage
-except ImportError:
-    #Do absolute import instead
+    # When running as a module (through run.py)
     from pages.mainpages.learningpage import LearningPage
     from pages.mainpages.dailytaskspage import DailyTasksPage
     from pages.mainpages.vocabs import VocabsPage
@@ -21,6 +12,16 @@ except ImportError:
     from pages.mainpages.settings import SettingsPage
     from pages.Languagetrees.spanish_main import SpanishMainPage
     from pages.Languagetrees.english_main import EnglishMainPage
+except ImportError:
+    # When running directly with flet run
+    from mainpages.learningpage import LearningPage
+    from mainpages.dailytaskspage import DailyTasksPage
+    from mainpages.vocabs import VocabsPage
+    from mainpages.dictionary import DictionaryPage
+    from mainpages.account import AccountPage
+    from mainpages.settings import SettingsPage
+    from Languagetrees.spanish_main import SpanishMainPage
+    from Languagetrees.english_main import EnglishMainPage
 
 #Function to remove the access token from the client storage
 def remove_access_token(page):
@@ -149,8 +150,25 @@ class MainPage(ft.Container):
         self.drawer.on_dismiss = self.handle_dismissal
         self.drawer.on_change = self.handle_change
         
-        # Initialize Pages
-        self.learning_page = LearningPage(self.page, self)
+        # Initialize Pages with sample lessons for LearningPage
+        sample_lessons = [
+            {
+                'title': 'Lesson 1',
+                'color': '#d65b09',
+                'on_click': lambda: print("Lesson 1 clicked")
+            },
+            {
+                'title': 'Lesson 2',
+                'color': '#098ad6',
+                'on_click': lambda: print("Lesson 2 clicked")
+            },
+            {
+                'title': 'Lesson 3',
+                'color': '#0acb6f',
+                'on_click': lambda: print("Lesson 3 clicked")
+            }
+        ]
+        self.learning_page = LearningPage(self.page, self, sample_lessons)
         self.daily_tasks_page = DailyTasksPage(self.page)
         self.vocabs_page = VocabsPage(self.page)
         self.dictionary_page = DictionaryPage(self.page)

@@ -5,7 +5,7 @@ from typing import Callable
 
 
 class LearningPage(ft.Container):
-   def __init__(self, page, mainpage, lessons: list[dict]):
+    def __init__(self, page, mainpage, lessons: list[dict]):
         """
         `lessons`: List of dictionaries with:
             - 'title': str
@@ -30,6 +30,7 @@ class LearningPage(ft.Container):
 
         # List to hold all Flet containers
         self.lessons = []
+
 
         # Dynamically create containers from passed data
         for i, lesson in enumerate(lessons):
@@ -59,8 +60,7 @@ class LearningPage(ft.Container):
         self.update_positions()
 
     def wrap_on_click(self, i: int, user_callback: Callable):
-
-        def wrapped_click(e, self = self, i=i, user_callback=user_callback):
+        def wrapped_click(e, self=self, i=i, user_callback=user_callback):
             if i != self.center_index:
                 self.center_index = i
                 self.update_positions()
@@ -89,25 +89,28 @@ class LearningPage(ft.Container):
             else:
                 container.left = -self.WIDTH - 1000
 
-def main(page: ft.Page):
-    # Step 1: Define on_click handlers for each lesson
-    def lesson1_click():
-        print("Lektion 1 wurde angeklickt!")
+if __name__ == "__main__":
+    # This code will only run when the file is executed directly, not when imported
+    def main(page: ft.Page):
+        # Step 1: Define on_click handlers for each lesson
+        def lesson1_click():
+            print("Lektion 1 wurde angeklickt!")
 
-    def lesson2_click():
-        print("Lektion 2 wurde angeklickt!")
+        def lesson2_click():
+            print("Lektion 2 wurde angeklickt!")
 
-    def lesson3_click():
-        print("Lektion 3 wurde angeklickt!")
+        def lesson3_click():
+            print("Lektion 3 wurde angeklickt!")
 
-    # Step 2: Create the lessons_data list with title, color, and callback
-    lessons_data = [
-        {"title": "Lektion 1", "color": "#d65b09", "on_click": lesson1_click},
-        {"title": "Lektion 2", "color": "#098ad6", "on_click": lesson2_click},
-        {"title": "Lektion 3", "color": "#0acb6f", "on_click": lesson3_click},
-    ]
+        # Step 2: Create the lessons_data list with title, color, and callback
+        lessons_data = [
+            {"title": "Lektion 1", "color": "#d65b09", "on_click": lesson1_click},
+            {"title": "Lektion 2", "color": "#098ad6", "on_click": lesson2_click},
+            {"title": "Lektion 3", "color": "#0acb6f", "on_click": lesson3_click},
+        ]
 
-    return lessons_data
-
-    # Step 3: Create and add the LearningPage with the data
-learning_page = LearningPage(page, None, lessons_data)
+        # Create and return the LearningPage
+        return LearningPage(page, None, lessons_data)
+    
+    # Only run the app if this file is executed directly
+    ft.app(target=main)
