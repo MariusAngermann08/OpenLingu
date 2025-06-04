@@ -11,55 +11,25 @@ class LearningPage(ft.Container):
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
-        self.content = ft.Column(
-            controls=[
-                ft.Container(
-                    content=ft.Row(
-                    controls=[
-                        ft.Text("Spanish", size=90, weight="w600",),
-                        ft.Image(
-                        src=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "flags", "Spain.png")),
-                        width=200,
-                        height=120,
-                        fit=ft.ImageFit.CONTAIN
+        self.content = ft.Row(
+            controls=[ 
+                    ft.Container(
+                        content=ft.Row(
+                        controls=[
+                            ft.Text("Lektion 1", size=70, weight="w600",),
+                        ],
+                        alignment = ft.MainAxisAlignment.CENTER,
                         ),
-                    ],
-                    alignment=ft.MainAxisAlignment.SPACE_AROUND,
-                    ),
-                    margin=20,
-                    padding=20,
-                    alignment=ft.alignment.center,
-                    bgcolor="#d65b09",
-                    expand=True,
-                    border_radius=10,
-                    ink=True,
-                    on_click= self.main_page.handle_spanishhomepage
-                ),
-
-                ft.Container(
-                    content=ft.Row(
-                    controls=[
-                        ft.Text("English", size=90, weight="w600",),
-                        ft.Image(
-                        src=os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "assets", "flags", "England.png")),
-                        width=200,
-                        height=120,
-                        fit=ft.ImageFit.CONTAIN
-                        ),
-                    ],
-                    alignment=ft.MainAxisAlignment.SPACE_AROUND,
-                    ),
-                    margin=20,
-                    padding=20,
-                    alignment=ft.alignment.center,
-                    bgcolor="#726362",
-                    expand=True,
-                    border_radius=10,
-                    ink=True,
-                    on_click= self.main_page.handle_englishhomepage,
-                ),
+                        margin=50,
+                        padding=20,
+                        alignment=ft.alignment.center,
+                        bgcolor="#d65b09",
+                        width=500,
+                        height=500,
+                        border_radius=10,
+                        ink=True,
+                    )
             ],
             alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            expand=True
         )
+                

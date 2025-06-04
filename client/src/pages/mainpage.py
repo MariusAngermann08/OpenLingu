@@ -9,8 +9,8 @@ try:
     from mainpages.dictionary import DictionaryPage
     from pages.mainpages.account import AccountPage
     from pages.mainpages.settings import SettingsPage
-    from pages.lectionhomepages.spanish_main import SpanishMainPage
-    from pages.lectionhomepages.english_main import EnglishMainPage
+    from pages.Languagetrees.spanish_main import SpanishMainPage
+    from pages.Languagetrees.english_main import EnglishMainPage
 except ImportError:
     #Do absolute import instead
     from pages.mainpages.learningpage import LearningPage
@@ -19,8 +19,8 @@ except ImportError:
     from pages.mainpages.dictionary import DictionaryPage
     from pages.mainpages.account import AccountPage
     from pages.mainpages.settings import SettingsPage
-    from pages.lectionhomepages.spanish_main import SpanishMainPage
-    from pages.lectionhomepages.english_main import EnglishMainPage
+    from pages.Languagetrees.spanish_main import SpanishMainPage
+    from pages.Languagetrees.english_main import EnglishMainPage
 
 #Function to remove the access token from the client storage
 def remove_access_token(page):
@@ -156,8 +156,8 @@ class MainPage(ft.Container):
         self.dictionary_page = DictionaryPage(self.page)
         self.account_page = AccountPage(self.page)
         self.settings_page = SettingsPage(self.page)
-        self.spanish_main_page = SpanishMainPage(self.page, self)
-        self.english_main_page = EnglishMainPage(self.page, self)
+        self.spanish_main_tree = SpanishMainPage(self.page, self)
+        self.english_main_tree = EnglishMainPage(self.page, self)
 
         self.current_shown_content = self.daily_tasks_page
 
@@ -384,25 +384,6 @@ class MainPage(ft.Container):
             self._reset_sign_out_button()
     
     
-    def handle_spanishhomepage(self, e):
-        self.last_page.append(self.content)
-        self.current_shown_content = self.spanish_main_page
-        # Handle navigation to the Spanish main page
-        self.content = self.spanish_main_page
-        self.not_on_home = True
-        self.appbar_title = "Spanish"
-        self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
-        self.page.update()
-    
-    def handle_englishhomepage(self, e):
-        self.last_page.append(self.content)
-        self.current_shown_content = self.english_main_page
-        # Handle navigation to the English main page
-        self.content = self.english_main_page
-        self.not_on_home = True
-        self.appbar_title = "English"
-        self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
-        self.page.update()
     
     def go_back_from_language_home(self, e):
         if self.last_page:
@@ -439,12 +420,6 @@ class MainPage(ft.Container):
             self.not_on_home = False
         elif self.current_shown_content == self.settings_page:
             self.appbar_title = "Settings"
-            self.not_on_home = False
-        elif self.current_shown_content == self.spanish_main_page:
-            self.appbar_title = "Spanish"
-            self.not_on_home = False
-        elif self.current_shown_content == self.english_main_page:
-            self.appbar_title = "English"
             self.not_on_home = False
         else:
             self.appbar_title = "OpenLingu"
