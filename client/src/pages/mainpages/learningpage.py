@@ -5,7 +5,7 @@ from typing import Callable
 
 
 class LearningPage(ft.Container):
-    def __init__(self, page, mainpage, lessons: list[dict]):
+    def __init__(self, page):
         """
         `lessons`: List of dictionaries with:
             - 'title': str
@@ -14,7 +14,6 @@ class LearningPage(ft.Container):
         """
         super().__init__(expand=True, alignment=ft.alignment.center)
         self.page = page
-        self.main_page = mainpage
 
         # Page layout settings
         page.vertical_alignment = ft.MainAxisAlignment.CENTER

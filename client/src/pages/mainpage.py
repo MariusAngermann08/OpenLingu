@@ -54,6 +54,14 @@ class MainPage(ft.Container):
         # Track if we are on a nested Page
         self.not_on_home = False
 
+        #Create Server Dialog
+        self.server_info_dialog = ft.AlertDialog(
+            title=ft.Text("Server Information"),
+            content=ft.Text(f"Server URL: {self.page.client_storage.get('server_url')}", selectable=True),
+            alignment=ft.alignment.center,
+            on_dismiss=lambda e: print("Dialog dismissed!"),
+            title_padding=ft.padding.all(25)
+        )  
 
         
         # Create the NavigationDrawer
@@ -150,25 +158,8 @@ class MainPage(ft.Container):
         self.drawer.on_dismiss = self.handle_dismissal
         self.drawer.on_change = self.handle_change
         
-        # Initialize Pages with sample lessons for LearningPage
-        sample_lessons = [
-            {
-                'title': 'Lesson 1',
-                'color': '#d65b09',
-                'on_click': lambda: print("Lesson 1 clicked")
-            },
-            {
-                'title': 'Lesson 2',
-                'color': '#098ad6',
-                'on_click': lambda: print("Lesson 2 clicked")
-            },
-            {
-                'title': 'Lesson 3',
-                'color': '#0acb6f',
-                'on_click': lambda: print("Lesson 3 clicked")
-            }
-        ]
-        self.learning_page = LearningPage(self.page, self, sample_lessons)
+        # Initialize Pages
+        self.learning_page = LearningPage(self.page)
         self.daily_tasks_page = DailyTasksPage(self.page)
         self.vocabs_page = VocabsPage(self.page)
         self.dictionary_page = DictionaryPage(self.page)
@@ -252,35 +243,7 @@ class MainPage(ft.Container):
         self.page.update()
         
     def show_server_info(self, e):
-        print("Server info button clicked")  # Debug print
-        try:
-            server_url = self.page.client_storage.get("server_url") or "No server configured"
-            print(f"Server URL: {server_url}")  # Debug print
-            
-            # Create a simple dialog
-            dlg = ft.AlertDialog(
-                title=ft.Text("Server Information"),
-                content=ft.Text(server_url, selectable=True),
-                actions=[
-                    ft.TextButton("Close", on_click=lambda e: self.close_dialog(dlg))
-                ],
-            )
-            
-            # Show the dialog
-            self.page.dialog = dlg
-            dlg.open = True
-            self.page.update()
-            print("Dialog should be visible now")  # Debug print
-            
-        except Exception as ex:
-            print(f"Error showing server info: {ex}")
-    
-    def close_dialog(self, dlg):
-        dlg.open = False
-        self.page.update()
-        
-    def close_server_info(self, e):
-        self.server_info_dialog.open = False
+        self.page.open(self.server_info_dialog)
         self.page.update()
         
     def create_app_bar(self, appbar_title):
