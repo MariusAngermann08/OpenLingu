@@ -17,6 +17,14 @@ class DBUser(UsersBase):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     disabled = Column(Boolean, default=False)
+    
+    def __setattr__(self, key, value):
+        print(f"DBUser.__setattr__: {key} = {value}")
+        super().__setattr__(key, value)
+    
+    def __init__(self, **kwargs):
+        print(f"DBUser.__init__ with args: {kwargs}")
+        super().__init__(**kwargs)
 
 class Token(UsersBase):
     __tablename__ = "tokens"
@@ -24,7 +32,6 @@ class Token(UsersBase):
     
     token = Column(String, primary_key=True, index=True)
     expires = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(days=1))
-    username = Column(String, index=True)  # Add username to track token ownership
 
 # Language-related models (stored in languages.db)
 class Language(LanguagesBase):

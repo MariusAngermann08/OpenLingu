@@ -40,40 +40,54 @@ languages_db_dependency = Annotated[Session, Depends(get_language_db)]
 async def get():
     return {"msg": "OpenLingu"}
 
+from fastapi import Form
+
 @app.post("/login")
-async def login(username: str, password: str, db: users_db_dependency):
+async def login(
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_users_db)
+):
     """
     Authenticate a user and return an access token
     
     Args:
-        username: The username of the user
-        password: The user's password
+        username: The username of the user (from form data)
+        password: The user's password (from form data)
         db: Database session dependency
         
     Returns:
         dict: Access token and token type
     """
-    # Authenticate user
-    user = await authenticate_user(username, password, db)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        print(f"[LOGIN] Attempting login for user: {username}")
+        # Authenticate user and generate token
+        result = await authenticate_user(
+            username=username,
+            password=password,
+            db=db,
+            generate_token=True
         )
-    
-    # Generate token
-    access_token = generate_token(data={"sub": user.username})
-    
-    # Store token in database
-    token = Token(token=access_token, expires=datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    db.add(token)
-    db.commit()
-    
-    return {"access_token": access_token, "token_type": "bearer"}
+        print(f"[LOGIN] Login successful for user: {username}")
+        return result
+        
+    except HTTPException as e:
+        print(f"[LOGIN] Login failed for user {username}: {str(e)}")
+        # Re-raise HTTP exceptions
+        raise e
+    except Exception as e:
+        # Log the error and return a 500 error
+        error_msg = f"Internal server error during login: {str(e)}"
+        print(f"[LOGIN] {error_msg}")
+        if 'db' in locals():
+            db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_msg
+        )
 
 @app.post("/register")
-async def register(username: str, password: str, email: str, db: users_db_dependency):
+async def register(username: str, email: str, password: str, db: users_db_dependency):
     """
     Register a new user
     
@@ -96,22 +110,16 @@ async def register(username: str, password: str, email: str, db: users_db_depend
         
     # Create new user
     try:
-        user = await create_user(username, password, email, db)
+        user = await create_user(username, email, password, db)
         return {"message": "User created successfully"}
     except Exception as e:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error creating user: {str(e)}"
-        ) # Generate token
-    access_token = generate_token(data={"sub": user.username})
+        )
     
-    # Store token in database
-    token = Token(token=access_token, expires=datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    db.add(token)
-    db.commit()
-    
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"message": "User created successfully"}
 
 @app.post("/logout")
 async def logout(token: str, db: users_db_dependency):

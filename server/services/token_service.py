@@ -8,20 +8,37 @@ from passlib.context import CryptContext
 
 # Import from server modules
 try:
-    from server.auth import *
-    from server.database import get_users_db
     from server.models import Token, DBUser
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 except ImportError:
     # Fall back to direct imports when running directly
-    from auth import *
-    from database import get_users_db
     from models import Token, DBUser
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
+# Import get_users_db only when needed to avoid circular imports
+def _get_users_db():
+    try:
+        from server.database import get_users_db as _get_db
+    except ImportError:
+        from database import get_users_db as _get_db
+    return _get_db()
+
 async def generate_token(user: DBUser):
-    token = jwt.encode({"sub": user.username}, SECRET_KEY, algorithm=ALGORITHM)
-    return token
+    try:
+        print(f"[DEBUG] Generating token for user: {user.username}")
+        print(f"[DEBUG] SECRET_KEY: {'Set' if SECRET_KEY else 'Not set'}")
+        print(f"[DEBUG] ALGORITHM: {ALGORITHM}")
+        
+        token_data = {"sub": user.username}
+        print(f"[DEBUG] Token data: {token_data}")
+        
+        token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+        print(f"[DEBUG] Token generated: {token}")
+        
+        return token
+    except Exception as e:
+        print(f"[ERROR] Failed to generate token: {str(e)}")
+        raise
 
 async def verify_token(token: str, db: Session = None) -> str:
     """
@@ -46,9 +63,21 @@ async def verify_token(token: str, db: Session = None) -> str:
                 headers={"WWW-Authenticate": "Bearer"}
             )
             
+        # Get database session if not provided
+        if db is None:
+            db = next(_get_users_db())
+            close_db = True
+            
         # Decode the token
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        
+        if not username:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token format",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
         
         if not username:
             raise HTTPException(
