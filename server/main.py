@@ -44,8 +44,8 @@ from fastapi import Form
 
 @app.post("/login")
 async def login(
-    username: str = Form(...),
-    password: str = Form(...),
+    username: str,
+    password: str,
     db: Session = Depends(get_users_db)
 ):
     """
