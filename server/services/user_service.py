@@ -97,10 +97,7 @@ async def delete_user(username: str, token: str, db: Session = None):
             close_db = True
             
         # Check if token is valid and matches the username
-        try:
-            token_username = await verify_token(token, db)
-        except HTTPException as e:
-            raise e
+        token_username = await verify_token(token, db)
         
         # Check if given username matches token username
         if token_username != username:
@@ -117,23 +114,32 @@ async def delete_user(username: str, token: str, db: Session = None):
             print(f"User '{username}' not found in database")
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Delete user
-        await remove_user(username, token, db)
-        print(f"Successfully deleted user: {username}")
-        return {"message": "User deleted successfully"}
+        try:
+            # Delete the user directly instead of calling remove_user
+            db.delete(user)
+            db.commit()
+            print(f"Successfully deleted user: {username}")
+            return {"message": "User deleted successfully"}
+        except Exception as e:
+            db.rollback()
+            print(f"Error deleting user from database: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error deleting user from database: {str(e)}"
+            )
             
     except HTTPException as e:
-        if 'db' in locals():
+        if 'db' in locals() and db.is_active:
             db.rollback()
         raise e
     except Exception as e:
-        if 'db' in locals():
+        if 'db' in locals() and db.is_active:
             db.rollback()
-        print(f"Error deleting user: {str(e)}")
+        print(f"Error in delete_user: {str(e)}")
         raise HTTPException(
             status_code=500,
-            detail="An error occurred while deleting the user"
+            detail=f"An error occurred while deleting the user: {str(e)}"
         )
     finally:
-        if close_db and 'db' in locals():
+        if close_db and 'db' in locals() and db.is_active:
             db.close()

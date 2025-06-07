@@ -13,7 +13,7 @@ try:
     from server.models import DBUser, Token, Language
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
-    from server.services.user_service import get_user_profile
+    from server.services.user_service import get_user_profile, delete_user
     from server.services.token_service import generate_token, verify_token, remove_expired_tokens
     from server.language_handler.languageregistry import add_language, delete_language
 except ImportError:
@@ -22,7 +22,7 @@ except ImportError:
     from models import DBUser, Token, Language
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
-    from services.user_service import get_user_profile
+    from services.user_service import get_user_profile, delete_user
     from services.token_service import generate_token, verify_token, remove_expired_tokens
     from language_handler.languageregistry import add_language, delete_language
 

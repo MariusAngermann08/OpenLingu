@@ -20,39 +20,40 @@ def init_db():
     # Re-import models to ensure they're bound to the correct metadata
     import importlib
     import sys
+    from sqlalchemy import inspect
     
     if 'server.models' in sys.modules:
         importlib.reload(sys.modules['server.models'])
     elif 'models' in sys.modules:
         importlib.reload(sys.modules['models'])
     
-    # Drop all existing tables to ensure clean slate
-    with users_engine.begin() as conn:
-        users_metadata.drop_all(bind=conn)
-    with languages_engine.begin() as conn:
-        languages_metadata.drop_all(bind=conn)
-    
-    # Create users database tables with correct schema
-    users_metadata.create_all(bind=users_engine)
-    
-    # Create languages database tables
-    languages_metadata.create_all(bind=languages_engine)
-    
-    # Verify the schema was created correctly
-    from sqlalchemy import inspect
-    
+    # Create tables only if they don't exist
     inspector = inspect(users_engine)
-    users_columns = [col['name'] for col in inspector.get_columns('users')]
     
-    print("\nDatabase tables created successfully!")
-    print(f"Users database location: {os.path.abspath('db/users.db')}")
-    print(f"Tables in users database: {list(users_metadata.tables.keys())}")
-    print(f"Users table columns: {', '.join(users_columns)}")
-    print(f"\nLanguages database location: {os.path.abspath('db/languages.db')}")
-    print(f"Tables in languages database: {list(languages_metadata.tables.keys())}")
+    # Check and create users tables if they don't exist
+    if not inspector.has_table('users'):
+        users_metadata.create_all(bind=users_engine)
+        print("Created users table")
     
-    if set(users_columns) != {'username', 'email', 'hashed_password', 'disabled'}:
-        print("\nWARNING: Users table schema does not match expected schema!")
+    # Check and create languages tables if they don't exist
+    if not inspector.has_table('languages'):
+        languages_metadata.create_all(bind=languages_engine)
+        print("Created languages table")
+    
+    # Verify the schema
+    try:
+        users_columns = [col['name'] for col in inspector.get_columns('users')]
+        print("\nDatabase initialization complete!")
+        print(f"Users database location: {os.path.abspath('db/users.db')}")
+        print(f"Tables in users database: {list(users_metadata.tables.keys())}")
+        print(f"Users table columns: {', '.join(users_columns)}")
+        print(f"\nLanguages database location: {os.path.abspath('db/languages.db')}")
+        print(f"Tables in languages database: {list(languages_metadata.tables.keys())}")
+        
+        if set(users_columns) != {'username', 'email', 'hashed_password', 'disabled'}:
+            print("\nWARNING: Users table schema does not match expected schema!")
+    except Exception as e:
+        print(f"\nWarning: Could not verify database schema: {str(e)}")
 
 if __name__ == "__main__":
     init_db()
