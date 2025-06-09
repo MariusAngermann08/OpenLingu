@@ -1,6 +1,12 @@
 import flet as ft
 import requests
 
+try:
+    from Widgetlibary.Lectionwidgets import UnderlinedText
+
+except ImportError:
+    from pages.Widgetlibary.Lectionwidgets import UnderlinedText
+
 class DailyTasksPage(ft.Container):
     def __init__(self, page):
         super().__init__(expand=True, alignment=ft.alignment.center)
@@ -10,8 +16,13 @@ class DailyTasksPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
-                ft.Text("Welcome to the Daily Tasks page!", size=24, weight="bold"),
-                ft.Text("Fresh Content to learn will be added soon", size=16, color="grey"),
+                UnderlinedText(
+                    "This is a test for research purposes.",
+                    {3 : "red", 5: "blue"},
+                    32,
+                    "green",
+                ).render(),
+
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,

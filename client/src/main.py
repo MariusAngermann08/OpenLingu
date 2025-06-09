@@ -14,7 +14,7 @@ def route_change(e):
     route = page.route
 
     if route == "/":
-        #page.go("/main")
+        page.go("/main")
         #page.go("/setup")
         # Check if server url is saved
         server_url = page.client_storage.get("server_url")
