@@ -15,7 +15,7 @@ try:
     from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from server.services.user_service import get_user_profile, delete_user
     from server.services.token_service import generate_token, verify_token, remove_expired_tokens
-    from server.language_handler.languageregistry import add_language, delete_language
+    from server.language_handler.languageregistry import add_language, delete_language, get_languages_list as get_languages_list_impl
 except ImportError:
     # When running directly from server directory
     from database import users_engine, get_users_db, get_language_db
@@ -24,7 +24,7 @@ except ImportError:
     from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from services.user_service import get_user_profile, delete_user
     from services.token_service import generate_token, verify_token, remove_expired_tokens
-    from language_handler.languageregistry import add_language, delete_language
+    from language_handler.languageregistry import add_language, delete_language, get_languages_list as get_languages_list_impl
 
 # Used for password hashing
 from passlib.context import CryptContext
@@ -220,6 +220,19 @@ async def delete_language_from_db(language_name: str, username: str, token: str,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while deleting the language: {str(e)}"
         )
+
+@app.get("/languages")
+async def get_languages_list(db: languages_db_dependency):
+    """
+    Get a list of all languages in the database
+    
+    Args:
+        db: Database session dependency
+        
+    Returns:
+        list: List of language names
+    """
+    return await get_languages_list_impl(db)
 
 @app.on_event("startup")
 async def startup_event():
