@@ -29,20 +29,40 @@ except ImportError:
 # Used for password hashing
 from passlib.context import CryptContext
 
-app = FastAPI()
+# Define tags for API documentation
+tags_metadata = [
+    {
+        "name": "authentication",
+        "description": "User authentication and authorization endpoints",
+    },
+    {
+        "name": "users",
+        "description": "User management operations",
+    },
+    {
+        "name": "languages",
+        "description": "Language management operations",
+    },
+    {
+        "name": "system",
+        "description": "System information and status",
+    }
+]
+
+app = FastAPI(openapi_tags=tags_metadata)
 
 # Database dependencies
 users_db_dependency = Annotated[Session, Depends(get_users_db)]
 languages_db_dependency = Annotated[Session, Depends(get_language_db)]
 
 
-@app.get("/")
+@app.get("/", tags=["system"])
 async def get():
     return {"msg": "OpenLingu"}
 
 from fastapi import Form
 
-@app.post("/login")
+@app.post("/login", tags=["authentication"])
 async def login(
     username: str,
     password: str,
@@ -86,7 +106,7 @@ async def login(
             detail=error_msg
         )
 
-@app.post("/register")
+@app.post("/register", tags=["authentication"])
 async def register(username: str, email: str, password: str, db: users_db_dependency):
     """
     Register a new user
@@ -121,7 +141,7 @@ async def register(username: str, email: str, password: str, db: users_db_depend
     
     return {"message": "User created successfully"}
 
-@app.post("/logout")
+@app.post("/logout", tags=["authentication"])
 async def logout(token: str, db: users_db_dependency):
     """
     Log out a user by removing their token
@@ -144,7 +164,7 @@ async def logout(token: str, db: users_db_dependency):
             detail=f"Error logging out: {str(e)}"
         )
 
-@app.get("/user/{username}")
+@app.get("/user/{username}", tags=["users"])
 async def get_user(username: str, token: str, db: users_db_dependency):
     """
     Get a user's profile information
@@ -159,7 +179,7 @@ async def get_user(username: str, token: str, db: users_db_dependency):
     """
     return await get_user_profile(username, token, db)
 
-@app.delete("/user/{username}")
+@app.delete("/user/{username}", tags=["users"])
 async def delete_db_user(username: str, token: str, db: users_db_dependency):
     """
     Delete a user account
@@ -174,7 +194,7 @@ async def delete_db_user(username: str, token: str, db: users_db_dependency):
     """
     return await delete_user(username, token, db)
 
-@app.post("/language/{language_name}")
+@app.post("/languages", tags=["languages"])
 async def add_language_to_db(language_name: str, username: str, token: str, db: languages_db_dependency):
     """
     Add a new language
@@ -190,7 +210,7 @@ async def add_language_to_db(language_name: str, username: str, token: str, db: 
     """
     return await add_language(language_name, username, token, db)
 
-@app.delete("/language/{language_name}")
+@app.delete("/languages/{language_name}", tags=["languages"])
 async def delete_language_from_db(language_name: str, username: str, token: str, db: languages_db_dependency):
     """
     Delete a language
@@ -221,7 +241,7 @@ async def delete_language_from_db(language_name: str, username: str, token: str,
             detail=f"An error occurred while deleting the language: {str(e)}"
         )
 
-@app.get("/languages")
+@app.get("/languages", tags=["languages"])
 async def get_languages_list(db: languages_db_dependency):
     """
     Get a list of all languages in the database
