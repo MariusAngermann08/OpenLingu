@@ -12,6 +12,7 @@
     - Update User Language Progress
     - Handle Language Progress Analytics
 - Client
+    - Account Setup Pages
     - Language Menu
     - Language Setup
     - Language Progress (Connect with Server)
