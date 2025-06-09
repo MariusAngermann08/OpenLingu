@@ -112,3 +112,24 @@ async def delete_language(language_name: str, username: str, token: str, db: Ses
             status_code=500,
             detail=f"An error occurred while deleting the language: {str(e)}"
         )
+
+async def get_languages_list(db: Session):
+    """
+    Get a list of all languages in the database
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        list: List of language names
+    """
+    try:
+        languages = db.query(Language).all()
+        return [language.name for language in languages]
+    except Exception as e:
+        print(f"Error getting languages list: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting the languages list: {str(e)}"
+        )
+    
