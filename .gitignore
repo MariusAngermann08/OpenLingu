@@ -1,3 +1,5 @@
 /venv/
 /server/__pycache__/
-/server/db/user.db
+/server/services/__pycache__/
+/server/language_handler/__pycache__/
+/server/db/
