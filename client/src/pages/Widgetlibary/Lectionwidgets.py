@@ -78,6 +78,7 @@ class MatchablePairs:
         self.buttons_left = []
         self.buttons_right = []
 
+
     def build(self):
         self.left_column = ft.Column()
         self.right_column = ft.Column()
@@ -158,9 +159,8 @@ class MatchablePairs:
                 btn.disabled = True
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN)
                 btn.update()
-            # Nach kurzer Zeit beide Buttons auf gleiche Zufallsfarbe setzen
-            self.page.run_task(self.set_random_color_after_delay, left_btn, right_btn)
-            self.reset_selection()
+                self.page.run_task(self.set_random_color_after_delay, left_btn, right_btn)
+                self.reset_selection()
         else:
             for btn in [left_btn, right_btn]:
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.RED)
@@ -174,18 +174,42 @@ class MatchablePairs:
             btn.style = ft.ButtonStyle(bgcolor=color)
             btn.update()
 
-    def get_random_color(self):
-        # Liste von Farben, die NICHT blau, grün oder rot sind
-        forbidden = {ft.Colors.BLUE, ft.Colors.GREEN, ft.Colors.RED}
-        color_choices = [
-            ft.Colors.ORANGE, ft.Colors.PURPLE, ft.Colors.BROWN, ft.Colors.YELLOW,
-            ft.Colors.PINK, ft.Colors.CYAN, ft.Colors.LIME,
-            ft.Colors.AMBER, ft.Colors.DEEP_ORANGE, ft.Colors.DEEP_PURPLE,
-            ft.Colors.LIGHT_GREEN, ft.Colors.LIGHT_BLUE, ft.Colors.TEAL,
+    def get_distinct_color(self):
+    # Farben, die sich deutlich von Blau, Grün, Rot abheben und sich untereinander unterscheiden
+        distinct_colors = [
+            ft.Colors.ORANGE,
+            ft.Colors.PURPLE,
+            ft.Colors.BROWN,
+            ft.Colors.YELLOW,
+            ft.Colors.PINK,
+            ft.Colors.AMBER,
+            ft.Colors.DEEP_ORANGE,
+            ft.Colors.DEEP_PURPLE,
+            ft.Colors.LIME,
+            ft.Colors.INDIGO,
+            ft.Colors.GREY,
+            ft.Colors.CYAN,
+            ft.Colors.TEAL,
+            ft.Colors.LIGHT_GREEN,
+            ft.Colors.LIGHT_BLUE,
         ]
-        # Filtere verbotene Farben raus
-        color_choices = [c for c in color_choices if c not in forbidden]
-        return random.choice(color_choices)
+        # Verbotene Farben
+        forbidden = {ft.Colors.BLUE, ft.Colors.GREEN, ft.Colors.RED}
+        # Bereits vergebene Farben sammeln
+        used_colors = set(getattr(btn, "bgcolor", None) for _, btn in self.buttons_left + self.buttons_right if btn.disabled)
+        # Nur erlaubte und noch nicht vergebene Farben nehmen
+        available = [c for c in distinct_colors if c not in forbidden and c not in used_colors]
+        if not available:
+            # Falls alle Farben vergeben sind, nimm eine beliebige erlaubte
+            available = [c for c in distinct_colors if c not in forbidden]
+        return random.choice(available)
+    
+    async def set_random_color_after_delay(self, left_btn, right_btn):
+        await asyncio.sleep(0.6)
+        color = self.get_distinct_color()
+        for btn in [left_btn, right_btn]:
+            btn.style = ft.ButtonStyle(bgcolor=color)
+            btn.update()
 
     async def reset_incorrect_with_delay(self, left_btn, right_btn):
         time.sleep(0.6)
@@ -216,3 +240,13 @@ class MatchablePairs:
                 btn.style = None
                 btn.update()
         self.reset_selection()
+    
+    def check_all_solved(self):
+        # Returns True if all left and right buttons are disabled (i.e., all pairs solved)
+        all_left_disabled = all(btn.disabled for _, btn in self.buttons_left)
+        all_right_disabled = all(btn.disabled for _, btn in self.buttons_right)
+        return all_left_disabled and all_right_disabled  # Immer True oder False zurückgeben
+
+    def test(self):
+        if self.check_all_solved():
+            print("Alle Paare gelöst!")
