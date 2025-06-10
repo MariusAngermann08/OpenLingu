@@ -179,10 +179,9 @@ class MatchablePairs:
         forbidden = {ft.Colors.BLUE, ft.Colors.GREEN, ft.Colors.RED}
         color_choices = [
             ft.Colors.ORANGE, ft.Colors.PURPLE, ft.Colors.BROWN, ft.Colors.YELLOW,
-            ft.Colors.PINK, ft.Colors.CYAN, ft.Colors.LIME, ft.Colors.INDIGO,
+            ft.Colors.PINK, ft.Colors.CYAN, ft.Colors.LIME,
             ft.Colors.AMBER, ft.Colors.DEEP_ORANGE, ft.Colors.DEEP_PURPLE,
             ft.Colors.LIGHT_GREEN, ft.Colors.LIGHT_BLUE, ft.Colors.TEAL,
-            ft.Colors.GREY
         ]
         # Filtere verbotene Farben raus
         color_choices = [c for c in color_choices if c not in forbidden]
