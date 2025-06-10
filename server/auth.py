@@ -148,14 +148,14 @@ async def remove_user(username: str, token: str, db: Session = None):
         if db and close_db:
             db.close()
 
-async def authenticate_user(username: str, password: str, db: Session = None, generate_token: bool = False):
+async def authenticate_user(username: str, password: str, db: Session, generate_token: bool = False):
     """
     Authenticate a user and optionally generate an access token
     
     Args:
         username: The username to authenticate
         password: The plain text password
-        db: Database session (optional)
+        db: Database session (required)
         generate_token: Whether to generate and return an access token
         
     Returns:
@@ -165,96 +165,81 @@ async def authenticate_user(username: str, password: str, db: Session = None, ge
     Raises:
         HTTPException: If authentication fails
     """
-    close_db = False
     try:
-        # Get DB session if not provided
-        if db is None:
-            db = next(get_users_db())
-            close_db = True
+        if not db:
+            raise ValueError("Database session is required")
             
-        # Get user from database
-        print(f"[DEBUG] Looking up user: {username}")
-        user = db.query(DBUser).filter(DBUser.username == username).first()
+        print(f"[AUTH] Authenticating user: {username}")
         
-        # Check if user exists
+        # Get user from database
+        user = db.query(DBUser).filter(DBUser.username == username).first()
         if not user:
-            print(f"[ERROR] User not found: {username}")
+            print(f"[AUTH] User not found: {username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"}
-            )
-            
-        # Check if user is disabled
-        if user.disabled:
-            print(f"[ERROR] User account disabled: {username}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Inactive user"
             )
             
         # Verify password
-        print(f"[DEBUG] Verifying password for user: {username}")
         if not verify_password(password, user.hashed_password):
-            print(f"[ERROR] Invalid password for user: {username}")
+            print(f"[AUTH] Invalid password for user: {username}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"}
             )
             
-        print(f"User '{username}' successfully authenticated")
+        print(f"[AUTH] User '{username}' successfully authenticated")
         
-        if generate_token:
-            try:
-                print("[DEBUG] Getting token service...")
-                generate_token_func, _ = _get_token_service()
-                print("[DEBUG] Generating token...")
-                # Generate token
-                token = await generate_token_func(user)
-                print(f"[DEBUG] Generated token: {token}")
-                
-                # Create token entry
-                expires = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-                print(f"[DEBUG] Creating token entry (expires: {expires})")
-                
-                token_entry = Token(
-                    token=token,
-                    expires=expires
-                )
-                
-                print("[DEBUG] Adding token to session...")
-                db.add(token_entry)
-                print("[DEBUG] Committing transaction...")
-                db.commit()
-                print("[DEBUG] Token committed successfully")
-                
-                return {"access_token": token, "token_type": "bearer"}
-                
-            except Exception as token_error:
-                print(f"[ERROR] Token generation/validation failed: {str(token_error)}")
-                print(f"[ERROR] Token type: {type(token) if 'token' in locals() else 'Not defined'}")
-                print(f"[ERROR] Token value: {token if 'token' in locals() else 'Not defined'}")
-                db.rollback()
-                raise
+        if not generate_token:
+            return user
             
-        return user
+        # Generate token
+        print("[AUTH] Generating token...")
+        generate_token_func, _ = _get_token_service()
+        token = await generate_token_func(user, db=db)
+        print(f"[AUTH] Token generated successfully for user: {username}")
         
-    except HTTPException:
+        # Get the expiration time from the token
+        from jose import jwt
+        try:
+            # Decode the token to get the expiration time
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            expires = datetime.utcfromtimestamp(payload['exp'])
+            print(f"[AUTH] Token expires at: {expires}")
+            
+            # Create and save token entry
+            token_entry = Token(
+                token=token,
+                expires=expires
+            )
+            
+            db.add(token_entry)
+            db.commit()
+            print("[AUTH] Token saved to database")
+            
+            return {"access_token": token, "token_type": "bearer"}
+            
+        except Exception as e:
+            db.rollback()
+            print(f"[ERROR] Failed to create token entry: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create authentication token"
+            )
+        
+    except HTTPException as he:
         # Re-raise HTTP exceptions
-        raise
+        raise he
         
     except Exception as e:
-        # Rollback in case of error
+        # Log the error and return a 500 error
+        error_msg = f"Authentication error: {str(e)}"
+        print(f"[AUTH] {error_msg}")
         if db:
             db.rollback()
-        print(f"Error during authentication: {str(e)}")
         raise HTTPException(
-            status_code=500,
-            detail="Internal server error during authentication"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication failed. Please try again."
         )
-        
-    finally:
-        # Ensure database connection is closed
-        if db:
-            db.close()

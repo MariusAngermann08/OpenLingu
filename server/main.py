@@ -9,7 +9,7 @@ from typing import Annotated
 # Import modules
 try:
     # When running from project root via run.py
-    from server.database import users_engine, get_users_db, get_language_db
+    from server.database import users_engine, get_users_db, get_languages_db
     from server.models import DBUser, Token, Language
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
@@ -18,7 +18,7 @@ try:
     from server.language_handler.languageregistry import add_language, delete_language, get_languages_list as get_languages_list_impl
 except ImportError:
     # When running directly from server directory
-    from database import users_engine, get_users_db, get_language_db
+    from database import users_engine, get_users_db, get_languages_db
     from models import DBUser, Token, Language
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
@@ -53,7 +53,7 @@ app = FastAPI(openapi_tags=tags_metadata)
 
 # Database dependencies
 users_db_dependency = Annotated[Session, Depends(get_users_db)]
-languages_db_dependency = Annotated[Session, Depends(get_language_db)]
+languages_db_dependency = Annotated[Session, Depends(get_languages_db)]
 
 
 @app.get("/", tags=["system"])
@@ -65,8 +65,7 @@ from fastapi import Form
 @app.post("/login", tags=["authentication"])
 async def login(
     username: str,
-    password: str,
-    db: Session = Depends(get_users_db)
+    password: str
 ):
     """
     Authenticate a user and return an access token
@@ -74,13 +73,17 @@ async def login(
     Args:
         username: The username of the user (from form data)
         password: The user's password (from form data)
-        db: Database session dependency
         
     Returns:
         dict: Access token and token type
     """
+    db = None
     try:
         print(f"[LOGIN] Attempting login for user: {username}")
+        
+        # Get a new database session
+        db = next(get_users_db())
+        
         # Authenticate user and generate token
         result = await authenticate_user(
             username=username,
@@ -88,23 +91,33 @@ async def login(
             db=db,
             generate_token=True
         )
+        
+        # Explicitly commit any pending transactions
+        db.commit()
         print(f"[LOGIN] Login successful for user: {username}")
         return result
         
     except HTTPException as e:
         print(f"[LOGIN] Login failed for user {username}: {str(e)}")
-        # Re-raise HTTP exceptions
+        if db:
+            db.rollback()
         raise e
+        
     except Exception as e:
         # Log the error and return a 500 error
         error_msg = f"Internal server error during login: {str(e)}"
         print(f"[LOGIN] {error_msg}")
-        if 'db' in locals():
+        if db:
             db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg
+            detail="Login failed. Please try again."
         )
+        
+    finally:
+        # Always close the database session
+        if db:
+            db.close()
 
 @app.post("/register", tags=["authentication"])
 async def register(username: str, email: str, password: str, db: users_db_dependency):
@@ -151,17 +164,59 @@ async def logout(token: str, db: users_db_dependency):
         db: Database session dependency
         
     Returns:
-        dict: Success message
+        dict: Success message and status
+        
+    Raises:
+        HTTPException: If there's an error during logout
     """
-    # Remove the token from the database
+    if not token or not isinstance(token, str) or len(token) < 10:  # Basic validation
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or missing authentication token"
+        )
+    
+    print(f"[LOGOUT] Starting logout for token: {token[:10]}...")
+    
     try:
-        await remove_expired_tokens(db)
-        return {"message": "Logged out successfully"}
+        # Verify the token first to ensure it's valid
+        try:
+            username = await verify_token(token, db)
+            print(f"[LOGOUT] Verified token for user: {username}")
+        except HTTPException as e:
+            if e.status_code == 401:
+                print("[LOGOUT] Token is invalid or expired, but will attempt to remove it")
+            else:
+                raise
+        
+        # Import token service functions
+        from server.services.token_service import remove_token as remove_token_func, remove_expired_tokens as remove_expired_tokens_func
+        
+        # Remove the specific token
+        token_removed = await remove_token_func(token, db)
+        
+        # Also clean up any expired tokens
+        expired_count = await remove_expired_tokens_func(db)
+        
+        if not token_removed:
+            print(f"[WARNING] Token not found during logout - it may have already been removed or expired")
+            
+        return {
+            "status": "success",
+            "message": "Successfully logged out",
+            "token_removed": token_removed,
+            "expired_tokens_removed": expired_count
+        }
+        
+    except HTTPException as he:
+        print(f"[LOGOUT] HTTP Error during logout: {str(he)}")
+        raise
     except Exception as e:
         db.rollback()
+        error_msg = f"Unexpected error during logout: {str(e)}"
+        print(f"[LOGOUT] {error_msg}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error logging out: {str(e)}"
+            detail=error_msg
         )
 
 @app.get("/user/{username}", tags=["users"])
@@ -256,32 +311,65 @@ async def get_languages_list(db: languages_db_dependency):
 
 @app.on_event("startup")
 async def startup_event():
+    """Initialize the application on startup."""
+    import logging
+    from fastapi import HTTPException
+    
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)  # Ensure this logger shows INFO and above
+    logger.info("Starting server initialization...")
+    
     # Initialize the database
     try:
-        from server.init_db import init_db
-    except ImportError:
-        from init_db import init_db
-    init_db()
+        logger.info("Initializing database...")
+        try:
+            from server.init_db import init_db
+        except ImportError:
+            from init_db import init_db
+            
+        init_db()
+        logger.info("Database initialization complete")
+        
+    except Exception as e:
+        error_msg = f"Failed to initialize database: {str(e)}"
+        logger.error("Failed to initialize database", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to initialize database. See server logs for details."
+        )
     
     # Clean up any expired tokens
+    db = None
     try:
+        logger.debug("Cleaning up expired tokens...")
         # Get a database session
         db = next(get_users_db())
         try:
             await remove_expired_tokens(db)
-            print("Successfully cleaned up expired tokens on startup")
+            logger.debug("Successfully cleaned up expired tokens on startup")
         except Exception as e:
-            print(f"Error cleaning up expired tokens on startup: {str(e)}")
-        finally:
-            db.close()
+            logger.warning("Error cleaning up expired tokens", exc_info=True)
+            # Continue even if token cleanup fails
     except Exception as e:
-        print(f"Failed to get database session for token cleanup on startup: {str(e)}")
+        logger.warning("Error during token cleanup", exc_info=True)
+        # Continue even if we can't clean up tokens
+    finally:
+        if db:
+            try:
+                db.close()
+            except Exception as e:
+                logger.warning("Error closing database connection", exc_info=True)
+    
+    logger.info("Server initialization complete")
 
 # Remove expired tokens on shutdown
 @app.on_event("shutdown")
 async def shutdown_event():
+    print("Shutting down server...")
     # Clean up any remaining expired tokens
+    db = None
     try:
+        print("Cleaning up expired tokens before shutdown...")
         # Get a database session
         db = next(get_users_db())
         try:

@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+import uuid
 from jose import JWTError, jwt
 from fastapi import FastAPI, status, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -23,22 +24,72 @@ def _get_users_db():
         from database import get_users_db as _get_db
     return _get_db()
 
-async def generate_token(user: DBUser):
+async def generate_token(user: DBUser, db: Session = None):
+    """
+    Generate a JWT token for the user
+    
+    Args:
+        user: The user to generate token for
+        db: Optional database session to check for token collisions
+        
+    Returns:
+        str: The generated JWT token
+    """
+    close_db = False
     try:
         print(f"[DEBUG] Generating token for user: {user.username}")
         print(f"[DEBUG] SECRET_KEY: {'Set' if SECRET_KEY else 'Not set'}")
         print(f"[DEBUG] ALGORITHM: {ALGORITHM}")
         
-        token_data = {"sub": user.username}
-        print(f"[DEBUG] Token data: {token_data}")
+        # Get database session if not provided
+        if db is None:
+            db = next(_get_users_db())
+            close_db = True
         
-        token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
-        print(f"[DEBUG] Token generated: {token}")
+        max_attempts = 3
+        attempt = 0
         
-        return token
+        while attempt < max_attempts:
+            try:
+                # Calculate expiration time
+                expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+                expire = datetime.utcnow() + expires_delta
+                
+                # Generate token with current timestamp and expiration
+                token_data = {
+                    "sub": user.username,
+                    "iat": datetime.utcnow(),
+                    "nbf": datetime.utcnow(),
+                    "exp": expire,  # Set explicit expiration
+                    "jti": str(uuid.uuid4())  # Add a unique ID to the token
+                }
+                print(f"[DEBUG] Token data: {token_data}")
+                
+                token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+                print(f"[DEBUG] Token generated: {token}")
+                
+                # Check if token already exists in database
+                existing_token = db.query(Token).filter(Token.token == token).first()
+                if not existing_token:
+                    return token
+                    
+                print(f"[WARNING] Token collision detected, generating new token (attempt {attempt + 1}/{max_attempts})")
+                attempt += 1
+                
+            except Exception as e:
+                print(f"[ERROR] Failed to generate token: {str(e)}")
+                if attempt >= max_attempts - 1:
+                    raise
+                attempt += 1
+                
+        raise Exception("Failed to generate unique token after multiple attempts")
+        
     except Exception as e:
         print(f"[ERROR] Failed to generate token: {str(e)}")
         raise
+    finally:
+        if close_db and 'db' in locals():
+            db.close()
 
 async def verify_token(token: str, db: Session = None) -> str:
     """
@@ -132,6 +183,88 @@ async def verify_token(token: str, db: Session = None) -> str:
         if close_db and 'db' in locals():
             db.close()
 
-async def remove_expired_tokens(db: Session):
-    db.query(Token).filter(Token.expires < datetime.utcnow()).delete()
-    db.commit()
+async def remove_token(token: str, db: Session) -> bool:
+    """
+    Remove a specific token from the database with more reliable approach
+    
+    Args:
+        token: The token to remove
+        db: Database session
+        
+    Returns:
+        bool: True if token was found and removed, False otherwise
+    """
+    if not token or not isinstance(token, str):
+        print("[ERROR] Invalid token provided for removal")
+        return False
+        
+    try:
+        print(f"[DEBUG] Attempting to remove token: {token[:10]}...")
+        
+        # First try to find the token
+        token_entry = db.query(Token).filter(Token.token == token).first()
+        
+        if token_entry is None:
+            print("[DEBUG] Token not found in database")
+            return False
+            
+        print(f"[DEBUG] Found token, deleting...")
+        
+        # Delete using the instance
+        db.delete(token_entry)
+        
+        # Force flush to ensure the delete is executed
+        db.flush()
+        
+        # Commit the transaction
+        db.commit()
+        
+        # Verify deletion
+        token_still_exists = db.query(Token).filter(Token.token == token).first() is not None
+        
+        if token_still_exists:
+            print("[ERROR] Token still exists after deletion attempt!")
+            return False
+            
+        print("[DEBUG] Token successfully removed from database")
+        return True
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[ERROR] Error removing token: {str(e)}")
+        print(f"[DEBUG] Token value that caused error: {token}")
+        return False
+
+async def remove_expired_tokens(db: Session) -> int:
+    """
+    Remove all expired tokens from the database
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        int: Number of tokens that were removed
+    """
+    try:
+        print("[DEBUG] Removing expired tokens")
+        # First find all expired tokens
+        expired_tokens = db.query(Token).filter(Token.expires < datetime.utcnow()).all()
+        expired_count = len(expired_tokens)
+        
+        if expired_count > 0:
+            print(f"[DEBUG] Found {expired_count} expired tokens to remove")
+            # Delete each token individually for better reliability
+            for token in expired_tokens:
+                db.delete(token)
+            
+            db.commit()
+            print(f"[DEBUG] Successfully removed {expired_count} expired tokens")
+        else:
+            print("[DEBUG] No expired tokens to remove")
+            
+        return expired_count
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[ERROR] Error removing expired tokens: {str(e)}")
+        return 0
