@@ -3,3 +3,4 @@
 /server/services/__pycache__/
 /server/language_handler/__pycache__/
 /server/db/
+/server/db/users.db

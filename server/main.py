@@ -1,10 +1,11 @@
-from fastapi import FastAPI, status, Depends, HTTPException
+from fastapi import FastAPI, status, Depends, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-from typing import Annotated
+from typing import Annotated, Callable, Awaitable
+import time
 
 # Import modules
 try:
@@ -50,6 +51,30 @@ tags_metadata = [
 ]
 
 app = FastAPI(openapi_tags=tags_metadata)
+
+# Middleware to clean up expired tokens on every request
+@app.middleware("http")
+async def cleanup_expired_tokens_middleware(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+    """
+    Middleware to clean up expired tokens on every request.
+    This ensures that expired tokens are removed from the database even if the server runs for a long time.
+    """
+    # Get a database session
+    db = next(get_users_db())
+    try:
+        # Clean up expired tokens
+        removed_count = await remove_expired_tokens(db)
+        if removed_count > 0:
+            print(f"[MIDDLEWARE] Removed {removed_count} expired tokens")
+    except Exception as e:
+        print(f"[MIDDLEWARE] Error cleaning up expired tokens: {str(e)}")
+    finally:
+        # Always close the database session
+        db.close()
+    
+    # Continue processing the request
+    response = await call_next(request)
+    return response
 
 # Database dependencies
 users_db_dependency = Annotated[Session, Depends(get_users_db)]
