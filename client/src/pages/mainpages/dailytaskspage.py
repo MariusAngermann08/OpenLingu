@@ -3,9 +3,11 @@ import requests
 
 try:
     from Widgetlibary.Lectionwidgets import UnderlinedText
+    from Widgetlibary.Lectionwidgets import MatchablePairs
 
 except ImportError:
     from pages.Widgetlibary.Lectionwidgets import UnderlinedText
+    from pages.Widgetlibary.Lectionwidgets import MatchablePairs
 
 class DailyTasksPage(ft.Container):
     def __init__(self, page):
@@ -16,12 +18,15 @@ class DailyTasksPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
-                UnderlinedText(
-                    "This is a test for research purposes.",
-                    {3 : "red", 5: "blue"},
-                    32,
-                    "green",
-                ).render(),
+                UnderlinedText("Lösen sie folgende Aufgabe", 
+                               {1: "green", 3: "red"},
+                               32,
+                               "white").render(),
+                MatchablePairs(
+                    page,
+                    left_items=["Aufgabe 1", "Aufgabe 2", "Aufgabe 3", "Aufgabe 4"],
+                    right_items=["Beschreibung 1", "Beschreibung 2", "Beschreibung 3", "Beschreibung 4"]
+                ).build(),
 
             ],
             alignment=ft.MainAxisAlignment.CENTER,
