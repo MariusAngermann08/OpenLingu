@@ -158,13 +158,35 @@ class MatchablePairs:
                 btn.disabled = True
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.GREEN)
                 btn.update()
+            # Nach kurzer Zeit beide Buttons auf gleiche Zufallsfarbe setzen
+            self.page.run_task(self.set_random_color_after_delay, left_btn, right_btn)
             self.reset_selection()
         else:
             for btn in [left_btn, right_btn]:
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.RED)
                 btn.update()
-            # Use run_task to run the reset in a background thread
             self.page.run_task(self.reset_incorrect_with_delay, left_btn, right_btn)
+
+    async def set_random_color_after_delay(self, left_btn, right_btn):
+        await asyncio.sleep(0.6)
+        color = self.get_random_color()
+        for btn in [left_btn, right_btn]:
+            btn.style = ft.ButtonStyle(bgcolor=color)
+            btn.update()
+
+    def get_random_color(self):
+        # Liste von Farben, die NICHT blau, grün oder rot sind
+        forbidden = {ft.Colors.BLUE, ft.Colors.GREEN, ft.Colors.RED}
+        color_choices = [
+            ft.Colors.ORANGE, ft.Colors.PURPLE, ft.Colors.BROWN, ft.Colors.YELLOW,
+            ft.Colors.PINK, ft.Colors.CYAN, ft.Colors.LIME, ft.Colors.INDIGO,
+            ft.Colors.AMBER, ft.Colors.DEEP_ORANGE, ft.Colors.DEEP_PURPLE,
+            ft.Colors.LIGHT_GREEN, ft.Colors.LIGHT_BLUE, ft.Colors.TEAL,
+            ft.Colors.GREY
+        ]
+        # Filtere verbotene Farben raus
+        color_choices = [c for c in color_choices if c not in forbidden]
+        return random.choice(color_choices)
 
     async def reset_incorrect_with_delay(self, left_btn, right_btn):
         time.sleep(0.6)
