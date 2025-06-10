@@ -42,7 +42,12 @@ class Token(UsersBase):
     __table_args__ = {'extend_existing': True}
     
     token = Column(String, primary_key=True, index=True)
-    expires = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(days=1))
+    expires = Column(DateTime)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.expires:
+            self.expires = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
 # Language-related models (stored in languages.db)
 class Language(LanguagesBase):
