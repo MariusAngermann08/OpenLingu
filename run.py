@@ -53,56 +53,36 @@ def run_fastapi():
 
 
 def run_flet(web_mode=False):
-    """Run the Flet app using subprocess and return the process object and whether it's in web mode."""
+    """Run the Flet app using the flet command directly."""
     client_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'client')
-    with change_dir(client_dir):
-        try:
-            # Try using the flet command directly first
+    
+    try:
+        with change_dir(client_dir):
+            # Build the command
             cmd = ["flet", "run", "src/main.py"]
             if web_mode:
                 cmd.append("--web")
             
-            # Run the command in a subprocess
+            # Print the command for debugging
+            print(f"Running: {' '.join(cmd)} in {os.getcwd()}")
+            
+            # Run the command in the client directory
             process = subprocess.Popen(
                 cmd,
-                shell=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                stdout=sys.stdout,
+                stderr=sys.stderr,
                 text=True
             )
             return process, web_mode
             
-        except (subprocess.SubprocessError, FileNotFoundError) as e:
-            print(f"Failed to run with 'flet' command: {e}")
-            
-            # Fallback to python -m flet
-            try:
-                cmd = [sys.executable, "-m", "flet", "run", "src/main.py"]
-                if web_mode:
-                    cmd.append("--web")
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                return process, web_mode
-            except subprocess.SubprocessError as e2:
-                print(f"Failed to run with 'python -m flet': {e2}")
-                
-            # Final fallback: run the Python file directly
-            try:
-                print("Attempting to run the app directly...")
-                process = subprocess.Popen(
-                    [sys.executable, "src/main.py"],
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                return process, False  # Direct execution is never in web mode
-            except subprocess.SubprocessError as e3:
-                print(f"Failed to run app directly: {e3}")
-                return None, False
+    except Exception as e:
+        print(f"Failed to start Flet application: {e}", file=sys.stderr)
+        print("\nMake sure you're in the virtual environment and Flet is installed.")
+        print("You can install it with: pip install flet")
+        print("\nYou can also try running the app manually with:")
+        print(f"  cd {client_dir}")
+        print("  flet run src/main.py")
+        return None, False
 
 def main():
     # Parse command line arguments
@@ -216,30 +196,21 @@ def main():
     try:
         if is_web:
             print("\nRunning in web mode. The app should open in your default browser.")
-            print("Press any key to stop the server and exit...")
-            # Wait for any key press
-            if os.name == 'nt':  # Windows
-                import msvcrt
-                msvcrt.getch()
-            else:  # Unix/Linux/MacOS
-                import termios, tty
-                fd = sys.stdin.fileno()
-                old_settings = termios.tcgetattr(fd)
-                try:
-                    tty.setraw(sys.stdin.fileno())
-                    sys.stdin.read(1)
-                finally:
-                    termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        else:
-            # Monitor the Flet process for desktop mode
-            while True:
-                # Check if Flet process is still running
-                if flet_process.poll() is not None:
-                    print("\nFlet application has exited.")
-                    break
-                    
-                # Check for keyboard interrupt
+            print("Press Ctrl+C to stop the server and exit...")
+        
+        # Monitor the Flet process
+        while True:
+            # Check if Flet process is still running
+            if flet_process.poll() is not None:
+                print("\nFlet application has exited.")
+                break
+                
+            # Check for keyboard interrupt
+            try:
                 time.sleep(0.5)
+            except KeyboardInterrupt:
+                print("\nShutting down...")
+                break
                     
     except KeyboardInterrupt:
         print("\nShutting down...")
@@ -247,15 +218,34 @@ def main():
         print(f"An error occurred: {e}")
     finally:
         # Clean up processes in reverse order
-        if flet_process and flet_process.poll() is None:
+        if flet_process:
             print("Terminating Flet process...")
             try:
-                flet_process.terminate()
-                flet_process.wait(timeout=5)
-            except (subprocess.TimeoutExpired, Exception) as e:
-                print(f"Error terminating Flet process: {e}")
+                if flet_process.poll() is None:
+                    # First try to terminate gracefully
+                    flet_process.terminate()
+                    try:
+                        flet_process.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        print("Flet process did not terminate gracefully, forcing...")
+                        flet_process.kill()
+                        flet_process.wait()
+                
+                # Print any remaining output
                 try:
-                    flet_process.kill()
+                    stdout, stderr = flet_process.communicate(timeout=1)
+                    if stdout:
+                        print(f"Flet final stdout:\n{stdout}")
+                    if stderr:
+                        print(f"Flet final stderr:\n{stderr}", file=sys.stderr)
+                except:
+                    pass
+                    
+            except Exception as e:
+                print(f"Error stopping Flet process: {e}")
+                try:
+                    if flet_process.poll() is None:
+                        flet_process.kill()
                 except:
                     pass
         
