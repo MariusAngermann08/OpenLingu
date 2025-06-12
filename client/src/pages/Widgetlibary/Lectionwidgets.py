@@ -183,8 +183,6 @@ class MatchablePairs:
             ft.Colors.YELLOW,
             ft.Colors.PINK,
             ft.Colors.AMBER,
-            ft.Colors.DEEP_ORANGE,
-            ft.Colors.DEEP_PURPLE,
             ft.Colors.LIME,
             ft.Colors.INDIGO,
             ft.Colors.GREY,
@@ -193,15 +191,13 @@ class MatchablePairs:
             ft.Colors.LIGHT_GREEN,
             ft.Colors.LIGHT_BLUE,
         ]
-        # Verbotene Farben
-        forbidden = {ft.Colors.BLUE, ft.Colors.GREEN, ft.Colors.RED}
         # Bereits vergebene Farben sammeln
         used_colors = set(getattr(btn, "bgcolor", None) for _, btn in self.buttons_left + self.buttons_right if btn.disabled)
         # Nur erlaubte und noch nicht vergebene Farben nehmen
-        available = [c for c in distinct_colors if c not in forbidden and c not in used_colors]
+        available = [c for c in distinct_colors if c not in used_colors]
         if not available:
             # Falls alle Farben vergeben sind, nimm eine beliebige erlaubte
-            available = [c for c in distinct_colors if c not in forbidden]
+            available = [c for c in distinct_colors]
         return random.choice(available)
     
     async def set_random_color_after_delay(self, left_btn, right_btn):
@@ -245,8 +241,7 @@ class MatchablePairs:
         # Returns True if all left and right buttons are disabled (i.e., all pairs solved)
         all_left_disabled = all(btn.disabled for _, btn in self.buttons_left)
         all_right_disabled = all(btn.disabled for _, btn in self.buttons_right)
-        return all_left_disabled and all_right_disabled  # Immer True oder False zurückgeben
-
-    def test(self):
-        if self.check_all_solved():
-            print("Alle Paare gelöst!")
+        if all_left_disabled and all_right_disabled:
+            return True
+        else:
+            return False  # Immer True oder False jenachdem ob alle Buttons disabled sind

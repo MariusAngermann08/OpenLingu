@@ -18,6 +18,11 @@ class DailyTasksPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
+                MatchablePairs(
+                    page,
+                    left_items=["Aufgabe 1", "Aufgabe 2", "Aufgabe 3", "Aufgabe 4"],
+                    right_items=["Beschreibung 1", "Beschreibung 2", "Beschreibung 3", "Beschreibung 4"]
+                ).build(),
                 UnderlinedText("Lösen sie folgende Aufgabe", 
                                {1: "green", 3: "red"},
                                32,
