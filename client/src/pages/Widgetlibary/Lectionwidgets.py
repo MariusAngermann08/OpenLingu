@@ -2,6 +2,7 @@ import flet as ft
 import random
 import asyncio
 import time
+import json
 
 
 # Unterstrichener Text, Underlined Text("Dies ist ein Beispieltext mit einigen unterstrichenen Wörtern",{3 : "red", 5: "blue"}, 32, "green")
@@ -175,7 +176,6 @@ class MatchablePairs:
             btn.update()
 
     def get_distinct_color(self):
-    # Farben, die sich deutlich von Blau, Grün, Rot abheben und sich untereinander unterscheiden
         distinct_colors = [
             ft.Colors.ORANGE,
             ft.Colors.PURPLE,
@@ -188,8 +188,6 @@ class MatchablePairs:
             ft.Colors.GREY,
             ft.Colors.CYAN,
             ft.Colors.TEAL,
-            ft.Colors.LIGHT_GREEN,
-            ft.Colors.LIGHT_BLUE,
         ]
         # Bereits vergebene Farben sammeln
         used_colors = set(getattr(btn, "bgcolor", None) for _, btn in self.buttons_left + self.buttons_right if btn.disabled)
@@ -198,7 +196,7 @@ class MatchablePairs:
         if not available:
             # Falls alle Farben vergeben sind, nimm eine beliebige erlaubte
             available = [c for c in distinct_colors]
-        return random.choice(available)
+        return available
     
     async def set_random_color_after_delay(self, left_btn, right_btn):
         await asyncio.sleep(0.6)
@@ -245,3 +243,115 @@ class MatchablePairs:
             return True
         else:
             return False  # Immer True oder False jenachdem ob alle Buttons disabled sind
+
+class PictureDrag:
+    def __init__(self, page: ft.Page, image_path: str, options: list[str], correct_option_index: int):
+        self.page = page
+        self.image_path = image_path
+        self.options = list(enumerate(options))
+        self.correct_option_index = correct_option_index
+
+        self.drop_container = None
+        self.buttons = []
+        self.correct = False
+
+    def drag_will_accept(self, e):
+        idx = str(e.data)
+        e.control.content.border = ft.border.all(
+            2, ft.Colors.GREEN if idx == self.correct_option_index else ft.Colors.RED
+        )
+        e.control.update()
+
+    def drag_leave(self, e):
+        e.control.content.border = None
+        e.control.update()
+
+    def drag_accept(self, e: ft.DragTargetEvent):
+        try:
+            # falls Flet ein JSON liefert, extrahiere den src_id und hole darüber den Draggable
+            dragged_idx = int(e.data)
+        except ValueError:
+            try:
+                data_obj = json.loads(e.data)
+                src_control = self.page.get_control(data_obj["src_id"])
+                dragged_idx = int(src_control.data)  # <- hier liest du dann `data` korrekt aus
+            except Exception as ex:
+                print("FEHLER beim Parsen von Drag-Daten:", ex)
+                return  # abbrechen
+
+        self.correct = dragged_idx == self.correct_option_index
+        color = ft.Colors.GREEN if self.correct else ft.Colors.RED
+
+        # Drop-Ziel einfärben
+        e.control.content.bgcolor = color
+        e.control.content.border = None
+        e.control.update()
+
+        # gezogener Button einfärben
+        for idx, container in self.buttons:
+            if idx == dragged_idx:
+                container.bgcolor = color
+                container.update()
+                break
+
+
+        # Rücksetzen bei Fehler
+        if not self.correct:
+            async def reset_task():
+                await asyncio.sleep(1)
+                self.correct = False
+                e.control.content.bgcolor = ft.Colors.BLUE_GREY_100
+                e.control.update()
+                for _, container in self.buttons:
+                        container.bgcolor = ft.Colors.BLUE_GREY_100
+                        container.update()
+        else:
+            print("task solved")
+
+
+            self.page.run_task(reset_task)
+
+    def build(self):
+        image = ft.Image(src=self.image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN)
+
+        self.buttons.clear()
+        drag_row = ft.Row(spacing=10, alignment=ft.MainAxisAlignment.CENTER)
+
+        for idx, option in self.options:
+            container = ft.Container(
+                width=100,
+                height=100,
+                bgcolor=ft.Colors.BLUE_GREY_100,
+                border_radius=5,
+                alignment=ft.alignment.center,
+                content=ft.Text(option, size=24, color=ft.Colors.WHITE),
+            )
+            drag = ft.Draggable(
+                content=container,
+                data=str(idx),
+                group="answers"
+            )
+            self.buttons.append((idx, container))
+            drag_row.controls.append(drag)
+
+        drop_target = ft.DragTarget(
+            group="answers",
+            content=ft.Container(
+                width=100,
+                height=100,
+                bgcolor=ft.Colors.BLUE_GREY_100,
+                border_radius=5,
+            ),
+            on_will_accept=self.drag_will_accept,
+            on_accept=self.drag_accept,
+            on_leave=self.drag_leave,
+        )
+
+        return ft.Column(
+            [image, drop_target, drag_row],
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=20,
+        )
+
+    def is_correct(self):
+        return self.correct

@@ -4,10 +4,12 @@ import requests
 try:
     from Widgetlibary.Lectionwidgets import UnderlinedText
     from Widgetlibary.Lectionwidgets import MatchablePairs
+    from Widgetlibary.Lectionwidgets import PictureDrag
 
 except ImportError:
     from pages.Widgetlibary.Lectionwidgets import UnderlinedText
     from pages.Widgetlibary.Lectionwidgets import MatchablePairs
+    from pages.Widgetlibary.Lectionwidgets import PictureDrag
 
 class DailyTasksPage(ft.Container):
     def __init__(self, page):
@@ -18,20 +20,13 @@ class DailyTasksPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
-                MatchablePairs(
+                PictureDrag(
                     page,
-                    left_items=["Aufgabe 1", "Aufgabe 2", "Aufgabe 3", "Aufgabe 4"],
-                    right_items=["Beschreibung 1", "Beschreibung 2", "Beschreibung 3", "Beschreibung 4"]
-                ).build(),
-                UnderlinedText("Lösen sie folgende Aufgabe", 
-                               {1: "green", 3: "red"},
-                               32,
-                               "white").render(),
-                MatchablePairs(
-                    page,
-                    left_items=["Aufgabe 1", "Aufgabe 2", "Aufgabe 3", "Aufgabe 4"],
-                    right_items=["Beschreibung 1", "Beschreibung 2", "Beschreibung 3", "Beschreibung 4"]
-                ).build(),
+                    image_path="",
+                    options=["Katze", "Hund", "Maus"],
+                    correct_option_index=1,
+                ).build()
+                
 
             ],
             alignment=ft.MainAxisAlignment.CENTER,
