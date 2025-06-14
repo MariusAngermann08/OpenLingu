@@ -5,11 +5,13 @@ try:
     from Widgetlibary.Lectionwidgets import UnderlinedText
     from Widgetlibary.Lectionwidgets import MatchablePairs
     from Widgetlibary.Lectionwidgets import PictureDrag
+    from Widgetlibary.Lectionwidgets import DraggableText
 
 except ImportError:
     from pages.Widgetlibary.Lectionwidgets import UnderlinedText
     from pages.Widgetlibary.Lectionwidgets import MatchablePairs
     from pages.Widgetlibary.Lectionwidgets import PictureDrag
+    from pages.Widgetlibary.Lectionwidgets import DraggableText
 
 class DailyTasksPage(ft.Container):
     def __init__(self, page):
@@ -20,12 +22,12 @@ class DailyTasksPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
-                PictureDrag(
-                    page,
-                    image_path="",
-                    options=["Katze", "Hund", "Maus"],
-                    correct_option_index=1,
-                ).build()
+               DraggableText(
+                   page=page,
+                   text= "Hello, this page is called because we are silly as ",
+                   gaps_idx= [5, 11],
+                   options = {"Daily Tasks" : 5, "hell": 10},
+               ).build()
                 
 
             ],

@@ -268,48 +268,61 @@ class PictureDrag:
 
     def drag_accept(self, e: ft.DragTargetEvent):
         try:
-            # falls Flet ein JSON liefert, extrahiere den src_id und hole darüber den Draggable
+            # Versuche direkt einen int
             dragged_idx = int(e.data)
         except ValueError:
             try:
                 data_obj = json.loads(e.data)
                 src_control = self.page.get_control(data_obj["src_id"])
-                dragged_idx = int(src_control.data)  # <- hier liest du dann `data` korrekt aus
+                dragged_idx = int(src_control.data)
             except Exception as ex:
                 print("FEHLER beim Parsen von Drag-Daten:", ex)
-                return  # abbrechen
+                return
 
         self.correct = dragged_idx == self.correct_option_index
         color = ft.Colors.GREEN if self.correct else ft.Colors.RED
+        dragged_text = self.options[dragged_idx][1]
 
-        # Drop-Ziel einfärben
-        e.control.content.bgcolor = color
-        e.control.content.border = None
+        # Zeige gezogenen Text im Zielcontainer
+        e.control.content = ft.Container(
+            width=100,
+            height=100,
+            bgcolor=color,
+            border_radius=5,
+            alignment=ft.alignment.center,
+            content=ft.Text(dragged_text, size=24, color=ft.Colors.WHITE),
+        )
         e.control.update()
 
-        # gezogener Button einfärben
+        # Buttons NICHT ausblenden – nur ggf. einfärben
         for idx, container in self.buttons:
             if idx == dragged_idx:
                 container.bgcolor = color
                 container.update()
                 break
 
-
-        # Rücksetzen bei Fehler
         if not self.correct:
             async def reset_task():
                 await asyncio.sleep(1)
                 self.correct = False
-                e.control.content.bgcolor = ft.Colors.BLUE_GREY_100
-                e.control.update()
-                for _, container in self.buttons:
-                        container.bgcolor = ft.Colors.BLUE_GREY_100
-                        container.update()
-        else:
-            print("task solved")
 
+                # Ziel zurücksetzen (kein Text mehr)
+                e.control.content = ft.Container(
+                    width=100,
+                    height=100,
+                    bgcolor=ft.Colors.BLUE_GREY_100,
+                    border_radius=5,
+                )
+                e.control.update()
+
+                # Alle Buttons auf Standardfarbe zurücksetzen (bleiben sichtbar)
+                for _, container in self.buttons:
+                    container.bgcolor = ft.Colors.BLUE_GREY_100
+                    container.update()
 
             self.page.run_task(reset_task)
+        else:
+            print("task solved")
 
     def build(self):
         image = ft.Image(src=self.image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN)
@@ -355,3 +368,136 @@ class PictureDrag:
 
     def is_correct(self):
         return self.correct
+    
+
+
+class DraggableText:
+    def __init__(self, page: ft.Page, text: str, gaps_idx: list[int], options: dict[str, int]):
+        self.page = page
+        self.raw_text = text
+        self.luecken_idx = gaps_idx
+        self.options = list(options.items())  # [(word, idx)]
+        self.drop_targets = []
+        self.buttons = []
+        self.correct_state = [False] * len(gaps_idx)
+
+    # Visuelles Feedback, wenn etwas über einer Lücke ist
+    def drag_will_accept(self, e):
+        try:
+            data = json.loads(e.data)
+            idx = int(data["index"])
+            drop_index = int(e.control.data)
+
+            is_correct = idx == drop_index
+            e.control.content.border = ft.border.all(2, ft.Colors.GREEN if is_correct else ft.Colors.RED)
+        except Exception as ex:
+            print("WillAccept Fehler:", ex)
+        e.control.update()
+
+    # Entfernt die Rahmen wenn etwas weggezogen wird
+    def drag_leave(self, e):
+        e.control.content.border = None
+        e.control.update()
+
+    # Drop-Logik
+    def drag_accept(self, e: ft.DragTargetEvent):
+        try:
+            data = json.loads(e.data)
+            word = data["word"]
+            idx = int(data["index"])
+        except Exception as ex:
+            print("Accept Fehler:", ex)
+            return
+
+        try:
+            drop_index = int(e.control.data)
+            correct = idx == drop_index
+        except (ValueError, IndexError) as ex:
+            print("Drop-Index Fehler:", ex)
+            return
+
+        self.correct_state[drop_index] = correct
+        color = ft.Colors.GREEN if correct else ft.Colors.RED
+
+        e.control.content.border = None
+        e.control.content.bgcolor = color
+        e.control.content.content = ft.Text(word, size=16, color=ft.Colors.BLACK)
+        e.control.update()
+
+        # Rücksetzen bei falscher Antwort
+        if not correct:
+            async def reset():
+                await asyncio.sleep(1)
+                self.correct_state[drop_index] = False
+                e.control.content.bgcolor = ft.Colors.BLUE_GREY_100
+                e.control.content.content = ft.Text("______", size=16, color=ft.Colors.BLACK)
+                e.control.update()
+
+            self.page.run_task(reset)
+
+    # UI Aufbau
+    def build(self):
+        self.drop_targets.clear()
+        self.buttons.clear()
+
+        text_parts = self.raw_text.split(" ")
+        row = ft.Row(wrap=True, spacing=5, alignment=ft.MainAxisAlignment.CENTER)
+
+        luecke_counter = 0
+        for i, word in enumerate(text_parts):
+            if i in self.luecken_idx:
+                drop = ft.DragTarget(
+                    data=str(luecke_counter),
+                    group="textdrop",
+                    on_will_accept=self.drag_will_accept,
+                    on_leave=self.drag_leave,
+                    on_accept=self.drag_accept,
+                    content=ft.Container(
+                        padding=10,
+                        bgcolor=ft.Colors.BLUE_GREY_100,
+                        border_radius=8,
+                        alignment=ft.alignment.center,
+                        content=ft.Text("______", size=16, color=ft.Colors.BLACK),
+                    ),
+                )
+                self.drop_targets.append(drop)
+                row.controls.append(drop)
+                luecke_counter += 1
+            else:
+                row.controls.append(ft.Text(word, size=16, color=ft.Colors.BLACK))
+
+        # Drag-Buttons unten zentriert
+        drag_row = ft.Row(
+            spacing=10,
+            wrap=True,
+            alignment=ft.MainAxisAlignment.CENTER
+        )
+        for word, idx in self.options:
+            btn = ft.Draggable(
+                group="textdrop",
+                data=json.dumps({"word": word, "index": idx}),
+                content=ft.Container(
+                    padding=10,
+                    bgcolor=ft.Colors.BLUE_GREY_100,
+                    border_radius=8,
+                    alignment=ft.alignment.center,
+                    content=ft.Text(word, size=16, color=ft.Colors.WHITE),
+                ),
+            )
+            self.buttons.append(btn)
+            drag_row.controls.append(btn)
+
+        # Komplette Ansicht (zentriert)
+        return ft.Column(
+            [
+                ft.Row([row], alignment=ft.MainAxisAlignment.CENTER),
+                ft.Divider(height=20),
+                drag_row,
+            ],
+            spacing=20,
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+
+    def is_fully_correct(self):
+        return all(self.correct_state)
