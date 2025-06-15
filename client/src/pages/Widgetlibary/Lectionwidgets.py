@@ -377,65 +377,98 @@ class DraggableText:
         self.raw_text = text
         self.luecken_idx = gaps_idx
         self.options = list(options.items())  # [(word, idx)]
+        self.correct_state = [False] * len(gaps_idx)
         self.drop_targets = []
         self.buttons = []
-        self.correct_state = [False] * len(gaps_idx)
 
-    # Visuelles Feedback, wenn etwas über einer Lücke ist
-    def drag_will_accept(self, e):
+    def drag_will_accept(self, e: ft.DragTargetEvent):
+        # e.data kommt als String, entweder JSON oder direkter Index
         try:
-            data = json.loads(e.data)
-            idx = int(data["index"])
-            drop_index = int(e.control.data)
+            print("DRAG WILL ACCEPT | e.data:", e.data)
+            data = None
+            # Versuch JSON zu parsen
+            try:
+                data = json.loads(e.data)
+            except Exception:
+                data = e.data  # fallback: roher String
 
-            is_correct = idx == drop_index
-            e.control.content.border = ft.border.all(2, ft.Colors.GREEN if is_correct else ft.Colors.RED)
+            if isinstance(data, dict):
+                dragged_idx = int(data.get("index", -1))
+            elif isinstance(data, str) and data.isdigit():
+                dragged_idx = int(data)
+            else:
+                dragged_idx = -1
+
+            drop_idx = int(e.control.data)
+
+            is_correct = dragged_idx == drop_idx
+
+            e.control.content.border = ft.border.all(
+                2, ft.Colors.GREEN if is_correct else ft.Colors.RED
+            )
         except Exception as ex:
-            print("WillAccept Fehler:", ex)
+            print("drag_will_accept Fehler:", ex)
         e.control.update()
 
-    # Entfernt die Rahmen wenn etwas weggezogen wird
-    def drag_leave(self, e):
+    def drag_leave(self, e: ft.DragTargetEvent):
         e.control.content.border = None
         e.control.update()
 
-    # Drop-Logik
     def drag_accept(self, e: ft.DragTargetEvent):
         try:
-            data = json.loads(e.data)
-            word = data["word"]
-            idx = int(data["index"])
+            print("DROP ACCEPTED | e.data:", e.data)
+
+            data_obj = None
+            # Versuche JSON parsen, fallback auf rohen String
+            try:
+                data_obj = json.loads(e.data)
+            except Exception:
+                data_obj = e.data
+
+            # Falls data_obj ein dict mit src_id, holen wir Daten vom Draggable Control
+            if isinstance(data_obj, dict) and "src_id" in data_obj:
+                src_control = self.page.get_control(data_obj["src_id"])
+                drag_data_raw = src_control.data
+                if isinstance(drag_data_raw, str):
+                    drag_data = json.loads(drag_data_raw)
+                elif isinstance(drag_data_raw, dict):
+                    drag_data = drag_data_raw
+                else:
+                    print("Unerwarteter Datentyp bei src_control.data:", type(drag_data_raw))
+                    return
+            elif isinstance(data_obj, dict) and "word" in data_obj and "index" in data_obj:
+                drag_data = data_obj
+            else:
+                print("Unbekanntes Drag-Datenformat:", data_obj)
+                return
+
+            word = drag_data["word"]
+            dragged_idx = int(drag_data["index"])
+            drop_idx = int(e.control.data)
+
         except Exception as ex:
-            print("Accept Fehler:", ex)
+            print("Fehler bei drag_accept:", ex)
             return
 
-        try:
-            drop_index = int(e.control.data)
-            correct = idx == drop_index
-        except (ValueError, IndexError) as ex:
-            print("Drop-Index Fehler:", ex)
-            return
+        correct = dragged_idx == drop_idx
+        self.correct_state[drop_idx] = correct
 
-        self.correct_state[drop_index] = correct
-        color = ft.Colors.GREEN if correct else ft.Colors.RED
-
-        e.control.content.border = None
-        e.control.content.bgcolor = color
-        e.control.content.content = ft.Text(word, size=16, color=ft.Colors.BLACK)
+        container = e.control.content
+        container.border = None
+        container.bgcolor = ft.Colors.GREEN if correct else ft.Colors.RED
+        container.content = ft.Text(word, size=16, color=ft.Colors.BLACK)
         e.control.update()
 
-        # Rücksetzen bei falscher Antwort
         if not correct:
-            async def reset():
+            async def reset_task():
                 await asyncio.sleep(1)
-                self.correct_state[drop_index] = False
-                e.control.content.bgcolor = ft.Colors.BLUE_GREY_100
-                e.control.content.content = ft.Text("______", size=16, color=ft.Colors.BLACK)
+                self.correct_state[drop_idx] = False
+                container.bgcolor = ft.Colors.BLUE_GREY_100
+                container.content = ft.Text("______", size=16, color=ft.Colors.BLACK)
                 e.control.update()
 
-            self.page.run_task(reset)
+            self.page.run_task(reset_task)
 
-    # UI Aufbau
     def build(self):
         self.drop_targets.clear()
         self.buttons.clear()
@@ -454,6 +487,8 @@ class DraggableText:
                     on_accept=self.drag_accept,
                     content=ft.Container(
                         padding=10,
+                        width=100,
+                        height=40,
                         bgcolor=ft.Colors.BLUE_GREY_100,
                         border_radius=8,
                         alignment=ft.alignment.center,
@@ -466,18 +501,21 @@ class DraggableText:
             else:
                 row.controls.append(ft.Text(word, size=16, color=ft.Colors.BLACK))
 
-        # Drag-Buttons unten zentriert
         drag_row = ft.Row(
             spacing=10,
             wrap=True,
             alignment=ft.MainAxisAlignment.CENTER
         )
         for word, idx in self.options:
+            drag_data = json.dumps({"word": word, "index": idx})
+            print("Draggable created:", drag_data)
             btn = ft.Draggable(
                 group="textdrop",
-                data=json.dumps({"word": word, "index": idx}),
+                data=drag_data,
                 content=ft.Container(
                     padding=10,
+                    width=100,
+                    height=40,
                     bgcolor=ft.Colors.BLUE_GREY_100,
                     border_radius=8,
                     alignment=ft.alignment.center,
@@ -487,7 +525,6 @@ class DraggableText:
             self.buttons.append(btn)
             drag_row.controls.append(btn)
 
-        # Komplette Ansicht (zentriert)
         return ft.Column(
             [
                 ft.Row([row], alignment=ft.MainAxisAlignment.CENTER),
