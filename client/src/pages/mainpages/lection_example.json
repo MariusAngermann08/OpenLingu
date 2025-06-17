@@ -1,0 +1,50 @@
+{
+    "id": "unique_lection_id",
+    "title": "Lection Title",
+    "description": "Brief description of the lection",
+    "language": "de",
+    "difficulty": "beginner",
+    "created_at": "2025-06-17T11:57:56+02:00",
+    "updated_at": "2025-06-17T11:57:56+02:00",
+    "widgets": [
+      {
+        "type": "underlined_text",
+        "data": {
+          "text": "Dies ist ein Beispieltext mit einigen unterstrichenen Wörtern",
+          "underlined": {
+            "3": "red",
+            "5": "blue"
+          },
+          "font_size": 32,
+          "bgcolor": "green"
+        }
+      },
+      {
+        "type": "matchable_pairs",
+        "data": {
+          "left_items": ["Hund", "Katze", "Maus"],
+          "right_items": ["dog", "cat", "mouse"]
+        }
+      },
+      {
+        "type": "picture_drag",
+        "data": {
+          "image_path": "images/animals.jpg",
+          "options": ["Hund", "Katze", "Maus"],
+          "correct_option_index": 0
+        }
+      },
+      {
+        "type": "draggable_text",
+        "data": {
+          "text": "Der [1] bellt. Die [2] schnurrt.",
+          "gaps_idx": [1, 2],
+          "options": {
+            "Hund": 1,
+            "Katze": 2,
+            "Maus": 2
+          }
+        }
+      }
+    ]
+  }
