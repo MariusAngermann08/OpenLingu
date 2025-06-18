@@ -9,9 +9,10 @@ class AccountPage(ft.Container):
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
         self.content = ft.Column(
-            controls=[
-                ft.Text("Welcome to the Account Page!", size=24, weight="bold"),
-                ft.Text("Manage your account settings here", size=16, color="grey"),
+           controls = [
+                ft.Text("Account Page", size=30, weight=ft.FontWeight.BOLD),
+                ft.Text("This is where you can manage your account settings."),
+                ft.Text("Currently, this page is under construction.")
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
