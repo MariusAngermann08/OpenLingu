@@ -132,4 +132,55 @@ async def get_languages_list(db: Session):
             status_code=500,
             detail=f"An error occurred while getting the languages list: {str(e)}"
         )
+
+async def add_lection(language_name: str, lection_name: str, username: str, token: str, db: Session):
+    """
+    Add a new lection to the database
     
+    Args:
+        language_name: Name of the language to add the lection to
+        lection_name: Name of the lection to add
+        username: Username of the user making the request
+        token: Authentication token
+        db: Database session
+        
+    Returns:
+        dict: Success message
+        
+    Raises:
+        HTTPException: If user is not authorized or lection already exists
+    """
+
+    #Check if language exists
+    try:
+        language = db.query(Language).filter(Language.name == language_name).first()
+    except Exception as e:
+        print(f"Error getting language '{language_name}': {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting the language: {str(e)}"
+        )
+    
+    if not language:
+        print(f"Language '{language_name}' not found")
+        raise HTTPException(status_code=404, detail="Language not found")
+    
+    #Validate token
+    try:
+        name = await verify_token(token)
+    except HTTPException as e:
+        raise e
+    
+    #Check if token username matches requested username
+    if name != username:
+        print("Token username does not match requested username")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to add this Lection"
+        )
+    
+    #Check if lection already exists
+    #do nothing for now
+
+    #Add lection
+    #do nothing for now
