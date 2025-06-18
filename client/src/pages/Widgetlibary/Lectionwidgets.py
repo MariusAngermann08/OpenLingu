@@ -6,6 +6,7 @@ import json
 
 
 # Unterstrichener Text, Underlined Text("Dies ist ein Beispieltext mit einigen unterstrichenen Wörtern",{3 : "red", 5: "blue"}, 32, "green")
+#muss mit .render() innitiert werden
 class UnderlinedText:
     def __init__(
         self,
@@ -56,6 +57,7 @@ class UnderlinedText:
         )
 
 # Matchable Pairs Class
+# Muss mit .build() innitiert werden
 class MatchablePairs:
     def __init__(self, page, left_items: list[str], right_items: list[str]):
         super().__init__()
@@ -244,6 +246,8 @@ class MatchablePairs:
         else:
             return False  # Immer True oder False jenachdem ob alle Buttons disabled sind
 
+# Picture Drag and Drop Widget
+# muss mit .build() innitiert werden
 class PictureDrag:
     def __init__(self, page: ft.Page, image_path: str, options: list[str], correct_option_index: int):
         self.page = page
@@ -370,7 +374,8 @@ class PictureDrag:
         return self.correct
     
 
-
+# Draggable Text Widget
+# Muss mit .build() innitiert werden
 class DraggableText:
     def __init__(self, page: ft.Page, text: str, gaps_idx: list[int], options: dict[str, int]):
         self.page = page
