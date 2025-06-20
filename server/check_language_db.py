@@ -23,3 +23,12 @@ with engine.connect() as connection:
             print(row)
     except Exception as e:
         print(f"Error reading languages table: {e}")
+
+    #If lections table exists, show its contents
+    print("\nContents of 'lections' table:")
+    try:
+        result = connection.execute(text("SELECT * FROM lections;"))
+        for row in result:
+            print(row)
+    except Exception as e:
+        print(f"Error reading lections table: {e}")

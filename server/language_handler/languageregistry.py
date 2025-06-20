@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 
 try:
     # When running from project root via run.py
-    from server.models import Language
+    from server.models import Language, Lection
     from server.services.token_service import verify_token
 except ImportError:
     # When running directly from server directory
-    from models import Language
+    from models import Language, Lection
     from services.token_service import verify_token
 
 async def add_language(language_name: str, username: str, token: str, db: Session):
@@ -133,7 +133,7 @@ async def get_languages_list(db: Session):
             detail=f"An error occurred while getting the languages list: {str(e)}"
         )
 
-async def add_lection(language_name: str, lection_name: str, username: str, token: str, db: Session):
+async def add_lection(language_name: str, lection_name: str, username: str, token: str, content: str, db: Session):
     """
     Add a new lection to the database
     
@@ -142,13 +142,183 @@ async def add_lection(language_name: str, lection_name: str, username: str, toke
         lection_name: Name of the lection to add
         username: Username of the user making the request
         token: Authentication token
+        content: The JSON content of the lection
+        db: Database session
+        
+    Returns:
+        dict: Success message and lection ID
+        
+    Raises:
+        HTTPException: If user is not authorized, lection already exists, or content is invalid JSON
+    """
+    # First validate that the content is valid JSON
+    import json
+    from datetime import datetime
+    
+    try:
+        # Parse and re-serialize to ensure valid JSON
+        json_content = json.loads(content)
+        # Convert back to string with proper escaping
+        escaped_content = json.dumps(json_content, ensure_ascii=False)
+    except json.JSONDecodeError as e:
+        print(f"Invalid JSON content: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid JSON content: {str(e)}"
+        )
+
+    # Check if language exists
+    try:
+        language = db.query(Language).filter(Language.name == language_name).first()
+        if not language:
+            print(f"Language '{language_name}' not found")
+            raise HTTPException(status_code=404, detail="Language not found")
+    except Exception as e:
+        print(f"Error getting language '{language_name}': {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting the language: {str(e)}"
+        )
+    
+    # Verify token
+    try:
+        name = await verify_token(token)
+        if name != username:
+            print("Token username does not match requested username")
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to add this Lection"
+            )
+    except HTTPException as e:
+        raise e
+    
+    # Check if lection already exists
+    existing_lection = db.query(Lection).filter(Lection.title == lection_name).first()
+    if existing_lection:
+        print(f"Lection '{lection_name}' already exists")
+        raise HTTPException(status_code=400, detail="Lection already exists")
+
+    # Add lection
+    try:
+        lection_count = db.query(Lection).filter(Lection.language == language_name).count()
+        new_lection = Lection(
+            id=str(lection_count + 1), 
+            title=lection_name, 
+            language=language_name, 
+            created_by=username, 
+            content=escaped_content,
+            created_at=datetime.utcnow()
+        )
+        
+        db.add(new_lection)
+        db.commit()
+        db.refresh(new_lection)
+        
+        print(f"Successfully added lection: {lection_name}")
+        return {
+            "msg": "Lection added successfully",
+            "lection_id": new_lection.id
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error adding lection: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error adding lection: {str(e)}"
+        )
+
+async def edit_lection(language_name: str, lection_name: str, username: str, token: str, content: str, db: Session):
+    """
+    Edit a lection in the database
+    
+    Args:
+        language_name: Name of the language to edit the lection in
+        lection_name: Name of the lection to edit
+        username: Username of the user making the request
+        token: Authentication token
+        content: The content of the lection
+        db: Database session
+        
+    Returns:
+        dict: Success message and lection details
+    """
+
+    #Check if language exists
+    try:
+        language = db.query(Language).filter(Language.name == language_name).first()
+    except Exception as e:
+        print(f"Error getting language '{language_name}': {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting the language: {str(e)}"
+        )
+    
+    if not language:
+        print(f"Language '{language_name}' not found")
+        raise HTTPException(status_code=404, detail="Language not found")
+
+    #Check if lection exists
+    try:
+        lection = db.query(Lection).filter(Lection.title == lection_name).first()
+    except Exception as e:
+        print(f"Error getting lection '{lection_name}': {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting the lection: {str(e)}"
+        )
+    
+    if not lection:
+        print(f"Lection '{lection_name}' not found")
+        raise HTTPException(status_code=404, detail="Lection not found")
+
+    #Check if token username matches requested username
+    try:
+        name = await verify_token(token)
+    except HTTPException as e:
+        raise e
+    
+    if name != username:
+        print("Token username does not match requested username")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to edit this Lection"
+        )
+
+    #Edit lection
+    try:
+        lection.content = content
+        db.commit()
+        db.refresh(lection)
+        
+        print(f"Successfully edited lection: {lection_name}")
+        return {
+            "msg": "Lection edited successfully",
+            "lection_id": lection.id
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error editing lection: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error editing lection: {str(e)}"
+        )
+
+async def delete_lection(language_name: str, lection_name: str, username: str, token: str, db: Session):
+    """
+    Delete a lection from the database
+    
+    Args:
+        language_name: Name of the language to delete the lection from
+        lection_name: Name of the lection to delete
+        username: Username of the user making the request
+        token: Authentication token
         db: Database session
         
     Returns:
         dict: Success message
         
     Raises:
-        HTTPException: If user is not authorized or lection already exists
+        HTTPException: If user is not authorized, lection not found, or other error occurs
     """
 
     #Check if language exists
@@ -165,22 +335,36 @@ async def add_lection(language_name: str, lection_name: str, username: str, toke
         print(f"Language '{language_name}' not found")
         raise HTTPException(status_code=404, detail="Language not found")
     
-    #Validate token
+    #Check if lection exists
+    try:
+        lection = db.query(Lection).filter(Lection.title == lection_name).first()
+    except Exception as e:
+        print(f"Error getting lection '{lection_name}': {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"An error occurred while getting the lection: {str(e)}"
+        )
+    
+    if not lection:
+        print(f"Lection '{lection_name}' not found")
+        raise HTTPException(status_code=404, detail="Lection not found")
+    
+    #Check if token username matches requested username
     try:
         name = await verify_token(token)
     except HTTPException as e:
         raise e
     
-    #Check if token username matches requested username
     if name != username:
         print("Token username does not match requested username")
         raise HTTPException(
             status_code=403,
-            detail="Not authorized to add this Lection"
+            detail="Not authorized to delete this Lection"
         )
     
-    #Check if lection already exists
-    #do nothing for now
-
-    #Add lection
-    #do nothing for now
+    #Delete lection
+    db.delete(lection)
+    db.commit()
+    
+    print(f"Successfully deleted lection: {lection_name}")
+    return {"msg": "Lection deleted successfully"}

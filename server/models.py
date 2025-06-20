@@ -57,3 +57,17 @@ class Language(LanguagesBase):
     name = Column(String, primary_key=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(String, index=True)  # Track who created the language
+
+
+class Lection(LanguagesBase):
+    __tablename__ = "lections"
+    __table_args__ = {'extend_existing': True}
+    
+    id = Column(String, primary_key=True, index=True)
+    title = Column(String)
+    description = Column(String)
+    language = Column(String)
+    difficulty = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String, index=True)
+    content = Column(String) #Just raw JSON String

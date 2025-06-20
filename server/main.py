@@ -16,7 +16,7 @@ try:
     from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from server.services.user_service import get_user_profile, delete_user
     from server.services.token_service import generate_token, verify_token, remove_expired_tokens
-    from server.language_handler.languageregistry import add_language, delete_language, get_languages_list as get_languages_list_impl
+    from server.language_handler.languageregistry import add_language, add_lection, edit_lection, delete_lection, delete_language, get_languages_list as get_languages_list_impl
 except ImportError:
     # When running directly from server directory
     from database import users_engine, get_users_db, get_languages_db
@@ -25,7 +25,7 @@ except ImportError:
     from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from services.user_service import get_user_profile, delete_user
     from services.token_service import generate_token, verify_token, remove_expired_tokens
-    from language_handler.languageregistry import add_language, delete_language, get_languages_list as get_languages_list_impl
+    from language_handler.languageregistry import add_language, add_lection, edit_lection, delete_lection, delete_language, get_languages_list as get_languages_list_impl
 
 # Used for password hashing
 from passlib.context import CryptContext
@@ -333,6 +333,60 @@ async def get_languages_list(db: languages_db_dependency):
         list: List of language names
     """
     return await get_languages_list_impl(db)
+
+@app.post("/languages/{language_name}/lections/add", tags=["lections"])
+async def add_lection_to_db(language_name: str, lection_name: str, username: str, token: str, content: str, db: languages_db_dependency):
+    """
+    Add a new lection
+    
+    Args:
+        language_name: The name of the language to add the lection to
+        lection_name: The name of the lection to add
+        username: The username of the user making the request
+        token: Authentication token
+        content: The content of the lection
+        db: Database session dependency
+        
+    Returns:
+        dict: Success message and lection details
+    """
+    return await add_lection(language_name, lection_name, username, token, content, db)
+
+@app.post("/languages/{language_name}/lections/{lection_name}/edit", tags=["lections"])
+async def edit_lection_to_db(language_name: str, lection_name: str, username: str, token: str, content: str, db: languages_db_dependency):
+    """
+    Edit a lection
+    
+    Args:
+        language_name: The name of the language to add the lection to
+        lection_name: The name of the lection to add
+        username: The username of the user making the request
+        token: Authentication token
+        content: The content of the lection
+        db: Database session dependency
+        
+    Returns:
+        dict: Success message and lection details
+    """
+    return await edit_lection(language_name, lection_name, username, token, content, db)
+
+@app.post("/languages/{language_name}/lections/{lection_name}/delete", tags=["lections"])
+async def delete_lection_from_db(language_name: str, lection_name: str, username: str, token: str, db: languages_db_dependency):
+    """
+    Delete a lection
+    
+    Args:
+        language_name: The name of the language to add the lection to
+        lection_name: The name of the lection to add
+        username: The username of the user making the request
+        token: Authentication token
+        content: The content of the lection
+        db: Database session dependency
+        
+    Returns:
+        dict: Success message and lection details
+    """
+    return await delete_lection(language_name, lection_name, username, token, db)
 
 @app.on_event("startup")
 async def startup_event():
