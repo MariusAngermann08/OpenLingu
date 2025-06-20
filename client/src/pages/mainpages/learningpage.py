@@ -34,32 +34,32 @@ class LearningPage(ft.Container):
             {
                 "title": "Lesson 1",
                 "color": "#d65b09",
-                "on_click": None
+                "on_click": lambda e: print("Edit Lesson 1")
             },
             {
                 "title": "Lesson 2",
                 "color": "#098ad6",
-                "on_click": None
+                "on_click": lambda e: print("Edit Lesson 2")
             },
             {
                 "title": "Lesson 3",
                 "color": "#0acb6f",
-                "on_click": None
+                "on_click": lambda e: print("Edit Lesson 3")
             },
             {
                 "title": "Lesson 4",
                 "color": "#d65b09",
-                "on_click": None
+                "on_click": lambda e: print("Edit Lesson 4")
             },
             {
                 "title": "Lesson 5",
                 "color": "#098ad6",
-                "on_click": None
+                "on_click": lambda e: print("Edit Lesson 5")
             },
             {
                 "title": "Lesson 6",
                 "color": "#0acb6f",
-                "on_click": None
+                "on_click": lambda e: print("Edit Lesson 6")
             },
         ]
 
@@ -97,7 +97,8 @@ class LearningPage(ft.Container):
                 self.center_index = i
                 self.update_positions()
                 self.page.update()
-                #user_callback()   @Jonas what is this for? No such function exists
+            elif user_callback is not None:
+                user_callback(e)  # Only call if centered and callback exists
         return wrapped_click
 
     def update_positions(self):

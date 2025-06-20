@@ -409,7 +409,7 @@ class DraggableText:
             is_correct = dragged_idx == drop_idx
 
             e.control.content.border = ft.border.all(
-                2, ft.Colors.GREEN if is_correct else ft.Colors.RED
+                2, ft.Colors.BLACK
             )
         except Exception as ex:
             print("drag_will_accept Fehler:", ex)
