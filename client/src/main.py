@@ -7,12 +7,15 @@ from pages.mainpage import *
 from pages.serverpage import *
 from pages.connectingpage import *
 from pages.setuppage import SetupPage
+from pages.Loaders.languagechooser import LanguageChooser
 
 
 def route_change(e):
     page = e.page
     page.views.clear()
     route = page.route
+
+    mainpage = MainPage(page, route)
 
     if route == "/":
         #page.go("/main")
@@ -101,9 +104,6 @@ def route_change(e):
             )
         )
     elif route == "/main":
-        # Create main page instance with integrated NavigationDrawer and app bar
-        mainpage = MainPage(page, route)
-        
         # Create view with drawer and app bar
         view = ft.View(
             route="/main",
@@ -120,6 +120,15 @@ def route_change(e):
             ft.View(
                 route="/setup",
                 controls=[setuppage],
+            )
+        )
+    
+    elif route == "/languages":
+        languagechooser = LanguageChooser(page, mainpage)
+        page.views.append(
+            ft.View(
+                route="/languages",
+                controls=[languagechooser],
             )
         )
 

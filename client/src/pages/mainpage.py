@@ -41,7 +41,16 @@ class MainPage(ft.Container):
         self.current_language = "English"
         
         # Create language button reference for hover effect
-        self.language_btn = ft.Ref[ft.Container]()
+        self.language_btn = ft.ElevatedButton(
+            text="Select a language",
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=20),
+                padding=ft.padding.symmetric(horizontal=16, vertical=8),
+                bgcolor="#1a73e8",
+                color="white"
+            ),
+            on_click=lambda e: self.page.go("/languages"),
+        )
         # Create server button reference for hover effect
         self.server_btn = ft.Ref[ft.Container]()
         
@@ -275,16 +284,7 @@ class MainPage(ft.Container):
             center_title=False,
             actions=[
                 # Language Selection Button
-                ft.ElevatedButton(
-                    text="Select a language",
-                    style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=20),
-                        padding=ft.padding.symmetric(horizontal=16, vertical=8),
-                        bgcolor="#1a73e8",
-                        color="white"
-                    ),
-                    on_click=lambda e: None,
-                ),
+                self.language_btn,
                 # Server Information Button
                 ft.Container(
                     content=ft.IconButton(
