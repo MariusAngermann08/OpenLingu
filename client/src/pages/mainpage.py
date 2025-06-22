@@ -247,7 +247,7 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 5:
-            self.not_on_home = True
+            self.not_on_home = False
             self.current_shown_content = self.settings_page
             self.appbar_title = "Settings"
             #Close drawer
