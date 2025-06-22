@@ -249,6 +249,7 @@ class MainPage(ft.Container):
         elif selected_index == 5:
             self.not_on_home = False
             self.current_shown_content = self.settings_page
+            self.content = self.settings_page
             self.appbar_title = "Settings"
             #Close drawer
             self.drawer.open = False
