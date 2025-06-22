@@ -9,13 +9,13 @@ from pages.connectingpage import *
 from pages.setuppage import SetupPage
 from pages.Loaders.languagechooser import LanguageChooser
 
+mainpage = None
 
 def route_change(e):
+    global mainpage
     page = e.page
     page.views.clear()
     route = page.route
-
-    mainpage = MainPage(page, route)
 
     if route == "/":
         #page.go("/main")
@@ -105,6 +105,7 @@ def route_change(e):
         )
     elif route == "/main":
         # Create view with drawer and app bar
+        mainpage = MainPage(page, route)
         view = ft.View(
             route="/main",
             appbar=mainpage.create_app_bar(mainpage.appbar_title),

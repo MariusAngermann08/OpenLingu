@@ -37,12 +37,12 @@ class MainPage(ft.Container):
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         
-        # Default language (can be loaded from user preferences later)
-        self.current_language = "English"
+        # Initialize language from client storage or default to English
+        self.current_language = "English"  # Default value
         
         # Create language button reference for hover effect
         self.language_btn = ft.ElevatedButton(
-            text="Select a language",
+            text=self.current_language,
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(radius=20),
                 padding=ft.padding.symmetric(horizontal=16, vertical=8),
@@ -51,6 +51,26 @@ class MainPage(ft.Container):
             ),
             on_click=lambda e: self.page.go("/languages"),
         )
+        
+        # Load saved language asynchronously
+        async def load_language():
+            try:
+                saved_lang = await self.page.client_storage.get_async("selected_language")
+                if saved_lang:
+                    print(f"[DEBUG] Loaded language from storage: {saved_lang}")
+                    # Await the async method
+                    await self.update_language(saved_lang)
+                    print("[DEBUG] Initial language update completed")
+            except Exception as e:
+                print(f"[ERROR] Error loading language: {e}")
+        
+        # Run the async function in the event loop
+        if hasattr(self.page, 'run_task'):
+            self.page.run_task(load_language)
+        else:
+            import asyncio
+            asyncio.create_task(load_language())
+        
         # Create server button reference for hover effect
         self.server_btn = ft.Ref[ft.Container]()
         
@@ -417,3 +437,45 @@ class MainPage(ft.Container):
         else:
             self.appbar_title = "OpenLingu"
             self.not_on_home = False
+            
+    async def update_language(self, language_code: str):
+        """
+        Update the language button text.
+        
+        Args:
+            language_code (str): The language code (e.g., 'en', 'de', 'es')
+        """
+        print(f"[DEBUG] update_language called with: {language_code}")
+        language_map = {
+            'en': 'English',
+            'de': 'Deutsch',
+            'es': 'Español'
+        }
+        
+        # Update the current language and button text
+        new_language = language_map.get(language_code, 'English')
+        print(f"[DEBUG] Updating language to: {new_language}")
+        
+        # Update the button text directly
+        self.current_language = new_language
+        self.language_btn.text = new_language
+        
+        # Update the button immediately
+        if hasattr(self, 'language_btn') and self.language_btn is not None:
+            self.language_btn.update()
+            print("[DEBUG] Language button updated")
+            
+        # Save to client storage in the background
+        async def save_language():
+            try:
+                await self.page.client_storage.set_async("selected_language", language_code)
+                print("[DEBUG] Language saved to client storage")
+            except Exception as e:
+                print(f"[ERROR] Error saving language: {e}")
+        
+        # Don't await the storage operation to keep UI responsive
+        if hasattr(self.page, 'run_task'):
+            self.page.run_task(save_language())
+        else:
+            import asyncio
+            asyncio.create_task(save_language())
