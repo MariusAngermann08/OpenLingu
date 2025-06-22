@@ -7,7 +7,7 @@ from pages.mainpage import *
 from pages.serverpage import *
 from pages.connectingpage import *
 from pages.setuppage import SetupPage
-from pages.Loaders.languagechooser import LanguageChooser
+
 
 def route_change(e):
     page = e.page
@@ -101,32 +101,18 @@ def route_change(e):
             )
         )
     elif route == "/main":
+        # Create main page instance with integrated NavigationDrawer and app bar
         mainpage = MainPage(page, route)
-        # Store mainpage instance in page's session
-        page.session.set("mainpage", mainpage)
+        
+        # Create view with drawer and app bar
         view = ft.View(
             route="/main",
             appbar=mainpage.create_app_bar(mainpage.appbar_title),
             drawer=mainpage.drawer,
             controls=[mainpage]
         )
+
         page.views.append(view)
-    
-    elif route == "/main/languages":
-        # Get mainpage instance from session
-        mainpage = page.session.get("mainpage")
-        if mainpage is None:
-            # If for some reason mainpage is not in session, create a new one
-            mainpage = MainPage(page, "/main")
-            page.session.set("mainpage", mainpage)
-            
-        languagechooser = LanguageChooser(page, mainpage)
-        page.views.append(
-            ft.View(
-                route="/main/languages",
-                controls=[languagechooser],
-            )
-        )
     
     elif route == "/setup":
         setuppage = SetupPage(page, route)

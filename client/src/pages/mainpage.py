@@ -12,7 +12,6 @@ try:
     from pages.mainpages.settings import SettingsPage
     from pages.Languagetrees.spanish_main import SpanishMainPage
     from pages.Languagetrees.english_main import EnglishMainPage
-    from pages.Loaders.languagechooser import LanguageChooser
 except ImportError:
     # When running directly with flet run
     from mainpages.learningpage import LearningPage
@@ -23,7 +22,6 @@ except ImportError:
     from mainpages.settings import SettingsPage
     from Languagetrees.spanish_main import SpanishMainPage
     from Languagetrees.english_main import EnglishMainPage
-    from Loaders.languagechooser import LanguageChooser
 
 #Function to remove the access token from the client storage
 def remove_access_token(page):
@@ -47,26 +45,8 @@ class MainPage(ft.Container):
         # Create server button reference for hover effect
         self.server_btn = ft.Ref[ft.Container]()
         
-        # Server info dialog will be created when needed TODO: Marius
+        # Server info dialog will be created when needed
         
-        #Define language button
-        self.language_button = ft.Container(
-                content=ft.ElevatedButton(
-                    text="Select a language",
-                    icon="language",
-                    on_click=lambda e: self.page.go("/main/languages"),
-                    style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=20),
-                        padding=ft.padding.symmetric(horizontal=16, vertical=8),
-                        color="white",
-                        bgcolor="#1a73e8",
-                        overlay_color="#1a8cff",
-                    ),
-                ),
-                padding=ft.padding.only(right=8),
-                on_click=lambda e: None,
-        )
-
         # Sign out button state and reference
         self.sign_out_button = None
         self.is_signing_out = False
@@ -81,8 +61,9 @@ class MainPage(ft.Container):
             alignment=ft.alignment.center,
             on_dismiss=lambda e: print("Dialog dismissed!"),
             title_padding=ft.padding.all(25)
-        )
-      
+        )  
+
+        
         # Create the NavigationDrawer
         self.drawer = ft.NavigationDrawer(
             controls=[
@@ -247,7 +228,7 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
         elif selected_index == 5:
-            self.not_on_home = False
+            self.not_on_home = True
             self.current_shown_content = self.settings_page
             self.appbar_title = "Settings"
             #Close drawer
@@ -262,10 +243,8 @@ class MainPage(ft.Container):
         self.page.update()
         
     def show_server_info(self, e):
-        self.page.dialog = self.server_info_dialog
-        self.server_info_dialog.open = True
+        self.page.open(self.server_info_dialog)
         self.page.update()
-    
         
     def create_app_bar(self, appbar_title):
         # Get server URL or default text
@@ -287,16 +266,24 @@ class MainPage(ft.Container):
                 tooltip="Open menu",
                 on_click=self.toggle_drawer
             )
-            
+
         return ft.AppBar(
             leading=leading,
             title=ft.Text(f"{appbar_title}", color="white"),
             bgcolor="#1a73e8",
             center_title=False,
             actions=[
-                # Language Button
-                self.language_button,
-                
+                # Language Selection Button
+                ft.ElevatedButton(
+                    text="Select a language",
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=20),
+                        padding=ft.padding.symmetric(horizontal=16, vertical=8),
+                        bgcolor="#1a73e8",
+                        color="white"
+                    ),
+                    on_click=lambda e: None,
+                ),
                 # Server Information Button
                 ft.Container(
                     content=ft.IconButton(
@@ -309,85 +296,20 @@ class MainPage(ft.Container):
                     padding=ft.padding.all(4),
                     on_click=self.show_server_info,
                 ),
+                
+                # Language Selection Button
+                ft.IconButton(
+                    icon="language",
+                    icon_color="white",
+                    tooltip="Change Language",
+                    on_click=lambda _: None,  # Add language selection logic here
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=8),
+                        padding=8,
+                    ),
+                ),
             ]
         )
-
-    def toggle_drawer(self, e=None):
-        # Toggle the drawer open/closed
-        self.drawer.open = not self.drawer.open
-        self.page.update()
-
-    def show_server_info(self, e):
-        self.page.open(self.server_info_dialog)
-        self.page.update()
-        
-    def _reset_sign_out_button(self):
-        """Reset the sign-out button to its original state."""
-        if hasattr(self, 'drawer') and len(self.drawer.controls) > 1:
-            self.drawer.controls[-2].content.content = ft.Row(
-                [
-                    ft.Text("SIGN OUT", size=14, weight="bold"),
-                    ft.Icon("logout", size=20),
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-                spacing=10,
-            )
-            self.drawer.controls[-2].content.disabled = False
-            self.page.update()
-    
-    async def sign_out(self, e):
-        try:
-            # Set loading state
-            if hasattr(self, 'drawer') and len(self.drawer.controls) > 1:
-                self.drawer.controls[-2].content.disabled = True
-                self.drawer.controls[-2].content.content = ft.Row(
-                    [
-                        ft.ProgressRing(width=20, height=20, stroke_width=2, color="white"),
-                        ft.Text("Signing out...", size=14, weight="bold"),
-                    ],
-                    alignment=ft.MainAxisAlignment.CENTER,
-                    spacing=10,
-                )
-                self.page.update()
-            
-            # Try to get and use the access token if available
-            try:
-                server_url = await self.page.client_storage.get_async("server_url")
-                access_token = await self.page.client_storage.get_async("token")
-                
-                if server_url and access_token:
-                    # Try to send logout request, but don't wait for it or handle errors
-                    try:
-                        requests.post(
-                            f"{server_url}/logout",
-                            params={"token": access_token},
-                            timeout=2  # Short timeout to not block the UI
-                        )
-                    except:
-                        pass  # Ignore any errors during logout
-            except:
-                pass  # Ignore any errors during token retrieval
-            
-            # Remove the token from client storage
-            await self.page.client_storage.remove_async("token")
-            
-            # Navigate directly to the sign-in page
-            self.page.go("/sign-in")
-            
-        except Exception as e:
-            print(f"Error during sign out: {str(e)}")
-            self.page.snack_bar = ft.SnackBar(
-                content=ft.Text(f"Error during sign out: {str(e)}"),
-                bgcolor="#f44336",
-                behavior=ft.SnackBarBehavior.FLOATING,
-                duration=5000
-            )
-            self.page.snack_bar.open = True
-            self._reset_sign_out_button()
-    
-    def set_language_button_text(self):
-        #Set title of language button in appbar
-        self.language_button.content.text = self.current_language
     
     def _reset_sign_out_button(self):
         """Reset the sign-out button to its original state."""
@@ -472,12 +394,6 @@ class MainPage(ft.Container):
             self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
 
-    def set_language_button_text(self):
-        if hasattr(self, 'language_button'):
-            # Update the button text to show the current language
-            self.language_button.content.text = self.current_language
-            self.page.update()
-    
     def set_appbar_title_by_content(self):
         if self.current_shown_content == self.daily_tasks_page:
             self.appbar_title = "Daily Tasks"
