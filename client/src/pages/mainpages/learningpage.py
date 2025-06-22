@@ -1,5 +1,6 @@
 import flet as ft
 from typing import Callable
+import asyncio
 
 
 class LearningPage(ft.Container):
@@ -125,7 +126,6 @@ class LearningPage(ft.Container):
         self._auto_resize_running = False
 
     async def _auto_resize_loop(self):
-        import asyncio
         while getattr(self, "_auto_resize_running", False):
             self.update_positions()
             self.page.update()
