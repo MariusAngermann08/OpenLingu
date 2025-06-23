@@ -164,6 +164,7 @@ class MatchablePairs:
                 btn.update()
                 self.page.run_task(self.set_random_color_after_delay, left_btn, right_btn)
                 self.reset_selection()
+                self.check_solved()  # <-- Add this line
         else:
             for btn in [left_btn, right_btn]:
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.RED)
@@ -246,6 +247,14 @@ class MatchablePairs:
         else:
             return False  # Immer True oder False jenachdem ob alle Buttons disabled sind
 
+    def check_solved(self):
+        all_left_disabled = all(btn.disabled for _, btn in self.buttons_left)
+        all_right_disabled = all(btn.disabled for _, btn in self.buttons_right)
+        is_solved = all_left_disabled and all_right_disabled
+        if is_solved:
+            print("task solved")
+        return is_solved
+
 # Picture Drag and Drop Widget
 # muss mit .build() innitiert werden
 class PictureDrag:
@@ -327,6 +336,8 @@ class PictureDrag:
             self.page.run_task(reset_task)
         else:
             print("task solved")
+            # Or, to use the method:
+            self.check_solved()
 
     def build(self):
         image = ft.Image(src=self.image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN)
@@ -473,6 +484,7 @@ class DraggableText:
                 e.control.update()
 
             self.page.run_task(reset_task)
+        self.check_solved()
 
     def build(self):
         self.drop_targets.clear()
@@ -541,5 +553,9 @@ class DraggableText:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-    def is_fully_correct(self):
-        return all(self.correct_state)
+    def check_solved(self):
+        is_solved = all(self.correct_state)
+        if is_solved:
+            print("task solved")
+        return is_solved
+    
