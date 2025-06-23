@@ -183,15 +183,22 @@ class MatchablePairs:
             ft.Colors.GREY,
             ft.Colors.CYAN,
             ft.Colors.TEAL,
+            ft.Colors.LIGHT_GREEN,
+            ft.Colors.LIGHT_BLUE,
         ]
-        # Bereits vergebene Farben sammeln
-        used_colors = set(getattr(btn, "bgcolor", None) for _, btn in self.buttons_left + self.buttons_right if btn.disabled)
-        # Nur erlaubte und noch nicht vergebene Farben nehmen
+
+        used_colors = set()
+        for _, btn in self.buttons_left + self.buttons_right:
+            if btn.disabled and hasattr(btn, "bgcolor") and btn.bgcolor is not None:
+                used_colors.add(btn.bgcolor)
+
         available = [c for c in distinct_colors if c not in used_colors]
+
         if not available:
-            # Falls alle Farben vergeben sind, nimm eine beliebige erlaubte
-            available = [c for c in distinct_colors]
-        return available
+            available = distinct_colors  # Wenn alle vergeben, dann wieder freigeben
+
+        color = random.choice(available)
+        return color
     
     async def set_random_color_after_delay(self, left_btn, right_btn):
         await asyncio.sleep(0.6)
@@ -238,6 +245,7 @@ class MatchablePairs:
             return True
         else:
             return False  # Immer True oder False jenachdem ob alle Buttons disabled sind
+    
 
 # Picture Drag and Drop Widget
 # muss mit .build() innitiert werden

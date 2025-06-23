@@ -22,12 +22,12 @@ class DailyTasksPage(ft.Container):
 
         self.content = ft.Column(
             controls=[
-               DraggableText(
-                   page=page,
-                   text= "Hello, this page is called because we are silly as ",
-                   gaps_idx= [5, 10],
-                   options = {"Daily Tasks" : 0, "hell": 1},
+               MatchablePairs(
+                   page,
+                   left_items=["Dog", "Cat", "Fish"],
+                   right_items=["Hund","Katze","Fisch"],
                ).build()
+               
                 
 
             ],
