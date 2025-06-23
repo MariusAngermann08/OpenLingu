@@ -8,6 +8,7 @@ from pages.serverpage import *
 from pages.connectingpage import *
 from pages.setuppage import SetupPage
 from pages.Loaders.languagechooser import LanguageChooser
+from pages.Widgetlibary.lectionviewer import LectionViewer
 
 mainpage = None
 
@@ -21,12 +22,13 @@ def route_change(e):
         #page.go("/main")
         #page.go("/setup")
         # Check if server url is saved
-        server_url = page.client_storage.get("server_url")
-        if server_url:
+        #server_url = page.client_storage.get("server_url")
+        #if server_url:
             #Go to connecting page to validate the server
-            page.go(f"/connecting?url={server_url}")
-        else:
-            page.go("/server")
+            #page.go(f"/connecting?url={server_url}")
+        #else:
+            #page.go("/server")
+        page.go("/lectionviewer")
 
     def create_server_appbar(page):
         server_url = page.client_storage.get("server_url") or "No server selected"
@@ -130,6 +132,20 @@ def route_change(e):
             ft.View(
                 route="/languages",
                 controls=[languagechooser],
+            )
+        )
+    
+    elif route == "/lectionviewer":
+        lectionviewer = LectionViewer(page)
+        lectionviewer.load_lection("lection_example.json")
+        page.views.append(
+            ft.View(
+                route="/lectionviewer",
+                controls=[
+                    ft.AppBar(title=ft.Text("Lection Viewer"), bgcolor="#1a73e8"),
+                    lectionviewer
+                ],
+                padding=20
             )
         )
 

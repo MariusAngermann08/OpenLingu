@@ -6,33 +6,28 @@ import json
 
 
 # Unterstrichener Text, Underlined Text("Dies ist ein Beispieltext mit einigen unterstrichenen Wörtern",{3 : "red", 5: "blue"}, 32, "green")
-#muss mit .render() innitiert werden
-class UnderlinedText:
+#muss mit .build() innitiert werden
+class UnderlinedText(ft.Container):
     def __init__(
         self,
         text: str,
         underlined: dict[int, str],
         font_size: float = 14,
-        bgcolor: str = None
+        bgcolor: str = None,
+        **kwargs
     ):
-        self.text = text
-        self.underlined = underlined
-        self.font_size = font_size
-        self.bgcolor = bgcolor
-
-    def render(self) -> ft.Container:
-        words = self.text.split(" ")
+        words = text.split(" ")
         spans = []
 
         for i, word in enumerate(words):
-            if i in self.underlined:
+            if i in underlined:
                 spans.append(
                     ft.TextSpan(
                         text=word + " ",
                         style=ft.TextStyle(
                             decoration=ft.TextDecoration.UNDERLINE,
-                            decoration_color=self.underlined[i],
-                            size=self.font_size  # <-- Set font size here!
+                            decoration_color=underlined[i],
+                            size=font_size
                         )
                     )
                 )
@@ -41,19 +36,17 @@ class UnderlinedText:
                     ft.TextSpan(
                         text=word + " ",
                         style=ft.TextStyle(
-                            size=self.font_size  # <-- Set font size here!
+                            size=font_size
                         )
                     )
                 )
 
-        return ft.Container(
-            bgcolor=self.bgcolor,
+        super().__init__(
+            content=ft.Text(spans=spans, selectable=True),
+            bgcolor=bgcolor,
             padding=10,
             border_radius=5,
-            content=ft.Text(
-                spans=spans,
-                selectable=True
-            )
+            **kwargs
         )
 
 # Matchable Pairs Class
