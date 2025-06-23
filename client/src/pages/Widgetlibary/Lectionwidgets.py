@@ -164,7 +164,6 @@ class MatchablePairs:
                 btn.update()
                 self.page.run_task(self.set_random_color_after_delay, left_btn, right_btn)
                 self.reset_selection()
-                self.check_solved()  # <-- Add this line
         else:
             for btn in [left_btn, right_btn]:
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.RED)
@@ -191,15 +190,22 @@ class MatchablePairs:
             ft.Colors.GREY,
             ft.Colors.CYAN,
             ft.Colors.TEAL,
+            ft.Colors.LIGHT_GREEN,
+            ft.Colors.LIGHT_BLUE,
         ]
-        # Bereits vergebene Farben sammeln
-        used_colors = set(getattr(btn, "bgcolor", None) for _, btn in self.buttons_left + self.buttons_right if btn.disabled)
-        # Nur erlaubte und noch nicht vergebene Farben nehmen
+
+        used_colors = set()
+        for _, btn in self.buttons_left + self.buttons_right:
+            if btn.disabled and hasattr(btn, "bgcolor") and btn.bgcolor is not None:
+                used_colors.add(btn.bgcolor)
+
         available = [c for c in distinct_colors if c not in used_colors]
+
         if not available:
-            # Falls alle Farben vergeben sind, nimm eine beliebige erlaubte
-            available = [c for c in distinct_colors]
-        return available
+            available = distinct_colors  # Wenn alle vergeben, dann wieder freigeben
+
+        color = random.choice(available)
+        return color
     
     async def set_random_color_after_delay(self, left_btn, right_btn):
         await asyncio.sleep(0.6)
@@ -246,14 +252,7 @@ class MatchablePairs:
             return True
         else:
             return False  # Immer True oder False jenachdem ob alle Buttons disabled sind
-
-    def check_solved(self):
-        all_left_disabled = all(btn.disabled for _, btn in self.buttons_left)
-        all_right_disabled = all(btn.disabled for _, btn in self.buttons_right)
-        is_solved = all_left_disabled and all_right_disabled
-        if is_solved:
-            print("task solved")
-        return is_solved
+    
 
 # Picture Drag and Drop Widget
 # muss mit .build() innitiert werden
@@ -336,8 +335,6 @@ class PictureDrag:
             self.page.run_task(reset_task)
         else:
             print("task solved")
-            # Or, to use the method:
-            self.check_solved()
 
     def build(self):
         image = ft.Image(src=self.image_path, width=200, height=200, fit=ft.ImageFit.CONTAIN)
@@ -484,7 +481,6 @@ class DraggableText:
                 e.control.update()
 
             self.page.run_task(reset_task)
-        self.check_solved()
 
     def build(self):
         self.drop_targets.clear()
@@ -553,9 +549,5 @@ class DraggableText:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
         )
 
-    def check_solved(self):
-        is_solved = all(self.correct_state)
-        if is_solved:
-            print("task solved")
-        return is_solved
-    
+    def is_fully_correct(self):
+        return all(self.correct_state)
