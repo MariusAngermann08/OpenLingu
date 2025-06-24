@@ -128,4 +128,3 @@ class LectionViewer(ft.Container):
                 )
                 self.page.snack_bar.open = True
                 self.page.update()
-        

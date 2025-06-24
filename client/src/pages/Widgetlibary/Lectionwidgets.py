@@ -18,7 +18,6 @@ class UnderlinedText(ft.Container):
     ):
         words = text.split(" ")
         spans = []
-
         for i, word in enumerate(words):
             if i in underlined:
                 spans.append(

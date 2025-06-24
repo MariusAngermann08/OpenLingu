@@ -1,75 +1,41 @@
 {
-    "id": "english_grammar_101",
-    "title": "English Grammar Basics",
-    "description": "A comprehensive introduction to English grammar for beginners",
-    "language": "en",
+    "id": "french_grammar_101",
+    "title": "Le Futur Simple",
+    "description": "Une leçon sur la formation et l'utilisation du futur simple en français.",
+    "language": "fr",
     "difficulty": "beginner",
-    "created_at": "2025-06-23T22:15:00+02:00",
-    "updated_at": "2025-06-23T22:15:00+02:00",
+    "created_at": "2025-06-24T22:15:14+02:00",
+    "updated_at": "2025-06-24T22:15:14+02:00",
     "pages": [
         {
-            "title": "Present Simple Tense",
-            "description": "Learn how to form and use the present simple tense",
+            "title": "Le Futur Simple",
+            "description": "Apprenez à former le futur simple.",
             "widgets": [
                 {
                     "type": "text",
                     "data": {
-                        "text": "The present simple is used for:\n- Habits and routines\n- General truths\n- Fixed arrangements\n- Future timetables",
+                        "text": "Le futur simple est utilisé pour parler d'actions futures. On le forme en ajoutant les terminaisons -ai, -as, -a, -ons, -ez, -ont à l'infinitif du verbe.",
                         "size": 16,
-                        "weight": "bold"
+                        "weight": "normal"
                     }
                 },
                 {
                     "type": "underlined_text",
                     "data": {
-                        "text": "She works in a bank. He plays tennis every Sunday. The train leaves at 6 PM.",
+                        "text": "Par exemple, pour le verbe 'parler': Je parlerai, tu parleras, il parlera.",
                         "underlined": {
-                            "1": "#4CAF50",
-                            "4": "#2196F3",
+                            "6": "#4CAF50",
+                            "8": "#2196F3",
                             "10": "#FF5722"
                         },
                         "font_size": 18,
                         "bgcolor": "#F5F5F5"
                     }
-                }
-            ]
-        },
-        {
-            "title": "Present Continuous",
-            "description": "Learn when to use present continuous tense",
-            "widgets": [
-                {
-                    "type": "text",
-                    "data": {
-                        "text": "Form: am/is/are + verb + -ing\n\nUse for:\n- Actions happening now\n- Temporary situations\n- Future arrangements",
-                        "size": 16
-                    }
                 },
                 {
-                    "type": "matchable_pairs",
-                    "data": {
-                        "left_items": [
-                            "I am working",
-                            "She is studying",
-                            "They are playing"
-                        ],
-                        "right_items": [
-                            "Right now",
-                            "At the moment",
-                            "This week"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "title": "Past Simple vs Present Perfect",
-            "description": "Understand the difference between these tenses",
-            "widgets": [
-                {
                     "type": "text",
                     "data": {
-                        "text": "Complete the sentences with the correct form of the verb:",
+                        "text": "Complétez les phrases suivantes avec la forme correcte du verbe au futur simple :",
                         "size": 16,
                         "weight": "bold"
                     }
@@ -77,78 +43,15 @@
                 {
                     "type": "draggable_text",
                     "data": {
-                        "text": "I [0] (see) that movie last week. She [1] (not finish) her homework yet. They [2] (live) here since 2010.",
+                        "text": "Demain, je [0] (finir) mes devoirs. Nous [1] (voyager) en Espagne l'été prochain. Elle [2] (être) contente de te voir.",
                         "gaps_idx": [0, 1, 2],
                         "options": {
-                            "saw": 0,
-                            "have seen": 0,
-                            "hasn't finished": 1,
-                            "didn't finish": 1,
-                            "have lived": 2,
-                            "lived": 2
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            "title": "Modal Verbs",
-            "description": "Learn about can, could, may, might, must, should",
-            "widgets": [
-                {
-                    "type": "text",
-                    "data": {
-                        "text": "Match the modal verb to its use:",
-                        "size": 18,
-                        "weight": "bold"
-                    }
-                },
-                {
-                    "type": "matchable_pairs",
-                    "data": {
-                        "left_items": [
-                            "Can/Could",
-                            "May/Might",
-                            "Must",
-                            "Should"
-                        ],
-                        "right_items": [
-                            "Ability/Permission",
-                            "Possibility",
-                            "Obligation",
-                            "Advice"
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "title": "Practice: Mixed Tenses",
-            "description": "Test your understanding of different tenses",
-            "widgets": [
-                {
-                    "type": "text",
-                    "data": {
-                        "text": "Fill in the blanks with the correct form of the verb in brackets:",
-                        "size": 16
-                    }
-                },
-                {
-                    "type": "draggable_text",
-                    "data": {
-                        "text": "I usually [0] (go) to work by car. Yesterday I [1] (take) the bus because my car [2] (be) at the garage. Right now, I [3] (write) an email to my boss. I [4] (work) here since 2018.",
-                        "gaps_idx": [0, 1, 2, 3, 4],
-                        "options": {
-                            "go": 0,
-                            "goes": 0,
-                            "took": 1,
-                            "taken": 1,
-                            "was": 2,
-                            "is": 2,
-                            "am writing": 3,
-                            "write": 3,
-                            "have worked": 4,
-                            "worked": 4
+                            "finirai": 0,
+                            "finiras": 0,
+                            "voyagerons": 1,
+                            "voyagerez": 1,
+                            "sera": 2,
+                            "seront": 2
                         }
                     }
                 }
