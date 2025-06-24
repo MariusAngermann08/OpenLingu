@@ -1,0 +1,122 @@
+{
+  "id": "spanish_pronouns_001",
+  "title": "Spanish Subject Pronouns",
+  "description": "Learn how to say 'I', 'you', 'he', 'she', and more in Spanish.",
+  "language": "es",
+  "difficulty": "beginner",
+  "created_at": "2025-06-24T14:45:00+02:00",
+  "updated_at": "2025-06-24T14:45:00+02:00",
+  "pages": [
+    {
+      "title": "What are Subject Pronouns?",
+      "description": "Understand what subject pronouns are and why we need them.",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "Subject pronouns are words like 'I', 'you', or 'they'. They tell us who is doing the action in a sentence.\n\nIn English:\n- I eat.\n- You run.\n- She sings.\n\nIn Spanish, we also use subject pronouns to show who does something.",
+            "size": 16
+          }
+        }
+      ]
+    },
+    {
+      "title": "Spanish Subject Pronouns: Singular",
+      "description": "Learn how to say 'I', 'you', 'he', and 'she' in Spanish.",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "- Yo = I\n- Tú = You (informal)\n- Él = He\n- Ella = She\n- Usted = You (formal)",
+            "size": 18,
+            "weight": "bold"
+          }
+        },
+        {
+          "type": "matchable_pairs",
+          "data": {
+            "left_items": [
+              "Yo",
+              "Tú",
+              "Él",
+              "Ella",
+              "Usted"
+            ],
+            "right_items": [
+              "I",
+              "You (informal)",
+              "He",
+              "She",
+              "You (formal)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Spanish Subject Pronouns: Plural",
+      "description": "Learn how to say 'we', 'you all', and 'they' in Spanish.",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "- Nosotros/Nosotras = We (masc./fem.)\n- Vosotros/Vosotras = You all (informal, only used in Spain)\n- Ellos = They (masc.)\n- Ellas = They (fem.)\n- Ustedes = You all (formal or in Latin America)",
+            "size": 16
+          }
+        },
+        {
+          "type": "matchable_pairs",
+          "data": {
+            "left_items": [
+              "Nosotros",
+              "Vosotras",
+              "Ellos",
+              "Ellas",
+              "Ustedes"
+            ],
+            "right_items": [
+              "We (masculine)",
+              "You all (feminine, Spain)",
+              "They (masculine)",
+              "They (feminine)",
+              "You all (formal)"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Practice: Choose the Right Pronoun",
+      "description": "Pick the correct Spanish pronoun based on the English meaning.",
+      "widgets": [
+        {
+          "type": "draggable_text",
+          "data": {
+            "text": "[0] am a student. [1] are my friends. [2] is my teacher. [3] is a girl. [4] are all from Spain.",
+            "gaps_idx": [0, 1, 2, 3, 4],
+            "options": {
+              "Yo": 0,
+              "Ellos": 1,
+              "Él": 2,
+              "Ella": 3,
+              "Vosotros": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Bonus: Visual Summary",
+      "description": "Use this as a quick reference for all pronouns learned today.",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "**Singular:**\n- Yo = I\n- Tú = You (informal)\n- Él = He\n- Ella = She\n- Usted = You (formal)\n\n**Plural:**\n- Nosotros/Nosotras = We\n- Vosotros/Vosotras = You all (informal, Spain)\n- Ellos = They (masc.)\n- Ellas = They (fem.)\n- Ustedes = You all (formal)",
+            "size": 16
+          }
+        }
+      ]
+    }
+  ]
+}
