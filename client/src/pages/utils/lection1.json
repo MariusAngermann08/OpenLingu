@@ -92,14 +92,14 @@
         {
           "type": "draggable_text",
           "data": {
-            "text": "[0] am a student. [1] are my friends. [2] is my teacher. [3] is a girl. [4] are all from Spain.",
-            "gaps_idx": [0, 1, 2, 3, 4],
+            "text": "am a student. are my friends. is my teacher. is a girl. are all from Spain.",
+            "gaps_idx": [0, 3, 6, 9, 12],
             "options": {
               "Yo": 0,
-              "Ellos": 1,
-              "Él": 2,
-              "Ella": 3,
-              "Vosotros": 4
+              "Ellos": 3,
+              "Él": 6,
+              "Ella": 9,
+              "Ustedes": 12
             }
           }
         }

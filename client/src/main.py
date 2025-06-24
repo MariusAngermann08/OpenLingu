@@ -137,7 +137,7 @@ def route_change(e):
     
     elif route == "/lectionviewer":
         lectionviewer = LectionViewer(page)
-        lectionviewer.load_lection("lection_example.json")
+        lectionviewer.load_lection("lection1.json")
         page.views.append(
             ft.View(
                 route="/lectionviewer",
