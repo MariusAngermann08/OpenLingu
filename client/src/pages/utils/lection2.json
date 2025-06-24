@@ -1,0 +1,162 @@
+{
+  "id": "spanish_grammar_101",
+  "title": "Spanish Grammar Basics",
+  "description": "A beginner-friendly introduction to basic Spanish grammar",
+  "language": "es",
+  "difficulty": "beginner",
+  "created_at": "2025-06-24T14:00:00+02:00",
+  "updated_at": "2025-06-24T14:00:00+02:00",
+  "pages": [
+    {
+      "title": "Subject Pronouns in Spanish",
+      "description": "Learn the basic subject pronouns used in Spanish",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "Spanish subject pronouns are used to indicate who is performing an action:\n- Yo = I\n- Tú = You (informal)\n- Él/Ella/Usted = He/She/You (formal)\n- Nosotros/Nosotras = We\n- Vosotros/Vosotras = You all (informal, Spain)\n- Ellos/Ellas/Ustedes = They/You all (formal)",
+            "size": 16
+          }
+        },
+        {
+          "type": "matchable_pairs",
+          "data": {
+            "left_items": [
+              "Yo",
+              "Tú",
+              "Él",
+              "Ella",
+              "Nosotros",
+              "Ellos"
+            ],
+            "right_items": [
+              "I",
+              "You (informal)",
+              "He",
+              "She",
+              "We",
+              "They"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Present Tense of -AR Verbs",
+      "description": "Learn how to conjugate regular -AR verbs in present tense",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "To conjugate regular -AR verbs, remove -ar and add endings:\n- Yo: -o\n- Tú: -as\n- Él/Ella/Usted: -a\n- Nosotros: -amos\n- Vosotros: -áis\n- Ellos/Ellas/Ustedes: -an\n\nExample with *hablar* (to speak):\nYo hablo, Tú hablas, Él habla, Nosotros hablamos, Vosotros habláis, Ellos hablan",
+            "size": 16
+          }
+        },
+        {
+          "type": "draggable_text",
+          "data": {
+            "text": "Yo [0] (hablar) español. Tú [1] (trabajar) mucho. Nosotros [2] (estudiar) en casa.",
+            "gaps_idx": [0, 1, 2],
+            "options": {
+              "hablo": 0,
+              "hablas": 0,
+              "trabajas": 1,
+              "trabajo": 1,
+              "estudiamos": 2,
+              "estudian": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "Definite and Indefinite Articles",
+      "description": "Understand how to use 'el', 'la', 'un', and 'una'",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "In Spanish, articles match the gender and number of the noun:\n- Definite: el (masc. sing), la (fem. sing), los (masc. pl), las (fem. pl)\n- Indefinite: un (masc. sing), una (fem. sing), unos (masc. pl), unas (fem. pl)",
+            "size": 16
+          }
+        },
+        {
+          "type": "matchable_pairs",
+          "data": {
+            "left_items": [
+              "El libro",
+              "La casa",
+              "Un coche",
+              "Una manzana"
+            ],
+            "right_items": [
+              "The book",
+              "The house",
+              "A car",
+              "An apple"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Basic Sentence Structure",
+      "description": "Learn how to form basic affirmative sentences",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "In Spanish, the basic sentence structure is:\nSubject + Verb + Object\nExample: Yo como una manzana. (I eat an apple.)",
+            "size": 16,
+            "weight": "bold"
+          }
+        },
+        {
+          "type": "underlined_text",
+          "data": {
+            "text": "Tú lees un libro. Nosotros comemos arroz. Ellos viven en Madrid.",
+            "underlined": {
+              "0": "#4CAF50",
+              "2": "#2196F3",
+              "6": "#FF5722"
+            },
+            "font_size": 18,
+            "bgcolor": "#FFFDE7"
+          }
+        }
+      ]
+    },
+    {
+      "title": "Practice: Basic Spanish Grammar",
+      "description": "Review what you've learned with a mix of exercises",
+      "widgets": [
+        {
+          "type": "text",
+          "data": {
+            "text": "Complete the sentences with the correct word or form:",
+            "size": 16
+          }
+        },
+        {
+          "type": "draggable_text",
+          "data": {
+            "text": "Yo [0] (comer) pan. Ella [1] (hablar) francés. Nosotros [2] (leer) libros. Ellos [3] (ser) estudiantes. Tú [4] (vivir) en Barcelona.",
+            "gaps_idx": [0, 1, 2, 3, 4],
+            "options": {
+              "como": 0,
+              "come": 0,
+              "habla": 1,
+              "hablamos": 1,
+              "leemos": 2,
+              "leen": 2,
+              "son": 3,
+              "es": 3,
+              "vives": 4,
+              "vive": 4
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
