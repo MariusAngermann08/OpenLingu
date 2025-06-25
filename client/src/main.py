@@ -22,13 +22,13 @@ def route_change(e):
         #page.go("/main")
         #page.go("/setup")
         # Check if server url is saved
-        #server_url = page.client_storage.get("server_url")
-        #if server_url:
+        server_url = page.client_storage.get("server_url")
+        if server_url:
             #Go to connecting page to validate the server
-            #page.go(f"/connecting?url={server_url}")
-        #else:
-            #page.go("/server")
-        page.go("/lectionviewer")
+            page.go(f"/connecting?url={server_url}")
+        else:
+            page.go("/server")
+        #page.go("/lectionviewer")
 
     def create_server_appbar(page):
         server_url = page.client_storage.get("server_url") or "No server selected"
@@ -136,18 +136,40 @@ def route_change(e):
         )
     
     elif route == "/lectionviewer":
-        lectionviewer = LectionViewer(page)
-        lectionviewer.load_lection("lection1.json")
-        page.views.append(
-            ft.View(
-                route="/lectionviewer",
-                controls=[
-                    ft.AppBar(title=ft.Text("Lection Viewer"), bgcolor="#1a73e8"),
-                    lectionviewer
-                ],
-                padding=20
-            )
+        print("\n=== Setting up lection viewer ===")
+        view = ft.View(
+            route=route,
+            controls=[
+                ft.AppBar(title=ft.Text("Lection Viewer"), bgcolor="#1a73e8"),
+            ],
+            padding=20
         )
+        
+        print("1. Creating LectionViewer instance...")
+        lectionviewer = LectionViewer()
+        view.controls.append(lectionviewer)
+        
+        print("2. Setting page reference...")
+        lectionviewer.page = page
+        
+        print("3. Adding view to page...")
+        page.views.append(view)
+        
+        # Force update to ensure view is properly initialized
+        print("4. Forcing page update...")
+        page.update()
+        
+        # Load the lection data directly
+        print("5. Loading lection data...")
+        lectionviewer.load_lection()
+        
+        # Also set up the resize handler for future resizes
+        def load_lection_later(e):
+            print("Resize event detected, reloading lection...")
+            lectionviewer.load_lection()
+        
+        page.on_resize = load_lection_later
+        print("6. Lection viewer setup complete\n")
 
     page.update()
 

@@ -1,4 +1,6 @@
-from fastapi import FastAPI, status, Depends, HTTPException, Request
+from fastapi import FastAPI, status, Depends, HTTPException, Request, Path, Body
+from pydantic import BaseModel
+from typing import Optional
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
@@ -11,7 +13,7 @@ import time
 try:
     # When running from project root via run.py
     from server.database import users_engine, get_users_db, get_languages_db
-    from server.models import DBUser, Token, Language
+    from server.models import DBUser, Token, Language, Lection
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from server.services.user_service import get_user_profile, delete_user
@@ -20,7 +22,7 @@ try:
 except ImportError:
     # When running directly from server directory
     from database import users_engine, get_users_db, get_languages_db
-    from models import DBUser, Token, Language
+    from models import DBUser, Token, Language, Lection
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
     from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
     from services.user_service import get_user_profile, delete_user
@@ -334,41 +336,210 @@ async def get_languages_list(db: languages_db_dependency):
     """
     return await get_languages_list_impl(db)
 
+class LectionCreate(BaseModel):
+    lection_name: str
+    username: str
+    token: str
+    content: dict
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "lection_name": "Lektion 1",
+                "username": "user123",
+                "token": "your_jwt_token_here",
+                "content": {"id": "spanish_grammar_101", "title": "Spanish Grammar Basics", "pages": []}  # Your JSON content here
+            }
+        }
+
+
 @app.post("/languages/{language_name}/lections/add", tags=["lections"])
-async def add_lection_to_db(language_name: str, lection_name: str, username: str, token: str, content: str, db: languages_db_dependency):
+async def add_lection_to_db(
+    language_name: str,
+    lection_data: LectionCreate,
+    db: languages_db_dependency
+):
     """
     Add a new lection
     
     Args:
         language_name: The name of the language to add the lection to
-        lection_name: The name of the lection to add
-        username: The username of the user making the request
-        token: Authentication token
-        content: The content of the lection
+        lection_data: Lection data including name, username, token, and content
         db: Database session dependency
         
     Returns:
         dict: Success message and lection details
     """
-    return await add_lection(language_name, lection_name, username, token, content, db)
+    return await add_lection(
+        language_name,
+        lection_data.lection_name,
+        lection_data.username,
+        lection_data.token,
+        lection_data.content,
+        db
+    )
 
-@app.post("/languages/{language_name}/lections/{lection_name}/edit", tags=["lections"])
-async def edit_lection_to_db(language_name: str, lection_name: str, username: str, token: str, content: str, db: languages_db_dependency):
+@app.get("/languages/{language_name}/lections", tags=["lections"])
+def get_lection_list(language_name: str, db: Session = Depends(get_languages_db)):
+    """
+    Get a list of all lections for a language
+    
+    Args:
+        language_name: Name of the language to get the lections from
+        db: Database session dependency
+        
+    Returns:
+        list: List of lection dictionaries with id and title
+        
+    Raises:
+        HTTPException: If there's an error accessing the database
+    """
+    try:
+        # Query the database for lections matching the language and return just the titles
+        lections = db.query(Lection).filter(Lection.language == language_name).all()
+        
+        # Return a list of lection dictionaries with only id and title
+        return [{"id": lection.id, "title": lection.title} for lection in lections]
+        
+    except Exception as e:
+        # Log the error and return a 500 error
+        print(f"Error getting lection list: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving the lection list"
+        )
+
+@app.get("/languages/{language_name}/lections/by_title/{title}", tags=["lections"])
+async def get_lection_by_title(
+    language_name: str = Path(..., description="Name of the language"),
+    title: str = Path(..., description="Title of the lection"),
+    db: Session = Depends(get_languages_db)
+):
+    """
+    Get the content of a specific lection by its title
+    
+    Args:
+        language_name: Name of the language
+        title: Title of the lection to retrieve
+        db: Database session dependency
+        
+    Returns:
+        dict: Lection details including content
+        
+    Raises:
+        HTTPException: If the lection is not found or there's an error
+    """
+    try:
+        # Query the database for the specific lection by title
+        lection = db.query(Lection).filter(
+            Lection.title == title,
+            Lection.language == language_name
+        ).first()
+        
+        if not lection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lection with title '{title}' not found in language '{language_name}'"
+            )
+            
+        return {
+            "id": lection.id,
+            "title": lection.title,
+            "description": lection.description,
+            "language": lection.language,
+            "difficulty": lection.difficulty,
+            "created_at": lection.created_at,
+            "created_by": lection.created_by,
+            "content": lection.content
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting lection content: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving the lection content"
+        )
+
+@app.get("/languages/{language_name}/lections/{lection_id}", tags=["lections"])
+async def get_lection_by_id(
+    language_name: str = Path(..., description="Name of the language"),
+    lection_id: str = Path(..., description="ID of the lection"),
+    db: Session = Depends(get_languages_db)
+):
+    """
+    Get the content of a specific lection by its ID
+    
+    Args:
+        language_name: Name of the language
+        lection_id: ID of the lection to retrieve
+        db: Database session dependency
+        
+    Returns:
+        dict: Lection details including content
+        
+    Raises:
+        HTTPException: If the lection is not found or there's an error
+    """
+    try:
+        # Query the database for the specific lection by ID
+        lection = db.query(Lection).filter(
+            Lection.id == lection_id,
+            Lection.language == language_name
+        ).first()
+        
+        if not lection:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lection with ID {lection_id} not found in language '{language_name}'"
+            )
+            
+        return {
+            "id": lection.id,
+            "title": lection.title,
+            "description": lection.description,
+            "language": lection.language,
+            "difficulty": lection.difficulty,
+            "created_at": lection.created_at,
+            "created_by": lection.created_by,
+            "content": lection.content
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error getting lection content: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while retrieving the lection content"
+        )
+
+@app.put("/languages/{language_name}/lections/edit", tags=["lections"])
+async def edit_lection_to_db(
+    language_name: str,
+    lection_data: LectionCreate,
+    db: languages_db_dependency
+):
     """
     Edit a lection
     
     Args:
-        language_name: The name of the language to add the lection to
-        lection_name: The name of the lection to add
-        username: The username of the user making the request
-        token: Authentication token
-        content: The content of the lection
+        language_name: The name of the language the lection belongs to
+        lection_data: Updated lection data including name, username, token, and content
         db: Database session dependency
         
     Returns:
         dict: Success message and lection details
     """
-    return await edit_lection(language_name, lection_name, username, token, content, db)
+    return await edit_lection(
+        language_name,
+        lection_data.lection_name,
+        lection_data.username,
+        lection_data.token,
+        lection_data.content,
+        db
+    )
 
 @app.post("/languages/{language_name}/lections/{lection_name}/delete", tags=["lections"])
 async def delete_lection_from_db(language_name: str, lection_name: str, username: str, token: str, db: languages_db_dependency):

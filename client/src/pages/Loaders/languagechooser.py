@@ -1,4 +1,5 @@
 import flet as ft
+import requests
 
 class LanguageChooser(ft.Container):
     def __init__(self, page, mainpage):
@@ -7,12 +8,36 @@ class LanguageChooser(ft.Container):
         self.mainpage = mainpage
         self.selected_language = None
         
-        # Language options
-        self.languages = [
-            {"code": "en", "name": "English"},
-            {"code": "de", "name": "Deutsch"},
-            {"code": "es", "name": "Español"}
-        ]
+        #Setup empty language list
+        self.languages = []
+
+        #Get server url from client storage
+        self.server_url = self.page.client_storage.get("server_url")
+        if not self.server_url:
+            # Language options
+            self.languages = [
+                {"code": "default", "name": "Default"},
+            ]
+        else:
+            #Use server url to get languages from server
+            #Returns an array of languages
+            response = requests.get(f"{self.server_url}/languages", timeout=5)
+            if not response.status_code == 200:
+                self.languages = [
+                    {"code": "default", "name": "Default"},
+                ]
+            else:
+                # Get languages list from JSON response
+                languages_list = response.json()
+                self.languages.clear()
+                # Use language name as both code and name
+                for lang in languages_list:
+                    self.languages.append({"code": lang, "name": lang})
+
+            
+
+
+        
         
         # Create dropdown options
         self.dropdown_options = [
@@ -112,6 +137,7 @@ class LanguageChooser(ft.Container):
             return
             
         try:
+            
             # Save the selected language to client storage
             await self.page.client_storage.set_async("selected_language", self.selected_language)
             print(f"[DEBUG] Saved language to storage: {self.selected_language}")

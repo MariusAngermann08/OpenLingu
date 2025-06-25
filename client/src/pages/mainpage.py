@@ -1,3 +1,4 @@
+import asyncio
 import flet as ft
 import requests
 
@@ -438,44 +439,66 @@ class MainPage(ft.Container):
             self.appbar_title = "OpenLingu"
             self.not_on_home = False
             
-    async def update_language(self, language_code: str):
+    async def _safe_save_language(self, language_name: str):
+        """Safely save language to storage with proper error handling"""
+        try:
+            await self.page.client_storage.set_async("selected_language", language_name)
+            print("[DEBUG] Language saved to client storage")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Error saving language: {e}")
+            return False
+
+    def _run_async_save(self, language_name: str):
+        """Run save operation in a new event loop if needed"""
+        async def save():
+            return await self._safe_save_language(language_name)
+            
+        try:
+            # Try to run in the current event loop
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If loop is running, create a task
+                return asyncio.create_task(save())
+            else:
+                # If no loop is running, run it directly
+                return loop.run_until_complete(save())
+        except Exception as e:
+            print(f"[WARNING] Couldn't save language: {e}")
+            return None
+
+    async def update_language(self, language_name: str):
         """
-        Update the language button text.
+        Update the language button text with the provided language name.
         
         Args:
-            language_code (str): The language code (e.g., 'en', 'de', 'es')
+            language_name (str): The display name of the language (e.g., 'English', 'Deutsch')
         """
-        print(f"[DEBUG] update_language called with: {language_code}")
-        language_map = {
-            'en': 'English',
-            'de': 'Deutsch',
-            'es': 'Español'
-        }
-        
-        # Update the current language and button text
-        new_language = language_map.get(language_code, 'English')
-        print(f"[DEBUG] Updating language to: {new_language}")
-        
-        # Update the button text directly
-        self.current_language = new_language
-        self.language_btn.text = new_language
-        
-        # Update the button immediately
-        if hasattr(self, 'language_btn') and self.language_btn is not None:
-            self.language_btn.update()
-            print("[DEBUG] Language button updated")
+        if not language_name or not isinstance(language_name, str):
+            print("[WARNING] Invalid language name provided")
+            return
             
-        # Save to client storage in the background
-        async def save_language():
-            try:
-                await self.page.client_storage.set_async("selected_language", language_code)
-                print("[DEBUG] Language saved to client storage")
-            except Exception as e:
-                print(f"[ERROR] Error saving language: {e}")
+        print(f"[DEBUG] update_language called with: {language_name}")
         
-        # Don't await the storage operation to keep UI responsive
-        if hasattr(self.page, 'run_task'):
-            self.page.run_task(save_language())
-        else:
-            import asyncio
-            asyncio.create_task(save_language())
+        try:
+            # Update the current language
+            self.current_language = language_name
+            
+            # Update the UI
+            if hasattr(self, 'language_btn') and self.language_btn is not None and self.page is not None:
+                try:
+                    self.language_btn.text = language_name
+                    self.page.update()
+                    print("[DEBUG] Language button updated")
+                except Exception as e:
+                    print(f"[ERROR] Failed to update language button: {e}")
+            
+            # Save to storage in the background
+            if self.page is not None:
+                # Run the save operation without awaiting it
+                self._run_async_save(language_name)
+                        
+        except Exception as e:
+            print(f"[ERROR] Error in update_language: {e}")
+            import traceback
+            traceback.print_exc()

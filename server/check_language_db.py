@@ -28,7 +28,20 @@ with engine.connect() as connection:
     print("\nContents of 'lections' table:")
     try:
         result = connection.execute(text("SELECT * FROM lections;"))
+        columns = result.keys()
         for row in result:
-            print(row)
+            row_dict = dict(zip(columns, row))
+            print("- Lection:")
+            for key, value in row_dict.items():
+                if key == "content":
+                    try:
+                        # If value is a string, try to parse as JSON
+                        if isinstance(value, str):
+                            value = json.loads(value)
+                        print(f"    {key}:\n" + json.dumps(value, indent=2, ensure_ascii=False))
+                    except Exception as e:
+                        print(f"    {key}: (Could not parse as JSON) {value}")
+                else:
+                    print(f"    {key}: {value}")
     except Exception as e:
         print(f"Error reading lections table: {e}")

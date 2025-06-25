@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, DateTime, Table, MetaData
+from sqlalchemy import Boolean, Column, String, DateTime, Table, MetaData, Text, JSON
 from datetime import datetime, timedelta
 
 try:
@@ -70,4 +70,4 @@ class Lection(LanguagesBase):
     difficulty = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
     created_by = Column(String, index=True)
-    content = Column(String) #Just raw JSON String
+    content = Column(JSON)  # Store lection content as JSON

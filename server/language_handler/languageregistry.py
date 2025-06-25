@@ -133,7 +133,7 @@ async def get_languages_list(db: Session):
             detail=f"An error occurred while getting the languages list: {str(e)}"
         )
 
-async def add_lection(language_name: str, lection_name: str, username: str, token: str, content: str, db: Session):
+async def add_lection(language_name: str, lection_name: str, username: str, token: str, content: dict, db: Session):
     """
     Add a new lection to the database
     
@@ -151,22 +151,8 @@ async def add_lection(language_name: str, lection_name: str, username: str, toke
     Raises:
         HTTPException: If user is not authorized, lection already exists, or content is invalid JSON
     """
-    # First validate that the content is valid JSON
-    import json
     from datetime import datetime
-    
-    try:
-        # Parse and re-serialize to ensure valid JSON
-        json_content = json.loads(content)
-        # Convert back to string with proper escaping
-        escaped_content = json.dumps(json_content, ensure_ascii=False)
-    except json.JSONDecodeError as e:
-        print(f"Invalid JSON content: {str(e)}")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid JSON content: {str(e)}"
-        )
-
+    # content is now a dict; no need to parse or serialize
     # Check if language exists
     try:
         language = db.query(Language).filter(Language.name == language_name).first()
@@ -200,13 +186,15 @@ async def add_lection(language_name: str, lection_name: str, username: str, toke
 
     # Add lection
     try:
-        lection_count = db.query(Lection).filter(Lection.language == language_name).count()
+        import uuid
+        # Generate a unique ID for the lection
+        lection_id = str(uuid.uuid4())
         new_lection = Lection(
-            id=str(lection_count + 1), 
+            id=lection_id,
             title=lection_name, 
             language=language_name, 
             created_by=username, 
-            content=escaped_content,
+            content=content,
             created_at=datetime.utcnow()
         )
         
@@ -227,7 +215,7 @@ async def add_lection(language_name: str, lection_name: str, username: str, toke
             detail=f"Error adding lection: {str(e)}"
         )
 
-async def edit_lection(language_name: str, lection_name: str, username: str, token: str, content: str, db: Session):
+async def edit_lection(language_name: str, lection_name: str, username: str, token: str, content: dict, db: Session):
     """
     Edit a lection in the database
     

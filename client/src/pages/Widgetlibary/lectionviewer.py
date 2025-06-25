@@ -29,12 +29,20 @@ except ImportError as e:
 
 
 class LectionViewer(ft.Container):
-    def __init__(self, page: ft.Page, **kwargs):
-        # Store page reference first
+    def __init__(self, page: ft.Page = None, **kwargs):
+        # Initialize container first to ensure it exists
+        super().__init__(**kwargs)
+        
+        # Store page reference if provided
         self.page = page
         self.pages = []
         self.current_page = 0
         
+        # Initialize UI components
+        self._init_ui()
+        
+    def _init_ui(self):
+        """Initialize the UI components"""
         # Create a simple container for content
         self.content_area = ft.Container(expand=True)
         
@@ -67,10 +75,8 @@ class LectionViewer(ft.Container):
             expand=True
         )
         
-        # Initialize the container
-        super().__init__(content=layout, **kwargs)
-        
-        # Ensure the container is properly sized
+        # Set the layout as the container's content
+        self.content = layout
         self.expand = True
     
     def prev_page(self, e):
@@ -99,32 +105,115 @@ class LectionViewer(ft.Container):
         if self.page:
             self.page.update()
     
-    def load_lection(self, lection_json: str):
+    def _get_page(self):
+        """Helper method to safely get the page reference"""
+        # Try to get page from self first
+        page = getattr(self, 'page', None)
+        # If not found, try to get it from the content
+        if page is None and hasattr(self, 'content') and hasattr(self.content, 'page'):
+            page = self.content.page
+        return page
+
+    def load_lection(self):
+        print("\n=== Starting load_lection ===")
         try:
-            lection = LectionParser(lection_json)
-            # Pass the page reference to the parser
-            lection.page = self.page
-            lection.parse_lection()
-            self.pages = lection.get_pages()
-            self.current_page = 0
-            
-            if self.pages:
-                self.content_area.content = self.pages[0]
-                self.page_number.value = f"Page: 1/{len(self.pages)}"
-                self.prev_btn.disabled = True
-                self.next_btn.disabled = len(self.pages) <= 1
+            page = self._get_page()
+            if page is None:
+                error_msg = "Error: Page reference is None in load_lection"
+                print(error_msg)
+                return
                 
-                # Update the page
-                if self.page:
-                    self.page.update()
+            print("1. Page reference obtained successfully")
+            
+            # Load lection from client storage
+            print("2. Attempting to get lection from client storage...")
+            lection = page.client_storage.get("lection")
+            
+            if not lection:
+                error_msg = "No lection data found in client storage"
+                print(error_msg)
+                if page:
+                    page.snack_bar = ft.SnackBar(
+                        content=ft.Text(error_msg),
+                        bgcolor="#FF5252"
+                    )
+                    page.snack_bar.open = True
+                    page.update()
+                return
+                
+            print("3. Lection data retrieved from storage")
+            print(f"   Lection type: {type(lection)}")
+            
+            # Debug: Print the type and keys of the lection data
+            if hasattr(lection, 'keys'):
+                print(f"   Lection keys: {list(lection.keys())}")
+                if 'content' in lection and isinstance(lection['content'], str):
+                    print(f"   Content type: {type(lection['content'])}")
+                    print(f"   Content length: {len(lection['content'])}")
+            
+            # Check if we need to parse the content field
+            if isinstance(lection, dict) and 'content' in lection and isinstance(lection['content'], str):
+                print("4. Found string content, attempting to parse as JSON...")
+                try:
+                    import json
+                    content_json = json.loads(lection['content'])
+                    lection['content'] = content_json
+                    print("   Successfully parsed content JSON")
+                    if hasattr(content_json, 'keys'):
+                        print(f"   Parsed content keys: {list(content_json.keys())}")
+                except Exception as e:
+                    print(f"   Error parsing content JSON: {e}")
+                    import traceback
+                    traceback.print_exc()
+            
+            print("5. Creating LectionParser instance...")
+            try:
+                lection_parser = LectionParser(lection)
+                print("6. LectionParser created successfully")
+                
+                # Pass the page reference to the parser
+                lection_parser.page = page
+                print("7. Calling parse_lection...")
+                lection_parser.parse_lection()
+                
+                print("8. Getting pages from parser...")
+                self.pages = lection_parser.get_pages()
+                print(f"9. Got {len(self.pages)} pages from parser")
+                
+                self.current_page = 0
+                
+                if self.pages:
+                    print(f"10. First page type: {type(self.pages[0])}")
+                    self.content_area.content = self.pages[0]
+                    self.page_number.value = f"Page: 1/{len(self.pages)}"
+                    self.prev_btn.disabled = True
+                    self.next_btn.disabled = len(self.pages) <= 1
+                    
+                    print("11. Updating page content...")
+                    page.update()
+                    print("12. Page update complete")
+                else:
+                    print("10. No pages were generated by the parser")
+                    
+            except Exception as e:
+                print(f"Error in LectionParser: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                raise
                     
         except Exception as e:
-            error_msg = f"Error loading lection: {str(e)}"
+            error_msg = f"Error in load_lection: {str(e)}"
             print(error_msg)
-            if self.page:
-                self.page.snack_bar = ft.SnackBar(
-                    content=ft.Text(error_msg),
+            import traceback
+            traceback.print_exc()
+            
+            page = self._get_page()
+            if page:
+                page.snack_bar = ft.SnackBar(
+                    content=ft.Text(f"Error loading lection: {str(e)}"),
                     bgcolor="#FF5252"
                 )
-                self.page.snack_bar.open = True
-                self.page.update()
+                page.snack_bar.open = True
+                page.update()
+        
+        print("=== End of load_lection ===\n")
