@@ -157,17 +157,31 @@ class LectionParser:
             print(f"Parsing lection: {self.title} (ID: {self.id})")
             print(f"Language: {self.language}, Difficulty: {self.difficulty}")
             
-            # Check if pages exist
-            if "pages" not in self.lection or not self.lection["pages"]:
-                print("Warning: No pages found in lection data")
+            # Get the content which contains the pages
+            content = self.lection.get("content", {})
+            if not content:
+                print("Warning: No content found in lection data")
                 self.pages = []
                 return
                 
-            print(f"Found {len(self.lection['pages'])} pages in lection")
+            # Update metadata from content if not already set
+            self.title = content.get("title", self.title)
+            self.description = content.get("description", self.description)
+            self.language = content.get("language", self.language)
+            self.difficulty = content.get("difficulty", self.difficulty)
+            
+            # Check if pages exist in content
+            if "pages" not in content or not content["pages"]:
+                print("Warning: No pages found in lection content")
+                self.pages = []
+                return
+                
+            print(f"Found {len(content['pages'])} pages in lection")
             
             self.pages = []
-            for i, page_data in enumerate(self.lection["pages"], 1):
-                print(f"\nProcessing page {i}/{len(self.lection['pages'])}")
+            total_pages = len(content["pages"])
+            for i, page_data in enumerate(content["pages"], 1):
+                print(f"\nProcessing page {i}/{total_pages}")
                 current_page = Page()
                 widgets = []
                 

@@ -140,6 +140,9 @@ class LectionViewer(ft.Container):
                     page.snack_bar.open = True
                     page.update()
                 return
+            
+            #Print out the raw json content
+            print("Raw lection content:", lection)
                 
             print("3. Lection data retrieved from storage")
             print(f"   Lection type: {type(lection)}")

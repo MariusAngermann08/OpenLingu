@@ -1,0 +1,87 @@
+{
+    "id": "english_simple_present_101",
+    "title": "Simple Present Tense",
+    "description": "Learn how to use the simple present tense in English.",
+    "language": "en",
+    "difficulty": "beginner",
+    "created_at": "2025-06-25T14:00:00+02:00",
+    "updated_at": "2025-06-25T14:00:00+02:00",
+    "pages": [
+      {
+        "title": "Introduction to Simple Present",
+        "description": "Understand how and when to use the simple present tense.",
+        "widgets": [
+          {
+            "type": "text",
+            "data": {
+              "text": "The simple present tense is used to describe actions that happen regularly or facts.",
+              "size": 16,
+              "weight": "normal"
+            }
+          },
+          {
+            "type": "underlined_text",
+            "data": {
+              "text": "I eat breakfast every day. She works at a bank. They play soccer on weekends.",
+              "underlined": {
+                "1": "#FF0000",
+                "4": "#0000FF",
+                "8": "#00AA00"
+              },
+              "font_size": 16,
+              "bgcolor": "#F0F8FF"
+            }
+          }
+        ]
+      },
+      {
+        "title": "Match Subjects and Verbs",
+        "description": "Match the correct subject with the verb in simple present.",
+        "widgets": [
+          {
+            "type": "text",
+            "data": {
+              "text": "Match the subject with the correct verb form:",
+              "size": 16,
+              "weight": "bold"
+            }
+          },
+          {
+            "type": "matchable_pairs",
+            "data": {
+              "left_items": ["He", "We", "It", "I"],
+              "right_items": ["plays", "eat", "sleeps", "work"]
+            }
+          }
+        ]
+      },
+      {
+        "title": "Complete the Sentences",
+        "description": "Fill in the blanks with the correct words.",
+        "widgets": [
+          {
+            "type": "text",
+            "data": {
+              "text": "Drag the correct word to complete the sentences:",
+              "size": 16,
+              "weight": "bold"
+            }
+          },
+          {
+            "type": "draggable_text",
+            "data": {
+              "text": "She usually dinner at 7. They to music every evening.",
+              "gaps_idx": [2, 6],
+              "options": {
+                "cooks": 0,
+                "makes": 4,
+                "listen": 1,
+                "dance": 4
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+  

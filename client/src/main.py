@@ -140,7 +140,7 @@ def route_change(e):
         view = ft.View(
             route=route,
             controls=[
-                ft.AppBar(title=ft.Text("Lection Viewer"), bgcolor="#1a73e8"),
+                ft.AppBar(title=ft.Text("Lection Viewer"), bgcolor="#1a73e8", leading=ft.IconButton("arrow_back" , on_click=lambda _: page.go("/main"))),
             ],
             padding=20
         )
