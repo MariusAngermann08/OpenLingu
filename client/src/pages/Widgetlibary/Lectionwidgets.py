@@ -489,9 +489,8 @@ class DraggableText:
 
             drop_idx = int(e.control.data)
 
-            is_correct = dragged_idx == drop_idx
 
-            color = "#00C853" if is_correct else "#FF5252"
+            color = "#000000"
             e.control.content.border = ft.border.all(2, color)
         except Exception as ex:
             print("drag_will_accept Fehler:", ex)
