@@ -1,4 +1,5 @@
 import flet as ft
+from math import pi
 
 class LectionButton(ft.ElevatedButton):
     def __init__(self, page, language: str, lection: str, index: int, on_select):
@@ -9,92 +10,99 @@ class LectionButton(ft.ElevatedButton):
         self.index = index
         self.on_select_callback = on_select
         self.selected = False
-        
+
         self.text = f"Lektion {index + 1}: {lection}"
         self.width = 300
         self.height = 50
         self.style = ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=8),
-            padding=ft.padding.symmetric(horizontal=16, vertical=12),
-            bgcolor="#f8f9fa",
-            color="#202124",
-            overlay_color="#e8f0fe",
+            shape=ft.RoundedRectangleBorder(radius=12),
+            padding=ft.padding.symmetric(horizontal=20, vertical=14),
+            bgcolor="#ffffff",
+            color="#1a1a1a",
+            overlay_color="#e3f2fd",
+            shadow_color="#dadce0",
+            elevation=1,
+            animation_duration=200,
         )
         self.on_click = self.handle_click
-    
+
     def handle_click(self, e):
         self.selected = not self.selected
         self.update_style()
         self.on_select_callback(self, self.language, self.lection, self.selected)
-    
+
     def update_style(self):
         if self.selected:
-            self.bgcolor = "#e8f0fe"
             self.style = ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=8),
-                padding=ft.padding.symmetric(horizontal=16, vertical=12),
+                shape=ft.RoundedRectangleBorder(radius=12),
+                padding=ft.padding.symmetric(horizontal=20, vertical=14),
                 bgcolor="#e8f0fe",
                 color="#1a73e8",
                 overlay_color="#d2e3fc",
-                side=ft.border.BorderSide(2, "#1a73e8")
+                side=ft.border.BorderSide(2, "#1a73e8"),
+                shadow_color="#c6dafc",
+                elevation=2,
+                animation_duration=200,
             )
         else:
-            self.bgcolor = "#f8f9fa"
             self.style = ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=8),
-                padding=ft.padding.symmetric(horizontal=16, vertical=12),
-                bgcolor="#f8f9fa",
-                color="#202124",
-                overlay_color="#e8f0fe",
+                shape=ft.RoundedRectangleBorder(radius=12),
+                padding=ft.padding.symmetric(horizontal=20, vertical=14),
+                bgcolor="#ffffff",
+                color="#1a1a1a",
+                overlay_color="#e3f2fd",
+                shadow_color="#dadce0",
+                elevation=1,
+                animation_duration=200,
             )
         self.update()
 
 class ExpandableLanguage(ft.Container):
     def __init__(self, page: ft.Page, language: str, lections: list, on_lection_select):
-        super().__init__()
+        super().__init__(animate_rotation=True)
         self.page = page
         self.expanded = False
         self.language = language
         self.lections = lections
         self.on_lection_select = on_lection_select
         self.lection_buttons = {}
-        
-        # Create expansion arrow
+
         self.expand_icon = ft.Icon(
             "chevron_right",
-            animate_rotation=ft.Animation(300, "easeInOut"),
+            animate_rotation=ft.Animation(300, curve="ease"),
             color="#5f6368"
         )
-        
-        # Create header row
+
+
         self.header = ft.Container(
             content=ft.Row(
                 [
-                    ft.Text(language, size=20, weight=ft.FontWeight.W_500),
-                    ft.Container(expand=True),  # Spacer
+                    ft.Text(language, size=20, weight=ft.FontWeight.BOLD, color="#202124"),
+                    ft.Container(expand=True),
                     self.expand_icon
                 ],
                 alignment=ft.MainAxisAlignment.START,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
             ),
-            padding=ft.padding.symmetric(vertical=12, horizontal=16),
-            border_radius=8,
+            padding=ft.padding.symmetric(vertical=14, horizontal=20),
+            border_radius=12,
             bgcolor="#ffffff",
             on_click=self.toggle_expand,
-            border=ft.border.all(1, "#dadce0"),
+            border=ft.border.all(1, "#e0e0e0"),
+            shadow=ft.BoxShadow(
+                blur_radius=4,
+                spread_radius=1,
+                color="#00000012",
+                offset=ft.Offset(0, 1),
+            )
         )
-        
-        # Create storage for lection buttons
-        self.lection_buttons = {}
-        
-        # Create lection buttons container (initially hidden)
+
         self.lection_buttons_container = ft.Column(
             spacing=8,
             visible=False,
             animate_opacity=ft.Animation(200, "easeInOut"),
         )
-        
-        # Add lection buttons
+
         for i, lection in enumerate(lections):
             btn = LectionButton(
                 page=page,
@@ -105,31 +113,27 @@ class ExpandableLanguage(ft.Container):
             )
             self.lection_buttons[lection] = btn
             self.lection_buttons_container.controls.append(btn)
-        
-        # Main container
+
         self.content = ft.Column(
             [
                 self.header,
                 ft.Container(
                     content=self.lection_buttons_container,
-                    padding=ft.padding.only(left=16, top=8, bottom=8, right=0),
+                    padding=ft.padding.only(left=20, top=8, bottom=8, right=0),
                 )
             ],
             spacing=0,
         )
-    
     def toggle_expand(self, e):
         self.expanded = not self.expanded
         self.lection_buttons_container.visible = self.expanded
-        self.expand_icon.rotate = ft.Rotate(0.25 if self.expanded else 0, ft.alignment.center)
-        self.expand_icon.update()
-        self.lection_buttons_container.update()
+        self.expand_icon.rotate = pi / 2 if self.expanded else 0
+        self.update()
     
     def select_lection(self, lection_name, selected):
         if lection_name in self.lection_buttons:
             self.lection_buttons[lection_name].selected = selected
             self.lection_buttons[lection_name].update_style()
-
 class MainMenu(ft.Container):
     def __init__(self, page: ft.Page):
         super().__init__(

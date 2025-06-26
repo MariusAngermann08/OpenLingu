@@ -3,10 +3,10 @@ import flet as ft
 # Handle import as module or directly
 try:
     from Pages.authpage import LoginPage
-    from Pages.main_menu import MainMenu
+    from Pages.Main_menu import MainMenu
 except ImportError:
-    from .Pages.authpage import LoginPage
-    from .Pages.main_menu import MainMenu
+    from Pages.authpage import LoginPage
+    from Pages.Main_menu import MainMenu
 
 def route_change(e):
     page = e.page
