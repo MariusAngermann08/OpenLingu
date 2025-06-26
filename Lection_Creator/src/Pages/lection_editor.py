@@ -12,7 +12,7 @@ class EditorField(ft.Container):
         )
 
         self.field = ft.Container(
-            content=[],
+            content=None,
             expand=True,
             bgcolor="#d86e6e",
         )
@@ -20,7 +20,7 @@ class EditorField(ft.Container):
         self.content = ft.Container(
             content=ft.Column(
                 [
-                    self.field,
+                    self.field
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -104,7 +104,7 @@ class EditorSelection(ft.Container):
         self.content = ft.Container(
             content=ft.Column(
                 [
-                    self.selection_options,
+                    self.selection_options
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -114,4 +114,29 @@ class EditorSelection(ft.Container):
         )
 
 
+class MainEditor(ft.Container):
+    def __init__(self, page: ft.Page):
+        self.page = page
+
+        super().__init__(
+            expand=True,
+            padding=10,
+            alignment=ft.alignment.center,
+        )
+
+        self.editor_field = EditorField(page)
+        self.editor_selection = EditorSelection(page)
+
+        self.content = ft.Container(
+            content=ft.Column(
+                [
+                    self.editor_selection,
+                    self.editor_field
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=10,
+                expand=True,
+            ),
+        )
     
