@@ -11,13 +11,16 @@ class UnderlinedText(ft.Container):
     def __init__(
         self,
         text: str,
-        underlined: dict[int, str],
+        underlined: dict,
         font_size: float = 14,
         bgcolor: str = None,
         **kwargs
     ):
         words = text.split(" ")
         spans = []
+        # Convert string keys to integers and adjust from 1-based to 0-based indexing
+        underlined = {int(k)-1: v for k, v in underlined.items()}
+        
         for i, word in enumerate(words):
             if i in underlined:
                 spans.append(
