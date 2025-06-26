@@ -156,6 +156,8 @@ class MatchablePairs:
                 btn.update()
                 self.page.run_task(self.set_random_color_after_delay, left_btn, right_btn)
                 self.reset_selection()
+            if hasattr(self.page, "notify_task_update"):
+                self.page.notify_task_update()
         else:
             for btn in [left_btn, right_btn]:
                 btn.style = ft.ButtonStyle(bgcolor=ft.Colors.RED)
@@ -164,7 +166,7 @@ class MatchablePairs:
 
     async def set_random_color_after_delay(self, left_btn, right_btn):
         await asyncio.sleep(0.6)
-        color = self.get_random_color()
+        color = self.get_distinct_color()
         for btn in [left_btn, right_btn]:
             btn.style = ft.ButtonStyle(bgcolor=color)
             btn.update()
@@ -248,6 +250,87 @@ class MatchablePairs:
 
 # Picture Drag and Drop Widget
 # muss mit .build() innitiert werden
+
+# --- Lection End Page ---
+import flet as ft
+
+class LectionEndPage(ft.Container):
+    def __init__(self, page=None):
+        super().__init__()
+        self.page = page
+        self.expand = True
+        self.bgcolor = "#F5F5F5"  # Light grey background for the page
+        self.padding = 20
+        self.alignment = ft.alignment.center
+        
+        # Create the button with proper ButtonStyle
+        finish_button = ft.ElevatedButton(
+            text="Finish",
+            icon="done",
+            style=ft.ButtonStyle(
+                bgcolor="#1976D2",  # Blue 700
+                color="#FFFFFF",     # White
+                padding=20,
+                shape=ft.RoundedRectangleBorder(radius=10),
+                elevation=2,
+            ),
+            on_click=self.on_finish
+        )
+        
+        # Create the column content
+        column_content = ft.Column(
+            [
+                ft.Icon("check_circle", size=80, color="#00C853"),
+                ft.Text(
+                    "Congratulations!", 
+                    size=32, 
+                    weight="bold",
+                    color="#222222",
+                    text_align="center"
+                ),
+                ft.Text(
+                    "Lection completed successfully!",
+                    size=20,
+                    color="#555555",
+                    text_align="center"
+                ),
+                ft.Container(
+                    content=finish_button,
+                    padding=ft.padding.only(top=20)
+                )
+            ],
+            horizontal_alignment="center",
+            alignment="center",
+            spacing=20,
+            width=450,
+            expand=True
+        )
+        
+        # Create the card
+        card = ft.Card(
+            elevation=4,
+            content=ft.Container(
+                content=column_content,
+                padding=40,
+                bgcolor="#FFFFFF",
+                border_radius=10,
+                width=500,
+                height=400,
+            ),
+            color="#00000000",  # Transparent
+        )
+        
+        # Set the main container content
+        self.content = ft.Container(
+            content=card,
+            alignment=ft.alignment.center,
+            expand=True
+        )
+
+    def on_finish(self, e):
+        if hasattr(self.page, "go"):
+            self.page.go("/main")
+
 class PictureDrag:
     def __init__(self, page: ft.Page, image_path: str, options: list[str], correct_option_index: int):
         self.page = page
@@ -408,9 +491,8 @@ class DraggableText:
 
             is_correct = dragged_idx == drop_idx
 
-            e.control.content.border = ft.border.all(
-                2, ft.Colors.BLACK
-            )
+            color = "#00C853" if is_correct else "#FF5252"
+            e.control.content.border = ft.border.all(2, color)
         except Exception as ex:
             print("drag_will_accept Fehler:", ex)
         e.control.update()
@@ -464,6 +546,9 @@ class DraggableText:
         container.content = ft.Text(word, size=16, color=ft.Colors.BLACK)
         e.control.update()
 
+        if hasattr(self.page, "notify_task_update"):
+            self.page.notify_task_update()
+
         if not correct:
             async def reset_task():
                 await asyncio.sleep(1)
@@ -471,6 +556,9 @@ class DraggableText:
                 container.bgcolor = ft.Colors.BLUE_GREY_100
                 container.content = ft.Text("______", size=16, color=ft.Colors.BLACK)
                 e.control.update()
+
+                if hasattr(self.page, "notify_task_update"):
+                    self.page.notify_task_update()
 
             self.page.run_task(reset_task)
 

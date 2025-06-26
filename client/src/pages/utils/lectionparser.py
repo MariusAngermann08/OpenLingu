@@ -184,6 +184,7 @@ class LectionParser:
                 print(f"\nProcessing page {i}/{total_pages}")
                 current_page = Page()
                 widgets = []
+                current_page.task_widgets = []  # Store interactive widgets here
                 
                 # Add title if exists
                 if "title" in page_data:
@@ -216,12 +217,44 @@ class LectionParser:
                             widget_type = widget_data.get("type", "unknown")
                             print(f"    - Processing widget {j}: {widget_type}")
                             
-                            widget = self._create_widget(widget_data)
-                            if widget:
-                                widgets.append(widget)
+                            # --- Store the actual widget instance for task widgets ---
+                            widget_type = widget_data.get("type", "unknown")
+                            if widget_type == "matchable_pairs":
+                                task_widget = MatchablePairs(
+                                    page=self.page,
+                                    left_items=widget_data["data"]["left_items"],
+                                    right_items=widget_data["data"]["right_items"]
+                                )
+                                widgets.append(task_widget.build())
+                                current_page.task_widgets.append(task_widget)
+                                print(f"      ✓ Successfully created widget: {widget_type}")
+                            elif widget_type == "draggable_text":
+                                task_widget = DraggableText(
+                                    page=self.page,
+                                    text=widget_data["data"]["text"],
+                                    gaps_idx=widget_data["data"]["gaps_idx"],
+                                    options=widget_data["data"]["options"]
+                                )
+                                widgets.append(task_widget.build())
+                                current_page.task_widgets.append(task_widget)
+                                print(f"      ✓ Successfully created widget: {widget_type}")
+                            elif widget_type == "picture_drag":
+                                task_widget = PictureDrag(
+                                    page=self.page,
+                                    image_path=widget_data["data"]["image_path"],
+                                    options=widget_data["data"]["options"],
+                                    correct_option_index=widget_data["data"]["correct_option_index"]
+                                )
+                                widgets.append(task_widget.build())
+                                current_page.task_widgets.append(task_widget)
                                 print(f"      ✓ Successfully created widget: {widget_type}")
                             else:
-                                print(f"      ✗ Failed to create widget: {widget_type} (returned None)")
+                                widget = self._create_widget(widget_data)
+                                if widget:
+                                    widgets.append(widget)
+                                    print(f"      ✓ Successfully created widget: {widget_type}")
+                                else:
+                                    print(f"      ✗ Failed to create widget: {widget_type} (returned None)")
                         except Exception as e:
                             print(f"      ✗ Error creating widget {j}: {str(e)}")
                             import traceback
@@ -233,16 +266,16 @@ class LectionParser:
                     for i in range(1, len(widgets) * 2 - 1, 2):
                         widgets.insert(i, ft.Divider())
                 
-                current_page.content = ft.ListView(
-                    controls=widgets,
-                    expand=True,
-                    spacing=10,
-                    padding=20
-                )
+                current_page.content = ft.Column(widgets, alignment=ft.MainAxisAlignment.CENTER)
                 self.pages.append(current_page)
-                print(f"  ✓ Successfully created page {i} with {len(widgets)} widgets")
+                print(f"  Successfully created page {i} with {len(widgets)} widgets")
                 
-            print(f"\nSuccessfully parsed {len(self.pages)} pages for lection: {self.title}")
+            # --- Add the ending page ---
+            from pages.Widgetlibary.Lectionwidgets import LectionEndPage
+            end_page = LectionEndPage(page=self.page)
+            self.pages.append(end_page)
+
+            print(f"\nAll {len(self.pages)} pages processed (including ending page).")
             
         except Exception as e:
             print(f"Error in parse_lection: {str(e)}")
