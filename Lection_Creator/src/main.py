@@ -1,65 +1,77 @@
 import flet as ft
 
+# Handle import as module or directly
+try:
+    from Pages.authpage import LoginPage
+    from Pages.main_menu import MainMenu
+except ImportError:
+    from .Pages.authpage import LoginPage
+    from .Pages.main_menu import MainMenu
 
-class LoginPage:
-    def __init__(self, page: ft.Page):
-        self.page = page
-        self.email = ft.TextField(label="Email", width=300, autofocus=True)
-        self.password = ft.TextField(label="Password", password=True, can_reveal_password=True, width=300)
-        self.message = ft.Text("", color="#ea4335")
-
-    def login_click(self, e):
-        if self.email.value == "user@example.com" and self.password.value == "secret":
-            self.message.value = "Login successful!"
-            self.message.color = "#34a853"
-        else:
-            self.message.value = "Invalid credentials"
-            self.message.color = "#ea4335"
-        self.page.update()
-
-    def build(self):
-        self.page.title = "Login"
-        self.page.bgcolor = "#f5f5f5"
-        self.page.window_width = 400
-        self.page.window_height = 400
-        self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
-        self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-
-        login_button = ft.ElevatedButton(
-            text="Login",
-            on_click=self.login_click,
-            width=300,
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=10),
-                padding=15,
-            )
+def route_change(e):
+    page = e.page
+    route = e.route
+    
+    # Don't clear views if it's just a route update
+    if not page.views or page.views[-1].route != route:
+        page.views.clear()
+    
+    if route == "/login":
+        # Set window size for login
+        page.window_width = 400
+        page.window_height = 600
+        page.window_resizable = False
+        page.theme_mode = "light"
+        
+        # Create and add login view
+        view = ft.View(
+            route=route,
+            padding=0,
+            bgcolor="#f5f5f5",
+            spacing=0,
+            controls=[
+                LoginPage(page)
+            ]
         )
-
-        card = ft.Container(
-            content=ft.Column(
-                [
-                    ft.Text("Welcome Back", size=24, weight=ft.FontWeight.BOLD),
-                    self.email,
-                    self.password,
-                    login_button,
-                    self.message
-                ],
-                spacing=20,
-                alignment=ft.MainAxisAlignment.CENTER
-            ),
-            padding=30,
-            border_radius=12,
-            bgcolor="#ffffff",
-            width=350,
-            shadow=ft.BoxShadow(blur_radius=15, color="#1a1a1a1f")
+        page.views.append(view)
+    
+    elif route == "/main":
+        # Set window size for main app
+        page.window_width = 1200
+        page.window_height = 800
+        page.window_resizable = True
+        page.theme_mode = "light"
+        
+        # Create and add main menu view
+        main_menu = MainMenu(page)
+        view = ft.View(
+            route=route,
+            padding=0,
+            bgcolor="#f5f5f5",
+            spacing=0,
+            appbar=main_menu.create_app_bar(),
+            controls=[main_menu]
         )
+        page.views.append(view)
+    
+    page.update()
 
-
-        self.page.add(card)
+def view_pop(view):
+    view.page.views.pop()
+    top_view = view.page.views[-1]
+    view.page.go(top_view.route)
 
 def main(page: ft.Page):
-    login_page = LoginPage(page)
-    login_page.build()
+    page.title = "Lection Creator"
+    page.padding = 0
+    
+    # Set up routing
+    page.on_route_change = route_change
+    page.on_view_pop = view_pop
 
-ft.app(target=main)
+    # Initial route
+    page.go("/login")
+    page.update()
 
+if __name__ == "__main__":
+    ft.app(target=main, view=ft.AppView.FLET_APP)
