@@ -106,12 +106,13 @@ class LectionParser:
         data = widget_data["data"]
         
         if widget_type == "underlined_text":
-            return UnderlinedText(
+            widget =UnderlinedText(
                 text=data["text"],
                 underlined=data["underlined"],
                 font_size=data.get("font_size", 14),
                 bgcolor=data.get("bgcolor")
             )
+            return widget.render()
             
         elif widget_type == "matchable_pairs":
             widget = MatchablePairs(
