@@ -71,6 +71,7 @@ def route_change(e):
             padding=0,
             bgcolor="#f5f5f5",
             spacing=0,
+            appbar=main_editor.create_app_bar(),
             controls=[
                 main_editor
             ]
