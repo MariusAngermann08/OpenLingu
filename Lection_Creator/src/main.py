@@ -1,25 +1,25 @@
 import flet as ft
 
 
-lass LoginPage:
+class LoginPage:
     def __init__(self, page: ft.Page):
         self.page = page
         self.email = ft.TextField(label="Email", width=300, autofocus=True)
         self.password = ft.TextField(label="Password", password=True, can_reveal_password=True, width=300)
-        self.message = ft.Text("", color=ft.colors.RED)
+        self.message = ft.Text("", color="#ea4335")
 
     def login_click(self, e):
         if self.email.value == "user@example.com" and self.password.value == "secret":
             self.message.value = "Login successful!"
-            self.message.color = ft.colors.GREEN
+            self.message.color = "#34a853"
         else:
             self.message.value = "Invalid credentials"
-            self.message.color = ft.colors.RED
+            self.message.color = "#ea4335"
         self.page.update()
 
     def build(self):
         self.page.title = "Login"
-        self.page.bgcolor = ft.colors.SURFACE
+        self.page.bgcolor = "#f5f5f5"
         self.page.window_width = 400
         self.page.window_height = 400
         self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
@@ -49,12 +49,17 @@ lass LoginPage:
             ),
             padding=30,
             border_radius=12,
-            bgcolor=ft.colors.WHITE,
+            bgcolor="#ffffff",
             width=350,
-            shadow=ft.BoxShadow(blur_radius=15, color=ft.colors.BLACK12)
+            shadow=ft.BoxShadow(blur_radius=15, color="#1a1a1a1f")
         )
 
 
-    page.add(card)
+        self.page.add(card)
+
+def main(page: ft.Page):
+    login_page = LoginPage(page)
+    login_page.build()
 
 ft.app(target=main)
+
