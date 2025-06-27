@@ -40,8 +40,9 @@ class MainPage(ft.Container):
         
         # Initialize language from client storage or default to English
         self.current_language = "English"  # Default value
-        
-        # Create language button reference for hover effect
+        self.native_language_code = "en"   # Default code
+
+        # Create language button reference for hover effect (for learning language)
         self.language_btn = ft.ElevatedButton(
             text=self.current_language,
             style=ft.ButtonStyle(
@@ -52,30 +53,134 @@ class MainPage(ft.Container):
             ),
             on_click=lambda e: self.page.go("/languages"),
         )
-        
-        # Load saved language asynchronously
-        async def load_language():
+
+        # Load saved native language asynchronously
+        async def load_native_language():
             try:
-                saved_lang = await self.page.client_storage.get_async("selected_language")
-                if saved_lang:
-                    print(f"[DEBUG] Loaded language from storage: {saved_lang}")
-                    # Await the async method
-                    await self.update_language(saved_lang)
-                    print("[DEBUG] Initial language update completed")
+                lang_code = await self.page.client_storage.get_async("native_language")
+                if lang_code:
+                    self.native_language_code = lang_code
+                    # Map code to display name
+                    self.current_language = self.get_language_name(lang_code)
+                    print(f"[DEBUG] Loaded native language from storage: {self.current_language} ({lang_code})")
             except Exception as e:
-                print(f"[ERROR] Error loading language: {e}")
-        
+                print(f"[ERROR] Error loading native language: {e}")
         # Run the async function in the event loop
         if hasattr(self.page, 'run_task'):
-            self.page.run_task(load_language)
+            self.page.run_task(load_native_language)
         else:
-            import asyncio
-            asyncio.create_task(load_language())
-        
-        # Create server button reference for hover effect
-        self.server_btn = ft.Ref[ft.Container]()
-        
-        # Server info dialog will be created when needed
+            asyncio.create_task(load_native_language())
+
+        # Helper to get display name from language code
+        def get_language_name(self, code):
+            lang_map = {"en": "English", "de": "German", "es": "Spanish", "fr": "French"}
+            return lang_map.get(code, code)
+        self.get_language_name = get_language_name.__get__(self)
+
+        # Helper to set native language
+        def set_native_language(self, name, code):
+            self.current_language = name
+            self.native_language_code = code
+            self.page.client_storage.set("native_language", code)
+            self.page.snack_bar = ft.SnackBar(ft.Text(f"Native language set to {name}"))
+            self.page.snack_bar.open = True
+            self.page.update()
+        self.set_native_language = set_native_language.__get__(self)
+
+        # Download Lection Dialog opener and dynamic logic
+        def open_download_lection_dialog(self, e=None):
+            server_url = self.page.client_storage.get("server_url")
+            if not server_url:
+                self.download_lection_dialog.content.controls[0].value = "No server URL set in client storage."
+                self.download_lection_dialog.content.controls[1].controls.clear()
+                self.page.dialog = self.download_lection_dialog
+                self.download_lection_dialog.open = True
+                self.page.update()
+                return
+            try:
+                resp = requests.get(f"{server_url.rstrip('/')}/languages")
+                resp.raise_for_status()
+                languages = resp.json() if isinstance(resp.json(), list) else resp.json().get("languages", [])
+            except Exception as ex:
+                self.download_lection_dialog.content.controls[0].value = f"Failed to fetch languages: {ex}"
+                self.download_lection_dialog.content.controls[1].controls.clear()
+                self.page.dialog = self.download_lection_dialog
+                self.download_lection_dialog.open = True
+                self.page.update()
+                return
+            # Populate the ListView with ExpansionTiles for each language
+            tiles = []
+            for lang in languages:
+                lang_code = lang.get("code") if isinstance(lang, dict) else lang
+                lang_name = lang.get("name") if isinstance(lang, dict) else lang_code
+                def make_expansion_tile(lang_code=lang_code, lang_name=lang_name):
+                    # Title row with tap handler to load lections if not loaded
+                    def on_title_tap(e):
+                        self.fetch_and_show_lections(lang_code)
+                    return ft.ExpansionTile(
+                        title=ft.GestureDetector(
+                            content=ft.Text(f"{lang_name} ({lang_code})"),
+                            on_tap=on_title_tap
+                        ),
+                        controls=[]
+                    )
+                tiles.append(make_expansion_tile())
+            self.download_lection_dialog.content.controls[0].value = "Select a language to expand and see available lections."
+            self.download_lection_dialog.content.controls[1].controls = tiles
+            # Robust dialog opening
+            self.download_lection_dialog.open = False
+            self.page.dialog = self.download_lection_dialog
+            self.download_lection_dialog.open = True
+            self.page.update()
+        self.open_download_lection_dialog = open_download_lection_dialog.__get__(self)
+
+        # Fetch lections for a language and update the respective ExpansionTile
+        def fetch_and_show_lections(self, lang_code):
+            server_url = self.page.client_storage.get("server_url")
+            try:
+                resp = requests.get(f"{server_url.rstrip('/')}/lections?language={lang_code}")
+                resp.raise_for_status()
+                lections = resp.json() if isinstance(resp.json(), list) else resp.json().get("lections", [])
+            except Exception as ex:
+                lections = [ft.Text(f"Failed to fetch lections: {ex}")]
+            # Find the ExpansionTile for this lang_code
+            for tile in self.download_lection_dialog.content.controls[1].controls:
+                if hasattr(tile, 'title') and lang_code in tile.title.value:
+                    # Populate with lection items
+                    tile.controls.clear()
+                    if isinstance(lections, list):
+                        for lec in lections:
+                            lec_title = lec.get("title") if isinstance(lec, dict) else lec
+                            tile.controls.append(
+                                ft.Row([
+                                    ft.Text(lec_title),
+                                    ft.IconButton(icon="download", tooltip="Download", on_click=None)  # Download action to be implemented
+                                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+                            )
+                    else:
+                        tile.controls.append(ft.Text("No lections found."))
+            self.page.update()
+        self.fetch_and_show_lections = fetch_and_show_lections.__get__(self)
+
+        # Dialog close handler (must be defined before dialog assignment)
+        def close_download_lection_dialog(self, e=None):
+            self.download_lection_dialog.open = False
+            self.page.update()
+        self.close_download_lection_dialog = close_download_lection_dialog.__get__(self)
+
+        # Download Lection Dialog (scaffold)
+        self.download_lection_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("Download Lections from Server"),
+            content=ft.Column([
+                ft.Text("Select a language to expand and see available lections."),
+                ft.ListView([], expand=True, spacing=8, padding=8, auto_scroll=False, height=300),  # Will be populated dynamically
+            ]),
+            actions=[
+                ft.TextButton("Close", on_click=self.close_download_lection_dialog)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
         
         # Sign out button state and reference
         self.sign_out_button = None
@@ -304,8 +409,9 @@ class MainPage(ft.Container):
             bgcolor="#1a73e8",
             center_title=False,
             actions=[
-                # Language Selection Button
+                # Learning language selection button (restored)
                 self.language_btn,
+
                 # Server Information Button
                 ft.Container(
                     content=ft.IconButton(
@@ -319,16 +425,42 @@ class MainPage(ft.Container):
                     on_click=self.show_server_info,
                 ),
                 
-                # Language Selection Button
-                ft.IconButton(
+                # Native Language Selection Menu (Globe Icon)
+                ft.PopupMenuButton(
                     icon="language",
                     icon_color="white",
-                    tooltip="Change Language",
-                    on_click=lambda _: None,  # Add language selection logic here
-                    style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=8),
-                        padding=8,
-                    ),
+                    tooltip="Change Native Language",
+                    items=[
+                        ft.PopupMenuItem(text="Select your native language"),  # Title
+                        ft.PopupMenuItem(),  # Divider
+                        ft.PopupMenuItem(
+                            text="English",
+                            icon="check" if self.native_language_code == "en" else None,
+                            on_click=lambda e: self.set_native_language("English", "en")
+                        ),
+                        ft.PopupMenuItem(
+                            text="German",
+                            icon="check" if self.native_language_code == "de" else None,
+                            on_click=lambda e: self.set_native_language("German", "de")
+                        ),
+                        ft.PopupMenuItem(
+                            text="Spanish",
+                            icon="check" if self.native_language_code == "es" else None,
+                            on_click=lambda e: self.set_native_language("Spanish", "es")
+                        ),
+                        ft.PopupMenuItem(
+                            text="French",
+                            icon="check" if self.native_language_code == "fr" else None,
+                            on_click=lambda e: self.set_native_language("French", "fr")
+                        ),
+                        # Add more languages as needed
+                    ],
+                ),
+                ft.IconButton(
+                    icon="download",
+                    icon_color="white",
+                    tooltip="Download Lections from Server",
+                    on_click=lambda e: self.page.go("/download-lection")
                 ),
             ]
         )

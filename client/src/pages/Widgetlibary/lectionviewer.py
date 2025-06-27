@@ -40,6 +40,7 @@ class LectionViewer(ft.Container):
         
         # Initialize UI components
         self.task_widgets = []  # Track task widgets for current page
+        self.loading = False  # Show progress bar while parsing
         self._init_ui()
         
     def _init_ui(self):
@@ -97,6 +98,19 @@ class LectionViewer(ft.Container):
         # Set the layout as the container's content
         self.content = layout
         self.expand = True
+
+    def show_loading(self):
+        self.loading = True
+        self.content_area.content = ft.Container(
+            content=ft.ProgressRing(color="#1a73e8", width=60, height=60),
+            alignment=ft.alignment.center,
+            expand=True,
+        )
+        if self.page:
+            self.page.update()
+
+    def hide_loading(self):
+        self.loading = False
     
     def prev_page(self, e):
         if self.current_page > 0:
@@ -109,6 +123,9 @@ class LectionViewer(ft.Container):
             self.update_display()
     
     def update_display(self):
+        if self.loading:
+            self.show_loading()
+            return
         if not self.pages or self.current_page >= len(self.pages):
             return
             
@@ -204,11 +221,13 @@ class LectionViewer(ft.Container):
 
     def load_lection(self):
         print("\n=== Starting load_lection ===")
+        self.show_loading()
         try:
             page = self._get_page()
             if page is None:
                 error_msg = "Error: Page reference is None in load_lection"
                 print(error_msg)
+                self.hide_loading()
                 return
                 
             print("1. Page reference obtained successfully")
@@ -220,6 +239,7 @@ class LectionViewer(ft.Container):
             if not lection:
                 error_msg = "No lection data found in client storage"
                 print(error_msg)
+                self.hide_loading()
                 if page:
                     page.snack_bar = ft.SnackBar(
                         content=ft.Text(error_msg),
@@ -272,6 +292,7 @@ class LectionViewer(ft.Container):
                 print(f"9. Got {len(self.pages)} pages from parser")
                 
                 self.current_page = 0
+                self.hide_loading()
                 
                 if self.pages:
                     print(f"10. First page type: {type(self.pages[0])}")
@@ -288,6 +309,7 @@ class LectionViewer(ft.Container):
                     
             except Exception as e:
                 print(f"Error in LectionParser: {str(e)}")
+                self.hide_loading()
                 import traceback
                 traceback.print_exc()
                 raise
@@ -295,6 +317,7 @@ class LectionViewer(ft.Container):
         except Exception as e:
             error_msg = f"Error in load_lection: {str(e)}"
             print(error_msg)
+            self.hide_loading()
             import traceback
             traceback.print_exc()
             
