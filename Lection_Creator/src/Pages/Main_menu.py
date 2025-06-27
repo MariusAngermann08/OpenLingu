@@ -1,5 +1,7 @@
 import flet as ft
 from math import pi
+import requests
+import threading
 
 class LectionButton(ft.ElevatedButton):
     def __init__(self, page, language: str, lection: str, index: int, on_select):
@@ -142,32 +144,53 @@ class MainMenu(ft.Container):
             bgcolor="#f5f5f5"
         )
         self.page = page
+        self.page.on_view_pop = self.on_view_pop
         self.selected_lections = set()  # Store (language, lection) tuples
         self.app_bar_actions = []
-        self.app_bar = None
-        
-        # Sample data - in a real app, this would come from a database
-        self.languages = {
-            "Deutsch": ["Grundlagen", "Einführung", "Grammatik"],
-            "English": ["Basics", "Introduction", "Grammar"],
-            "Español": ["Básico", "Introducción", "Gramática"]
-        }
-        
-        # Create language sections
+        self.languages = {}  # Will be populated from server
         self.language_sections = {}
-        language_sections = []
-        for language, lections in self.languages.items():
-            language_section = ExpandableLanguage(
-                page=page,
-                language=language,
-                lections=lections,
-                on_lection_select=self.handle_lection_select
-            )
-            self.language_sections[language] = language_section
-            language_sections.append(language_section)
         
-        # Create create button
-        create_button = ft.FloatingActionButton(
+        # Server info button
+        self.server_url = self.page.client_storage.get("server_url") or "Not set"
+        self.server_button = ft.ElevatedButton(
+            text=f"Server: {self._get_server_display_name(self.server_url)}",
+            icon="dns",
+            on_click=self.go_to_server_page,
+            style=ft.ButtonStyle(
+                color="#1a73e8",
+                bgcolor="#e8f0fe",
+                padding=ft.padding.symmetric(horizontal=12, vertical=8),
+                shape=ft.RoundedRectangleBorder(radius=8),
+            ),
+            scale=0.9
+        )
+        
+        # Initialize loading overlay
+        self._loading_status_text = ft.Text("", size=16, color="#5f6368")
+        self.loading_overlay = ft.Container(
+            expand=True,
+            bgcolor="#ffffff",
+            alignment=ft.alignment.center,
+            content=ft.Column([
+                ft.Text("Loading languages and lections...", size=20, color="#1a73e8"),
+                ft.ProgressBar(width=400, color="#1a73e8", bgcolor="#e0e0e0", value=0, 
+                             ref=ft.Ref[ft.ProgressBar]()),
+                self._loading_status_text
+            ], alignment=ft.MainAxisAlignment.CENTER, spacing=30)
+        )
+        
+        # Main content container
+        self.language_sections_container = ft.Column(
+            [
+                ft.Text("Meine Lektionen", size=28, weight=ft.FontWeight.BOLD),
+                ft.Divider(height=24, color="transparent"),
+            ],
+            spacing=16,
+            expand=True
+        )
+        
+        # Create button
+        self.create_button = ft.FloatingActionButton(
             icon="add",
             text="Create",
             on_click=self.on_create_click,
@@ -178,32 +201,121 @@ class MainMenu(ft.Container):
         )
         
         # Main content
-        self.content = ft.Column(
+        self._main_content = ft.Column(
             [
+                self.language_sections_container,
                 ft.Container(
-                    content=ft.Column(
-                        [
-                            ft.Text("Meine Lektionen", size=28, weight=ft.FontWeight.BOLD),
-                            ft.Divider(height=24, color="transparent"),
-                            *language_sections,
-                            ft.Divider(height=16, color="transparent"),
-                        ],
-                        spacing=16,
-                    ),
-                    expand=True,
-                ),
-                ft.Container(
-                    content=create_button,
+                    content=self.create_button,
                     alignment=ft.alignment.bottom_right,
                     padding=ft.padding.all(20),
                 )
             ],
-            expand=True,
+            expand=True
         )
+        
+        # Initially show loading overlay
+        self.content = self.loading_overlay
+        
+        # Start fetching data in a separate thread
+        threading.Thread(target=self.fetch_languages_and_lections, daemon=True).start()
     
-    def on_lesson_click(self, e):
-        # Handle lesson button click
-        pass
+    def fetch_languages_and_lections(self):
+        server_url = self.page.client_storage.get("server_url")
+        progress_bar = self.loading_overlay.content.controls[1]
+        self._loading_status_text.value = "Fetching languages from server..."
+        self.page.update()
+        
+        if not server_url:
+            self._show_error("No server URL configured. Please set a server URL first.")
+            return
+            
+        try:
+            # Fetch languages
+            self._update_loading_status("Fetching languages...", 0.1)
+            resp = requests.get(f"{server_url.rstrip('/')}/languages")
+            resp.raise_for_status()
+            languages_data = resp.json()
+            languages = languages_data if isinstance(languages_data, list) else languages_data.get("languages", [])
+            
+            if not languages:
+                self._show_error("No languages found on the server.")
+                return
+                
+            # Fetch lections for each language
+            total_languages = len(languages)
+            language_sections = []
+            self.language_sections = {}
+            
+            for idx, lang in enumerate(languages):
+                if isinstance(lang, dict):
+                    lang_code = lang.get("code", str(lang))
+                    lang_name = lang.get("name", lang_code)
+                else:
+                    lang_code = str(lang)
+                    lang_name = lang_code.capitalize()
+                
+                # Fetch lections for this language
+                self._update_loading_status(f"Loading lections for {lang_name}...", (idx + 1) / (total_languages + 1))
+                
+                try:
+                    lec_resp = requests.get(f"{server_url.rstrip('/')}/languages/{lang_code}/lections")
+                    lec_resp.raise_for_status()
+                    lections_data = lec_resp.json()
+                    lections = lections_data if isinstance(lections_data, list) else lections_data.get("lections", [])
+                    
+                    # Store lections for this language
+                    self.languages[lang_name] = []
+                    for lec in lections:
+                        if isinstance(lec, dict):
+                            self.languages[lang_name].append(lec.get("title", str(lec)))
+                        else:
+                            self.languages[lang_name].append(str(lec))
+                    
+                    # Create language section
+                    language_section = ExpandableLanguage(
+                        page=self.page,
+                        language=lang_name,
+                        lections=self.languages[lang_name],
+                        on_lection_select=self.handle_lection_select
+                    )
+                    self.language_sections[lang_name] = language_section
+                    language_sections.append(language_section)
+                    
+                except Exception as ex:
+                    print(f"Error fetching lections for {lang_name}: {ex}")
+            
+            # Update UI with fetched data
+            self._update_ui_with_languages(language_sections)
+            
+        except requests.RequestException as ex:
+            self._show_error(f"Failed to fetch data from server: {ex}")
+        except Exception as ex:
+            self._show_error(f"An unexpected error occurred: {ex}")
+    
+    def _update_loading_status(self, message, progress):
+        self._loading_status_text.value = message
+        progress_bar = self.loading_overlay.content.controls[1]
+        progress_bar.value = progress
+        self.page.update()
+    
+    def _show_error(self, message):
+        self.language_sections_container.controls = [
+            ft.Text("Error", size=28, weight=ft.FontWeight.BOLD),
+            ft.Divider(height=24, color="transparent"),
+            ft.Text(message, color="red")
+        ]
+        self.content = self._main_content
+        self.page.update()
+    
+    def _update_ui_with_languages(self, language_sections):
+        # Clear existing content but keep the title
+        self.language_sections_container.controls = [
+            self.language_sections_container.controls[0],  # Keep the title
+            ft.Divider(height=24, color="transparent"),
+            *language_sections
+        ]
+        self.content = self._main_content
+        self.page.update()
     
     def on_create_click(self, e):
         # Handle create button click
@@ -235,11 +347,22 @@ class MainMenu(ft.Container):
             visible=False
         )
         
+        # Update server button text
+        self.server_button.text = f"Server: {self._get_server_display_name(self.server_url)}"
+        
         self.app_bar_actions = [
             self.edit_button,
             self.delete_button,
             self.cancel_button,
-            ft.IconButton("account_circle", tooltip="Profile"),
+            ft.Container(
+                content=self.server_button,
+                margin=ft.margin.only(right=8)
+            ),
+            ft.IconButton(
+                "account_circle",
+                tooltip="Profile",
+                icon_color="white"
+            ),
         ]
         
         self.app_bar = ft.AppBar(
@@ -303,3 +426,21 @@ class MainMenu(ft.Container):
         
         if self.app_bar:
             self.app_bar.update()
+    
+    def _get_server_display_name(self, url):
+        if not url:
+            return "Not set"
+        # Remove protocol and trailing slashes
+        clean_url = url.replace('https://', '').replace('http://', '').rstrip('/')
+        # Truncate if too long
+        return clean_url[:20] + '...' if len(clean_url) > 23 else clean_url
+    
+    def go_to_server_page(self, e):
+        self.page.go("/server")
+    
+    def on_view_pop(self, e):
+        # Update server URL when returning to this page
+        self.server_url = self.page.client_storage.get("server_url") or "Not set"
+        if hasattr(self, 'server_button'):
+            self.server_button.text = f"Server: {self._get_server_display_name(self.server_url)}"
+            self.page.update()

@@ -5,10 +5,12 @@ try:
     from Pages.lection_editor import MainEditor
     from Pages.authpage import LoginPage
     from Pages.Main_menu import MainMenu
+    from Pages.serverpage import ServerPage
 except ImportError:
     from Pages.authpage import LoginPage
     from Pages.Main_menu import MainMenu
     from Pages.lection_editor import MainEditor
+    from Pages.serverpage import ServerPage
 
 def route_change(e):
     page = e.page
@@ -18,7 +20,25 @@ def route_change(e):
     if not page.views or page.views[-1].route != route:
         page.views.clear()
     
-    if route == "/login":
+    if route == "/server":
+        # Set window size for server
+        page.window_width = 400
+        page.window_height = 600
+        page.window_resizable = False
+        page.theme_mode = "light"
+        
+        # Create and add server view
+        server_page = ServerPage(page)
+        view = ft.View(
+            route=route,
+            padding=0,
+            bgcolor="#f5f5f5",
+            spacing=0,
+            controls=[server_page]
+        )
+        page.views.append(view)
+
+    elif route == "/login":
         # Set window size for login
         page.window_width = 400
         page.window_height = 600
@@ -94,7 +114,7 @@ def main(page: ft.Page):
     page.on_view_pop = view_pop
 
     # Initial route
-    page.go("/editor")
+    page.go("/server")
     page.update()
 
 if __name__ == "__main__":
