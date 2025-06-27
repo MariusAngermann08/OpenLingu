@@ -4,6 +4,52 @@ import asyncio
 import time
 import json
 
+
+class UnderlinedText(ft.Container):
+    def __init__(
+        self,
+        text: str,
+        underlined: dict,
+        font_size: float = 14,
+        bgcolor: str = None,
+        **kwargs
+    ):
+        words = text.split(" ")
+        spans = []
+        # Convert string keys to integers and adjust from 1-based to 0-based indexing
+        underlined = {int(k)-1: v for k, v in underlined.items()}
+        
+        for i, word in enumerate(words):
+            if i in underlined:
+                spans.append(
+                    ft.TextSpan(
+                        text=word + " ",
+                        style=ft.TextStyle(
+                            decoration=ft.TextDecoration.UNDERLINE,
+                            decoration_color=underlined[i],
+                            size=font_size
+                        )
+                    )
+                )
+            else:
+                spans.append(
+                    ft.TextSpan(
+                        text=word + " ",
+                        style=ft.TextStyle(
+                            size=font_size
+                        )
+                    )
+                )
+
+        super().__init__(
+            content=ft.Text(spans=spans, selectable=True),
+            bgcolor=bgcolor,
+            padding=10,
+            border_radius=5,
+            **kwargs
+        )
+
+
 class DraggableText:
 
     def __init__(self, page: ft.Page, text: str, gaps_idx: list[int], options: dict[str, int]):
@@ -176,161 +222,6 @@ class DraggableText:
 
     def is_fully_correct(self):
         return all(self.correct_state)
-
-class DraggableTextCreator:
-    def __init__(self):
-        super().__init__()
-        self.text_field = ft.TextField(
-            label="Text mit Lücken",
-            multiline=True,
-            expand=True,
-            border_radius=8,
-            filled=True,
-            bgcolor="#f0f0f0",
-        )
-        self.gaps_idx = []  # Liste der Start-Indizes der Lücken
-
-        self.options = []  # Liste der Optionen: dict mit keys: word, idx
-        self.options_controls = []
-
-        self.option_container = ft.Column(spacing=10, expand=True)
-
-    def build(self):
-        return ft.Column(
-            [
-                ft.Row(
-                    [
-                        self.text_field,
-                        ft.IconButton(
-                            icon=ft.Icons.ADD,
-                            tooltip="Lücke einfügen",
-                            on_click=self.insert_gap,
-                            icon_color="#1565C0",
-                        ),
-                    ],
-                    alignment=ft.MainAxisAlignment.START,
-                    spacing=8,
-                ),
-                ft.Row(
-                    [
-                        ft.ElevatedButton("Option hinzufügen", on_click=self.add_option),
-                    ],
-                    alignment=ft.MainAxisAlignment.START,
-                    spacing=8,
-                ),
-                ft.Text(f"Lücken gesamt: {len(self.gaps_idx)}"),
-                ft.Text(f"Optionen gesamt: {len(self.options)}"),
-                self.option_container,
-            ],
-            spacing=15,
-            expand=True,
-        )
-
-    def insert_gap(self, e):
-        text = self.text_field.value or ""
-        cursor_pos = self.text_field.cursor_position or len(text)
-        gap_placeholder = "_____"
-        new_text = text[:cursor_pos] + gap_placeholder + text[cursor_pos:]
-        self.text_field.value = new_text
-        self.text_field.cursor_position = cursor_pos + len(gap_placeholder)
-        self.text_field.update()
-
-        # Lücke speichern (Index des Starts der Lücke)
-        self.gaps_idx.append(cursor_pos)
-        self.gaps_idx.sort()
-        self.update_option_dropdowns()
-
-        print("Lücken-Indizes:", self.gaps_idx)
-
-    def add_option(self, e):
-        # Default option mit leerem Wort und default Index 0 (wenn Lücken vorhanden)
-        idx = 0 if self.gaps_idx else -1
-        option = {"word": "", "idx": idx}
-        self.options.append(option)
-
-        # Erstelle Controls für die Option
-        word_field = ft.TextField(
-            value=option["word"],
-            label="Option Wort",
-            width=200,
-            on_change=lambda e, opt=option: self.on_word_change(e, opt),
-        )
-
-        idx_dropdown = ft.Dropdown(
-            label="Lücken-Index",
-            width=150,
-            options=[ft.dropdown.Option(str(i)) for i in range(len(self.gaps_idx))],
-            value=str(idx) if idx >= 0 else None,
-            on_change=lambda e, opt=option: self.on_idx_change(e, opt),
-        )
-
-        delete_button = ft.IconButton(
-            icon=ft.Icons.DELETE,
-            icon_color="red",
-            tooltip="Option löschen",
-            on_click=lambda e, opt=option: self.delete_option(opt),
-        )
-
-        option_row = ft.Row(
-            [word_field, idx_dropdown, delete_button],
-            spacing=10,
-            vertical_alignment=ft.CrossAxisAlignment.CENTER,
-        )
-
-        self.option_container.controls.append(option_row)
-        self.options_controls.append((option, word_field, idx_dropdown, delete_button))
-
-        self.update_option_count()
-        self.option_container.update()
-
-    def on_word_change(self, e, option):
-        option["word"] = e.control.value
-        print(f"Option Wort geändert: {option}")
-
-    def on_idx_change(self, e, option):
-        try:
-            option["idx"] = int(e.control.value)
-            print(f"Option Index geändert: {option}")
-        except:
-            pass
-
-    def delete_option(self, option):
-        # Option entfernen
-        idx = self.options.index(option)
-        self.options.pop(idx)
-
-        # Auch GUI-Elemente entfernen
-        option_controls = self.options_controls.pop(idx)
-        for ctrl in option_controls[1:]:
-            self.option_container.controls.remove(ctrl.parent)  # parent = Row
-
-        self.update_option_count()
-        self.option_container.update()
-
-    def update_option_dropdowns(self):
-        # Wenn neue Lücken dazukommen, Dropdowns anpassen
-        for option, _, idx_dropdown, _ in self.options_controls:
-            old_val = option["idx"]
-            max_idx = len(self.gaps_idx) - 1
-            if max_idx < 0:
-                # keine Lücken mehr
-                idx_dropdown.options = []
-                option["idx"] = -1
-                idx_dropdown.value = None
-            else:
-                idx_dropdown.options = [ft.dropdown.Option(str(i)) for i in range(len(self.gaps_idx))]
-                # Wenn Index zu groß ist, zurücksetzen
-                if old_val > max_idx or old_val < 0:
-                    option["idx"] = 0
-                    idx_dropdown.value = "0"
-                else:
-                    idx_dropdown.value = str(old_val)
-            idx_dropdown.update()
-
-        self.option_container.update()
-        self.update_option_count()
-
-
 
 
 
@@ -531,54 +422,3 @@ class MatchablePairs:
         else:
             return False  # Immer True oder False jenachdem ob alle Buttons disabled sind
 
-
-class MatchablePairsCreator:
-    def __init__(self, page):
-        self.page = page
-        self.left_inputs = []
-        self.right_inputs = []
-
-        self.pair_input_column = ft.Column()
-        self.add_input_row()
-
-    def add_input_row(self, left_text="", right_text=""):
-        left_field = ft.TextField(label="Left", value=left_text)
-        right_field = ft.TextField(label="Right", value=right_text)
-
-        self.left_inputs.append(left_field)
-        self.right_inputs.append(right_field)
-
-        row = ft.Row([left_field, right_field])
-        self.pair_input_column.controls.append(row)
-
-    def build(self):
-        add_pair_button = ft.ElevatedButton(
-            text="+ Add Pair",
-            on_click=lambda e: self.add_input_row()
-        )
-
-        start_button = ft.ElevatedButton(
-            text="Start",
-            on_click=self.start_game
-        )
-
-        return ft.Column([
-            ft.Text("Enter your matching pairs:"),
-            self.pair_input_column,
-            ft.Row([add_pair_button, start_button], spacing=20)
-        ])
-
-    def start_game(self, e):
-        left_items = [field.value.strip() for field in self.left_inputs if field.value.strip()]
-        right_items = [field.value.strip() for field in self.right_inputs if field.value.strip()]
-
-        if len(left_items) != len(right_items) or len(left_items) == 0:
-            self.page.snack_bar = ft.SnackBar(ft.Text("Please enter the same number of left and right items."))
-            self.page.snack_bar.open = True
-            self.page.update()
-            return
-
-        self.page.clean()
-        game = MatchablePairs(self.page, left_items, right_items)
-        self.page.add(game.build())
-        self.page.update()

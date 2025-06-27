@@ -6,7 +6,7 @@ import json
 
 # Versuche, die Widgets zu importieren, ansonsten hilfreiche Debug-Infos ausgeben
 try:
-    from Pages.Creator_widgets import MatchablePairs, MatchablePairsCreator, DraggableText, DraggableTextCreator
+    from Pages.Creator_widgets import MatchablePairs, DraggableText, UnderlinedText
 except ImportError as e:
     print(f"Fehler beim Importieren der Widgets: {e}")
     print(f"Working Directory: {os.getcwd()}")
@@ -162,6 +162,13 @@ class EditorField(ft.Container):
             return config["data"]
         elif config["type"] == "plain_text":
             return ft.Text(config["data"]["text"], size=18)
+        elif config["type"] == "underlined_text":
+            return UnderlinedText(
+                config["data"]["text"],
+                config["data"]["underlined"],
+                font_size=18,
+                bgcolor="#f5f5f5"
+            )
         return ft.Text("Unbekannter Widget-Typ")
 
 
@@ -195,7 +202,8 @@ class EditorSelection(ft.Container):
         editor_map = {
             "Matchable Pairs": self.build_matchable_pairs_editor,
             "Gap Text": self.build_gap_text_editor,
-            "Plain Text": self.build_plain_text_editor,  # <-- add this line
+            "Plain Text": self.build_plain_text_editor,
+            "Underlined Text": self.build_underlined_text_editor,  # <-- add this line
             # Weitere Editoren können hier ergänzt werden
         }
         if editor_type in editor_map:
@@ -572,6 +580,159 @@ class EditorSelection(ft.Container):
                     ),
                 ],
                 spacing=15,
+                expand=True,
+                scroll=ft.ScrollMode.ALWAYS,
+            ),
+            expand=True,
+            bgcolor="#fff",
+            border_radius=12,
+            padding=16,
+        )
+
+    def build_underlined_text_editor(self) -> ft.Control:
+        self.underlined_text_field = ft.TextField(
+            label="Text eingeben",
+            multiline=True,
+            filled=True,
+            border_radius=8,
+            min_lines=3,
+            expand=True,
+        )
+        self.underlined_words = {}  # {word_index: color}
+        self.selected_word = None
+        self.selected_color = "#1976D2"
+        self.words_dropdown = ft.Dropdown(
+            label="Wort auswählen",
+            width=200,
+            options=[],
+            on_change=lambda e: setattr(self, "selected_word", e.control.value),
+        )
+        self.color_dropdown = ft.Dropdown(
+            label="Farbe auswählen",
+            width=160,
+            options=[
+                ft.dropdown.Option("#1976D2", "Blau"),
+                ft.dropdown.Option("#E53935", "Rot"),
+                ft.dropdown.Option("#43A047", "Grün"),
+                ft.dropdown.Option("#FBC02D", "Gelb"),
+                ft.dropdown.Option("#8E24AA", "Lila"),
+                ft.dropdown.Option("#000000", "Schwarz"),
+            ],
+            value="#1976D2",
+            on_change=lambda e: setattr(self, "selected_color", e.control.value),
+        )
+        self.underlined_display = ft.Container()
+        self.words_row = ft.Row([self.words_dropdown, self.color_dropdown], spacing=12)
+
+        def update_words_dropdown(e=None):
+            text = self.underlined_text_field.value or ""
+            words = text.split()
+            self.words_dropdown.options = [
+                ft.dropdown.Option(f"{i}:{w}", w) for i, w in enumerate(words)
+            ]
+            self.words_dropdown.value = None
+            self.words_dropdown.update()
+
+        def add_underlined_word(e):
+            if not self.words_dropdown.value:
+                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte ein Wort auswählen!"))
+                self.page.snack_bar.open = True
+                self.page.update()
+                return
+            idx = int(self.words_dropdown.value.split(":")[0])
+            self.underlined_words[idx + 1] = self.selected_color  # <-- Use 1-based index!
+            render_underlined_preview()
+
+        def remove_underlined_word(idx1):
+            if idx1 in self.underlined_words:
+                del self.underlined_words[idx1]
+                render_underlined_preview()
+
+        def render_underlined_preview():
+            text = self.underlined_text_field.value or ""
+            preview = UnderlinedText(text, self.underlined_words, font_size=18, bgcolor="#f5f5f5")
+            # Show removable chips for each underlined word
+            chips = []
+            words = text.split()
+            for idx1, color in self.underlined_words.items():
+                idx = idx1 - 1  # idx1 is 1-based
+                if 0 <= idx < len(words):
+                    chips.append(
+                        ft.Chip(
+                            label=ft.Text(f"{words[idx]}"),
+                            bgcolor=color,
+                            on_delete=lambda e, i=idx1: remove_underlined_word(i),
+                            color="white" if color != "#FBC02D" else "black",
+                        )
+                    )
+            self.underlined_display.content = ft.Column(
+                [
+                    ft.Text("Vorschau:", size=16, weight=ft.FontWeight.W_600),
+                    preview,
+                    ft.Row(chips, spacing=8) if chips else ft.Text("Keine unterstrichenen Wörter."),
+                ],
+                spacing=8,
+            )
+            self.underlined_display.update()
+
+        def finish_editor(e):
+            text = self.underlined_text_field.value.strip()
+            if not text:
+                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte Text eingeben!"))
+                self.page.snack_bar.open = True
+                self.page.update()
+                return
+            if not self.underlined_words:
+                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte mindestens ein Wort unterstreichen!"))
+                self.page.snack_bar.open = True
+                self.page.update()
+                return
+            # Store as string keys (1-based) for config
+            config = {
+                "type": "underlined_text",
+                "data": {
+                    "text": text,
+                    "underlined": {str(idx): color for idx, color in self.underlined_words.items()}
+                }
+            }
+            print("Saving underlined config:", config)  # DEBUG
+            self.on_select_editor_callback(None, "Underlined Text", config=config)
+            self.show_editor_ui(self._build_selection_options())
+
+        # Update dropdown when text changes
+        self.underlined_text_field.on_change = update_words_dropdown
+
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.ElevatedButton(
+                        "Zurück",
+                        icon=ft.Icons.ARROW_BACK,
+                        on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
+                        bgcolor="#bbbbbb",
+                        color="black",
+                    ),
+                    ft.Text("Unterstrichene Wörter markieren", size=20, weight=ft.FontWeight.BOLD),
+                    self.underlined_text_field,
+                    self.words_row,
+                    ft.ElevatedButton(
+                        "Wort unterstreichen",
+                        icon=ft.Icons.ADD,
+                        on_click=add_underlined_word,
+                        bgcolor="#1976D2",
+                        color="white",
+                    ),
+                    ft.Divider(),
+                    self.underlined_display,
+                    ft.ElevatedButton(
+                        "Fertig",
+                        icon=ft.Icons.CHECK,
+                        on_click=finish_editor,
+                        bgcolor="#4CAF50",
+                        color="white",
+                    ),
+                ],
+                spacing=12,
                 expand=True,
                 scroll=ft.ScrollMode.ALWAYS,
             ),
