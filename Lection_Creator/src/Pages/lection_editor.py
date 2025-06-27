@@ -69,7 +69,7 @@ class EditorField(ft.Container):
     def __init__(self, page: ft.Page):
         self.page = page
         self.page_index = 0
-        self.pages_content = [ft.Text("Seite 1: Leer")]  # Start mit einer Seite
+        self.pages_content = [[]]  # Each page is a list of widget configs
         self.page_count = len(self.pages_content)
 
         self.navigator = PageNavigator(
@@ -87,9 +87,9 @@ class EditorField(ft.Container):
             shadow=ft.BoxShadow(blur_radius=14, color="#00000033", offset=ft.Offset(3, 3)),
             padding=30,
             content=ft.Column(
-                [self.pages_content[self.page_index]],
+                [],  # Start empty, will be filled in update_view
                 expand=True,
-                scroll=ft.ScrollMode.ALWAYS,  # oder ALWAYS, wenn gewünscht
+                scroll=ft.ScrollMode.ALWAYS,
             ),
 )
 
@@ -123,33 +123,44 @@ class EditorField(ft.Container):
 
     def add_new_page(self, e=None):
         # Neue leere Seite hinzufügen (kannst du später anpassen)
-        self.pages_content.append(ft.Text(f"Seite {len(self.pages_content)+1}: Neu"))
+        self.pages_content.append([])  # New page is an empty list of widget configs
         self.page_count = len(self.pages_content)
         self.page_index = self.page_count - 1
         self.update_view()
 
     def update_view(self):
-        # Update navigator label
         self.navigator.content.controls[1].value = f"{self.page_index + 1} / {self.page_count}"
-
-        # Update editor panel label
         self.editor_panel_label.value = f"Editor Panel - Seite {self.page_index + 1}"
 
-        # Update field content (update the Column's controls, not the Container's content)
+        # Clear and rebuild all widgets for this page
         self.field.content.controls.clear()
-        self.field.content.controls.append(self.pages_content[self.page_index])
+        for i, widget_cfg in enumerate(self.pages_content[self.page_index]):
+            if i > 0:
+                self.field.content.controls.append(ft.Divider())
+            widget = self.build_widget_from_config(widget_cfg)
+            self.field.content.controls.append(widget)
         self.field.content.update()
-
-        # Only update the top-level container
         self.update()
 
-    def set_editor_content(self, content: ft.Control, label: str = "Editor Panel"):
-        self.pages_content[self.page_index] = content
-        self.field.content.controls.clear()
-        self.field.content.controls.append(content)
-        self.field.content.update()
+    def set_editor_content(self, content: ft.Control, label: str = "Editor Panel", config=None):
+        # Save config (type, data) instead of widget instance
+        if config is None:
+            config = {"type": "custom", "data": content}
+        self.pages_content[self.page_index].append(config)
+        self.update_view()
         self.editor_panel_label.value = label
         self.update()
+
+    def build_widget_from_config(self, config):
+        if config["type"] == "gap_text":
+            # Always create a new DraggableText for unsolved state
+            return DraggableText(self.page, config["data"]["text"], config["data"]["gaps"], config["data"]["options"]).build()
+        elif config["type"] == "matchable_pairs":
+            return MatchablePairs(self.page, config["data"]["left"], config["data"]["right"]).build()
+        # Add more types as needed
+        elif config["type"] == "custom":
+            return config["data"]
+        return ft.Text("Unbekannter Widget-Typ")
 
 
 class EditorSelection(ft.Container):
@@ -173,6 +184,20 @@ class EditorSelection(ft.Container):
                 expand=True,
             )
         )
+
+    def show_editor_ui(self, editor_ui):
+        self.content.content = editor_ui
+        self.content.update()
+
+    def on_editor_selected(self, editor_type: str):
+        editor_map = {
+            "Matchable Pairs": self.build_matchable_pairs_editor,
+            "Gap Text": self.build_gap_text_editor,
+            # Weitere Editoren können hier ergänzt werden
+        }
+        if editor_type in editor_map:
+            editor_ui = editor_map[editor_type]()
+            self.show_editor_ui(editor_ui)
 
     def _build_selection_options(self) -> ft.Container:
         return ft.Container(
@@ -217,16 +242,6 @@ class EditorSelection(ft.Container):
             ),
             height=50,
         )
-
-    def on_editor_selected(self, editor_type: str):
-        editor_map = {
-            "Matchable Pairs": self.build_matchable_pairs_editor,
-            "Gap Text": self.build_gap_text_editor,
-            # Weitere Editoren können hier ergänzt werden
-        }
-        if editor_type in editor_map:
-            editor_ui = editor_map[editor_type]()
-            self.on_select_editor_callback(editor_ui, f"{editor_type} Editor")
 
     # — Matchable Pairs Editor, unverändert —
     def build_matchable_pairs_editor(self) -> ft.Control:
@@ -278,31 +293,49 @@ class EditorSelection(ft.Container):
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
-            matchable = MatchablePairs(self.page, self.left_items, self.right_items)
-            self.on_select_editor_callback(matchable.build(), "Matchable Pairs Aktivität")
+            self.on_select_editor_callback(
+                None,
+                "Matchable Pairs Aktivität",
+                config={
+                    "type": "matchable_pairs",
+                    "data": {
+                        "left": list(self.left_items),
+                        "right": list(self.right_items)
+                    }
+                }
+            )
+            self.show_editor_ui(self._build_selection_options())
 
-        return ft.Column(
-            [
-                ft.Text("Matchbare Paare erstellen", size=20, weight=ft.FontWeight.BOLD),
-                self.left_input,
-                self.right_input,
-                ft.Row(
-                    [
-                        ft.ElevatedButton(text="Paar hinzufügen", icon=ft.Icons.ADD, on_click=add_pair),
-                        ft.ElevatedButton(
-                            text="Fertig",
-                            icon=ft.Icons.CHECK,
-                            on_click=finish_editor,
-                            bgcolor="#4CAF50",
-                            color="white",
-                        ),
-                    ],
-                    spacing=12,
-                ),
-                ft.Divider(),
-                self.pairs_display,
-            ],
-            spacing=10,
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("Matchbare Paare erstellen", size=20, weight=ft.FontWeight.BOLD),
+                    self.left_input,
+                    self.right_input,
+                    ft.Row(
+                        [
+                            ft.ElevatedButton(text="Paar hinzufügen", icon=ft.Icons.ADD, on_click=add_pair),
+                            ft.ElevatedButton(
+                                text="Fertig",
+                                icon=ft.Icons.CHECK,
+                                on_click=finish_editor,
+                                bgcolor="#4CAF50",
+                                color="white",
+                            ),
+                        ],
+                        spacing=12,
+                    ),
+                    ft.Divider(),
+                    self.pairs_display,
+                ],
+                spacing=10,
+                expand=True,
+                scroll=ft.ScrollMode.ALWAYS,
+            ),
+            expand=True,
+            bgcolor="#fff",
+            border_radius=12,
+            padding=16,
         )
 
     # — NEUER GAP TEXT EDITOR (smooth, funktional, clean) —
@@ -320,7 +353,6 @@ class EditorSelection(ft.Container):
         self.options = []
         self.options_container = ft.Column(spacing=10, expand=True)
 
-        
         def update_gaps():
             text = self.text_field.value or ""
             words = text.split(" ")
@@ -339,15 +371,15 @@ class EditorSelection(ft.Container):
 
         def insert_gap(e):
             text = self.text_field.value or ""
-            gap_placeholder = " _____ "
-            new_text = text + gap_placeholder
+            gap_placeholder = "_____"
+            new_text = text + " " + gap_placeholder
             self.text_field.value = new_text
             self.text_field.update()
             update_gaps()
 
         def update_option_dropdowns():
-            # Hier kommt die Logik zum Aktualisieren der Dropdowns für die Optionen
-            pass  # Placeholder, implementiere nach Bedarf
+            # Optional: update dropdowns if gaps change
+            pass
 
         def render_options():
             self.options_container.controls.clear()
@@ -361,15 +393,14 @@ class EditorSelection(ft.Container):
                     border_radius=8,
                 )
 
-                # Build dropdown options: one for each gap, plus "Incorrect Option"
-                dropdown_options = [ft.dropdown.Option(str(i)) for i in range(len(self.gaps_idx))]
+                dropdown_options = [ft.dropdown.Option(str(idx)) for idx in range(len(self.gaps_idx))]
                 dropdown_options.append(ft.dropdown.Option("99", "Incorrect Option"))
 
                 gap_dropdown = ft.Dropdown(
                     label="Lücke auswählen",
                     width=140,
                     options=dropdown_options,
-                    value=str(option["gap_idx"]),  # Always set the value as string
+                    value=str(option["gap_idx"]),
                     on_change=lambda e, opt=option: update_gap_idx(opt, e.control.value),
                 )
 
@@ -408,7 +439,7 @@ class EditorSelection(ft.Container):
             render_options()
 
         def finish_editor(e):
-            # Validierung
+            # Validation
             if not self.gaps_idx:
                 self.page.snack_bar = ft.SnackBar(ft.Text("Keine Lücken im Text gefunden!"))
                 self.page.snack_bar.open = True
@@ -419,7 +450,6 @@ class EditorSelection(ft.Container):
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
-            # Check ob jede Lücke mindestens eine Option zugeordnet hat
             assigned_indices = {opt["gap_idx"] for opt in self.options if opt["gap_idx"] != 99}
             missing = [i for i in range(len(self.gaps_idx)) if i not in assigned_indices]
             if missing:
@@ -433,49 +463,53 @@ class EditorSelection(ft.Container):
             options = {opt["word"]: opt["gap_idx"] for opt in self.options}
             gaps = self.gaps_idx
 
-            # Instantiate DraggableText with your data
-            draggable = DraggableText(self.page, text, gaps, options)
-            draggable_widget = draggable.build() if hasattr(draggable, "build") else draggable
-
-            # Show the widget in the editor field
+            # Add to page and reset editor UI
             self.on_select_editor_callback(
-                draggable_widget,
+                None,
                 "Gap Text Aktivität",
+                config={"type": "gap_text", "data": {"text": text, "gaps": gaps, "options": options}}
             )
-            print("Gap Text Ergebnis:", {"text": text, "gaps": gaps, "options": self.options})
+            self.show_editor_ui(self._build_selection_options())
 
-        # --- Now build the UI ---
-        return ft.Column(
-            [
-                ft.Text("Lückentext erstellen", size=20, weight=ft.FontWeight.BOLD),
-                ft.Row(
-                    [
-                        self.text_field,
-                        ft.Column(
-                            [
-                                ft.ElevatedButton("Lücke einfügen", icon=ft.Icons.ADD, on_click=insert_gap),
-                                ft.ElevatedButton("Option hinzufügen", icon=ft.Icons.ADD, on_click=add_option),
-                                ft.ElevatedButton(
-                                    "Fertig",
-                                    icon=ft.Icons.CHECK,
-                                    on_click=finish_editor,
-                                    bgcolor="#4CAF50",
-                                    color="white",
-                                ),
-                            ],
-                            spacing=10,
-                            alignment=ft.MainAxisAlignment.START,
-                        ),
-                    ],
-                    spacing=20,
-                    expand=True,
-                    vertical_alignment=ft.CrossAxisAlignment.START,
-                ),
-                ft.Divider(),
-                self.options_container,
-            ],
-            spacing=15,
+        # --- Build the UI ---
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("Lückentext erstellen", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Row(
+                        [
+                            self.text_field,
+                            ft.Column(
+                                [
+                                    ft.ElevatedButton("Lücke einfügen", icon=ft.Icons.ADD, on_click=insert_gap),
+                                    ft.ElevatedButton("Option hinzufügen", icon=ft.Icons.ADD, on_click=add_option),
+                                    ft.ElevatedButton(
+                                        "Fertig",
+                                        icon=ft.Icons.CHECK,
+                                        on_click=finish_editor,
+                                        bgcolor="#4CAF50",
+                                        color="white",
+                                    ),
+                                ],
+                                spacing=10,
+                                alignment=ft.MainAxisAlignment.START,
+                            ),
+                        ],
+                        spacing=20,
+                        expand=True,
+                        vertical_alignment=ft.CrossAxisAlignment.START,
+                    ),
+                    ft.Divider(),
+                    self.options_container,
+                ],
+                spacing=15,
+                expand=True,
+                scroll=ft.ScrollMode.ALWAYS,  # <-- PUT IT HERE!
+            ),
             expand=True,
+            bgcolor="#fff",
+            border_radius=12,
+            padding=16,
         )
 
 
@@ -557,3 +591,7 @@ class MainEditor(ft.Container):
         self.page.snack_bar = ft.SnackBar(ft.Text("Speichern-Funktion noch nicht implementiert."))
         self.page.snack_bar.open = True
         self.page.update()
+
+    def show_editor_ui(self, editor_ui):
+        self.content.content = editor_ui
+        self.content.update()
