@@ -160,6 +160,8 @@ class EditorField(ft.Container):
         # Add more types as needed
         elif config["type"] == "custom":
             return config["data"]
+        elif config["type"] == "plain_text":
+            return ft.Text(config["data"]["text"], size=18)
         return ft.Text("Unbekannter Widget-Typ")
 
 
@@ -193,6 +195,7 @@ class EditorSelection(ft.Container):
         editor_map = {
             "Matchable Pairs": self.build_matchable_pairs_editor,
             "Gap Text": self.build_gap_text_editor,
+            "Plain Text": self.build_plain_text_editor,  # <-- add this line
             # Weitere Editoren können hier ergänzt werden
         }
         if editor_type in editor_map:
@@ -214,7 +217,8 @@ class EditorSelection(ft.Container):
                             self._build_button("Matchable Pairs"),
                             self._build_button("Gap Text"),
                             self._build_button("Picture Match"),
-                            self._build_button("Underlined Text"),
+                            self._build_button("Underlined Text"),#
+                            self._build_button("Plain Text")
                         ],
                         expand=True,
                         runs_count=2,
@@ -505,6 +509,53 @@ class EditorSelection(ft.Container):
                 spacing=15,
                 expand=True,
                 scroll=ft.ScrollMode.ALWAYS,  # <-- PUT IT HERE!
+            ),
+            expand=True,
+            bgcolor="#fff",
+            border_radius=12,
+            padding=16,
+        )
+
+    def build_plain_text_editor(self) -> ft.Control:
+        self.plain_text_field = ft.TextField(
+            label="Einfacher Text",
+            multiline=True,
+            filled=True,
+            border_radius=8,
+            min_lines=5,
+            expand=True,
+        )
+
+        def finish_editor(e):
+            text = self.plain_text_field.value.strip()
+            if not text:
+                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte Text eingeben!"))
+                self.page.snack_bar.open = True
+                self.page.update()
+                return
+            self.on_select_editor_callback(
+                None,
+                "Plain Text",
+                config={"type": "plain_text", "data": {"text": text}}
+            )
+            self.show_editor_ui(self._build_selection_options())
+
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.Text("Einfachen Text hinzufügen", size=20, weight=ft.FontWeight.BOLD),
+                    self.plain_text_field,
+                    ft.ElevatedButton(
+                        "Fertig",
+                        icon=ft.Icons.CHECK,
+                        on_click=finish_editor,
+                        bgcolor="#4CAF50",
+                        color="white",
+                    ),
+                ],
+                spacing=15,
+                expand=True,
+                scroll=ft.ScrollMode.ALWAYS,
             ),
             expand=True,
             bgcolor="#fff",
