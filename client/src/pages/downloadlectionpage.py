@@ -124,6 +124,11 @@ class DownloadLectionPage(ft.Container):
                 border=ft.border.all(1, "#e0e0e0"),
                 shadow=ft.BoxShadow(blur_radius=3, color="#00000010", offset=ft.Offset(0,1)),
             )
+            # Determine if download buttons should be disabled
+            server_url = self.page.client_storage.get("server_url") or ""
+            is_localhost = "localhost" in server_url
+            download_btn_color = "#bdbdbd" if is_localhost else "#1a73e8"
+            download_btn_enabled = not is_localhost
             # Render lections immediately
             if isinstance(lections, list) and lections:
                 for lec in lections:
@@ -131,7 +136,13 @@ class DownloadLectionPage(ft.Container):
                     self.lections_column.controls.append(
                         ft.Row([
                             ft.Text(lec_title),
-                            ft.IconButton(icon="download", tooltip="Download", on_click=None)
+                            ft.IconButton(
+                                icon="download",
+                                tooltip="Download",
+                                on_click=None,
+                                bgcolor=download_btn_color,
+                                disabled=not download_btn_enabled
+                            )
                         ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                     )
             else:
