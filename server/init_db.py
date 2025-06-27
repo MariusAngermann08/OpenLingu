@@ -26,7 +26,7 @@ try:
         users_metadata, languages_metadata,
         test_connection
     )
-    from server.models import DBUser, Token, Language
+    from server.models import DBUser, Token, Language, DBContributor
 except ImportError:
     from database import (
         users_engine, languages_engine, 
@@ -34,7 +34,7 @@ except ImportError:
         users_metadata, languages_metadata,
         test_connection
     )
-    from models import DBUser, Token, Language
+    from models import DBUser, Token, Language, DBContributor
 
 def wait_for_db(engine, max_retries: int = 5, retry_delay: int = 1) -> bool:
     """Wait for the database to be available.
@@ -99,10 +99,10 @@ def init_db() -> None:
         
         # Create users tables if they don't exist
         inspector = inspect(users_engine)
-        if not inspector.has_table('users'):
-            logger.info("Creating users table (first run)...")
+        if not inspector.has_table('users') or not inspector.has_table('contributors'):
+            logger.info("Creating database tables (first run)...")
             users_metadata.create_all(bind=users_engine)
-            logger.debug("Created users table")
+            logger.debug("Created all tables in users database")
         
         # Create languages tables if they don't exist
         if not inspector.has_table('languages'):

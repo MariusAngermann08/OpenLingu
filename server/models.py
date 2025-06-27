@@ -32,9 +32,16 @@ class DBUser(UsersBase):
     def __setattr__(self, key, value):
         print(f"DBUser.__setattr__: {key} = {value}")
         super().__setattr__(key, value)
+
+class DBContributor(UsersBase):
+    __tablename__ = "contributors"
+    __table_args__ = {'extend_existing': True}
+    
+    username = Column(String, primary_key=True, index=True)
+    hashed_password = Column(String)
     
     def __init__(self, **kwargs):
-        print(f"DBUser.__init__ with args: {kwargs}")
+        print(f"DBContributor.__init__ with args: {kwargs}")
         super().__init__(**kwargs)
 
 class Token(UsersBase):

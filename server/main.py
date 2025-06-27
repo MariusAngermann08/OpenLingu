@@ -1,33 +1,39 @@
-from fastapi import FastAPI, status, Depends, HTTPException, Request, Path, Body
+from fastapi import FastAPI, status, Depends, HTTPException, Request, Path, Body, Header
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any, List, Annotated, Callable, Awaitable
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse, Response
-from fastapi.encoders import jsonable_encoder
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
-from typing import Annotated, Callable, Awaitable
-import time
+import logging
+import uvicorn
+import os
+import sys
+from functools import wraps
 
-# Import modules
+# Import from server modules
 try:
     # When running from project root via run.py
     from server.database import users_engine, get_users_db, get_languages_db
-    from server.models import DBUser, Token, Language, Lection
+    from server.models import DBUser, Token, Language, Lection, DBContributor
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-    from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
+    from server.auth import create_user, authenticate_user, verify_password, pwd_context, remove_user, authenticate_contributer
     from server.services.user_service import get_user_profile, delete_user
     from server.services.token_service import generate_token, verify_token, remove_expired_tokens
     from server.language_handler.languageregistry import add_language, add_lection, edit_lection, delete_lection, delete_language, get_languages_list as get_languages_list_impl
 except ImportError:
     # When running directly from server directory
     from database import users_engine, get_users_db, get_languages_db
-    from models import DBUser, Token, Language, Lection
+    from models import DBUser, Token, Language, Lection, DBContributor
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-    from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user
+    from auth import create_user, authenticate_user, verify_password, pwd_context, remove_user, authenticate_contributer
     from services.user_service import get_user_profile, delete_user
     from services.token_service import generate_token, verify_token, remove_expired_tokens
     from language_handler.languageregistry import add_language, add_lection, edit_lection, delete_lection, delete_language, get_languages_list as get_languages_list_impl
+
+def get_contributor_by_username(db: Session, username: str):
+    """Get a contributor by username."""
+    return db.query(DBContributor).filter(DBContributor.username == username).first()
 
 # Used for password hashing
 from passlib.context import CryptContext
@@ -49,6 +55,10 @@ tags_metadata = [
     {
         "name": "system",
         "description": "System information and status",
+    },
+    {
+        "name": "contributer",
+        "description": "Contributer management operations",
     }
 ]
 
@@ -81,6 +91,84 @@ async def cleanup_expired_tokens_middleware(request: Request, call_next: Callabl
 # Database dependencies
 users_db_dependency = Annotated[Session, Depends(get_users_db)]
 languages_db_dependency = Annotated[Session, Depends(get_languages_db)]
+
+# Auth dependencies
+async def get_current_user(
+    authorization: str = Header(..., description="Bearer token"),
+    db: Session = Depends(get_users_db)
+) -> Dict[str, Any]:
+    """
+    Dependency to get the current user from the Authorization header
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    token = authorization.split(" ")[1]
+    try:
+        # Import the verify_token function
+        from services.token_service import verify_token
+        
+        # Verify the token and get the payload
+        payload = await verify_token(token, db)
+        username = payload.get("sub")
+        
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: No username in token",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        # Get the user from the database
+        user = get_contributor_by_username(db, username)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        return {
+            "username": user.username,
+            "is_contributor": True,
+            "is_admin": getattr(user, "is_admin", False)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Error in get_current_user: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+
+def require_contributor(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """
+    Dependency to require contributor status
+    """
+    if not user.get("is_contributor", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Contributor privileges required"
+        )
+    return user
+
+def require_admin(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+    """
+    Dependency to require admin status
+    """
+    if not user.get("is_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required"
+        )
+    return user
 
 
 @app.get("/", tags=["system"])
@@ -146,48 +234,233 @@ async def login(
         if db:
             db.close()
 
-@app.post("/register", tags=["authentication"])
-async def register(username: str, email: str, password: str, db: users_db_dependency):
+@app.get("/login_contributer", response_model=Dict[str, Any], tags=["authentication"])
+async def login_contributer(
+    username: str,
+    password: str,
+    db: Session = Depends(get_users_db)
+):
     """
-    Register a new user
+    Authenticate a contributor and return an access token with role information
     
     Args:
-        username: The username for the new user
-        password: The password for the new user
-        email: The email for the new user
+        username: The username of the contributor
+        password: The contributor's password
         db: Database session dependency
         
     Returns:
-        dict: Success message
-    """
-    # Check if user already exists
-    existing_user = db.query(DBUser).filter(DBUser.username == username).first()
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
-        )
+        dict: Access token, token type, and user information including roles
         
-    # Create new user
+    Raises:
+        HTTPException: If authentication fails
+    """
+    print(f"[DEBUG] login_contributer called with username: {username}")
+    
     try:
-        user = await create_user(username, email, password, db)
-        return {"message": "User created successfully"}
+        print("[DEBUG] Starting authentication...")
+        
+        # First, check if the user exists
+        user = get_contributor_by_username(db, username)
+        if not user:
+            print(f"[DEBUG] User {username} not found in database")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        print(f"[DEBUG] User found: {user.username}")
+        
+        # Now authenticate with password
+        auth_result = await authenticate_contributer(username, password, db, generate_token=True)
+        
+        # If we get here, authentication was successful
+        if not auth_result or "access_token" not in auth_result:
+            print("[ERROR] Authentication succeeded but no token was returned")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Authentication succeeded but no token was generated"
+            )
+            
+        print("[DEBUG] Authentication successful, generating response...")
+        
+        # Get the user object with role information
+        user_info = {
+            "username": username,
+            "is_contributor": True,  # This endpoint is only for contributors
+            "is_admin": getattr(user, "is_admin", False)
+        }
+        
+        response = {
+            "access_token": auth_result["access_token"],
+            "token_type": "bearer",
+            "user": user_info
+        }
+        
+        print(f"[DEBUG] Returning successful response for user: {username}")
+        return response
+        
+    except HTTPException as he:
+        print(f"[DEBUG] HTTPException in login_contributer: {he.detail}")
+        raise he
     except Exception as e:
-        db.rollback()
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"[ERROR] Exception in login_contributer: {str(e)}")
+        print(f"[ERROR] Traceback: {error_details}")
+        
+        # Return more detailed error in development
+        if os.getenv("ENVIRONMENT", "development") == "development":
+            detail = f"An error occurred during authentication: {str(e)}\n\n{error_details}"
+        else:
+            detail = "An error occurred during authentication"
+            
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error creating user: {str(e)}"
+            detail=detail
         )
+    finally:
+        # Make sure to close the database session
+        if db:
+            db.close()
+
+from pydantic import BaseModel
+
+class UserCreate(BaseModel):
+    """Model for user registration data"""
+    username: str
+    email: str
+    password: str
     
-    return {"message": "User created successfully"}
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "newuser",
+                "email": "user@example.com",
+                "password": "securepassword123"
+            }
+        }
+
+@app.post("/register", 
+          response_model=Dict[str, Any], 
+          status_code=status.HTTP_201_CREATED,
+          tags=["authentication"],
+          summary="Register a new user account",
+          responses={
+              201: {"description": "User registered successfully"},
+              400: {"description": "Invalid input data"},
+              409: {"description": "Username or email already exists"},
+              500: {"description": "Internal server error"}
+          })
+async def register(
+    user_data: UserCreate,
+    db: Session = Depends(get_users_db)
+):
+    """
+    Register a new user account
+    
+    This endpoint allows new users to create an account. The username must be unique,
+    and the password must be at least 8 characters long.
+    
+    Args:
+        user_data: User registration data including username, email, and password
+        db: Database session dependency
+        
+    Returns:
+        dict: Access token, token type, and basic user information
+        
+    Raises:
+        HTTPException: If registration fails due to invalid data or existing user
+    """
+    try:
+        # Validate input
+        if len(user_data.username) < 3:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Username must be at least 3 characters long"
+            )
+            
+        if len(user_data.password) < 8:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password must be at least 8 characters long"
+            )
+            
+        # Check if username or email already exists
+        existing_user = db.query(DBUser).filter(
+            (DBUser.username == user_data.username) | 
+            (DBUser.email == user_data.email)
+        ).first()
+        
+        if existing_user:
+            if existing_user.username == user_data.username:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Username already registered"
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Email already registered"
+                )
+            
+        # Create the user
+        user = await create_user(
+            username=user_data.username,
+            email=user_data.email,
+            password=user_data.password,
+            db=db
+        )
+        
+        # Commit the transaction
+        db.commit()
+        
+        # Return success response without token
+        return {
+            "status": "success",
+            "message": "User registered successfully. Please sign in.",
+            "user": {
+                "username": user.username,
+                "email": user.email
+            }
+        }
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "unique constraint" in error_msg:
+            if "username" in error_msg:
+                detail = "Username already exists"
+            elif "email" in error_msg:
+                detail = "Email already in use"
+            else:
+                detail = "User with these details already exists"
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=detail
+            )
+        print(f"Error during user registration: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during registration. Please try again."
+        )
+    finally:
+        if db:
+            db.close()
 
 @app.post("/logout", tags=["authentication"])
-async def logout(token: str, db: users_db_dependency):
+async def logout(
+    authorization: str = Header(..., description="Bearer token"),
+    db: Session = Depends(get_users_db)
+):
     """
     Log out a user by removing their token
     
     Args:
-        token: The authentication token to invalidate
+        authorization: The Authorization header containing the Bearer token
         db: Database session dependency
         
     Returns:
@@ -196,7 +469,15 @@ async def logout(token: str, db: users_db_dependency):
     Raises:
         HTTPException: If there's an error during logout
     """
-    if not token or not isinstance(token, str) or len(token) < 10:  # Basic validation
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or missing Authorization header"
+        )
+    
+    token = authorization.split(" ")[1]
+    
+    if not token or len(token) < 10:  # Basic validation
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or missing authentication token"
@@ -207,8 +488,8 @@ async def logout(token: str, db: users_db_dependency):
     try:
         # Verify the token first to ensure it's valid
         try:
-            username = await verify_token(token, db)
-            print(f"[LOGOUT] Verified token for user: {username}")
+            user = await get_current_user(authorization, db)
+            print(f"[LOGOUT] Verified token for user: {user['username']}")
         except HTTPException as e:
             if e.status_code == 401:
                 print("[LOGOUT] Token is invalid or expired, but will attempt to remove it")
@@ -226,6 +507,9 @@ async def logout(token: str, db: users_db_dependency):
         
         if not token_removed:
             print(f"[WARNING] Token not found during logout - it may have already been removed or expired")
+        
+        # Close the database session
+        db.close()
             
         return {
             "status": "success",
@@ -245,83 +529,291 @@ async def logout(token: str, db: users_db_dependency):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_msg
         )
+    finally:
+        if db:
+            db.close()
+
+@app.get("/me", response_model=Dict[str, Any], tags=["users"])
+async def get_current_user_profile(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_users_db)
+):
+    """
+    Get the current authenticated user's profile
+    
+    Args:
+        current_user: The currently authenticated user
+        db: Database session dependency
+        
+    Returns:
+        dict: Current user's profile information
+        
+    Raises:
+        HTTPException: If user is not found
+    """
+    try:
+        return await get_user_profile(current_user["username"], current_user["username"], db)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving user profile: {str(e)}"
+        )
 
 @app.get("/user/{username}", tags=["users"])
-async def get_user(username: str, token: str, db: users_db_dependency):
+async def get_user(
+    username: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    db: Session = Depends(get_users_db)
+):
     """
-    Get a user's profile information
+    Get a user's profile information (admin only)
     
     Args:
         username: The username of the user to retrieve
-        token: Authentication token
+        current_user: The currently authenticated user
         db: Database session dependency
         
     Returns:
         dict: User profile information
+        
+    Raises:
+        HTTPException: If user is not found or not authorized
     """
-    return await get_user_profile(username, token, db)
+    # Only admins can view other users' profiles
+    if not current_user.get("is_admin", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required to view other users' profiles"
+        )
+    
+    try:
+        return await get_user_profile(username, current_user["username"], db)
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error retrieving user profile: {str(e)}"
+        )
 
-@app.delete("/user/{username}", tags=["users"])
-async def delete_db_user(username: str, token: str, db: users_db_dependency):
+@app.delete("/user/{username}", status_code=status.HTTP_200_OK, tags=["users"])
+async def delete_user_endpoint(
+    username: str,
+    current_user: Dict[str, Any] = Depends(require_admin),  # Only admins can delete users
+    db: Session = Depends(get_users_db)
+):
     """
-    Delete a user account
+    Delete a user account (admin only)
     
     Args:
         username: The username of the user to delete
-        token: Authentication token
-        db: Database session dependency
-        
-    Returns:
-        dict: Success message
-    """
-    return await delete_user(username, token, db)
-
-@app.post("/languages", tags=["languages"])
-async def add_language_to_db(language_name: str, username: str, token: str, db: languages_db_dependency):
-    """
-    Add a new language
-    
-    Args:
-        language_name: The name of the language to add
-        username: The username of the user making the request
-        token: Authentication token
-        db: Database session dependency
-        
-    Returns:
-        dict: Success message and language details
-    """
-    return await add_language(language_name, username, token, db)
-
-@app.delete("/languages/{language_name}", tags=["languages"])
-async def delete_language_from_db(language_name: str, username: str, token: str, db: languages_db_dependency):
-    """
-    Delete a language
-    
-    Args:
-        language_name: The name of the language to delete
-        username: The username of the user making the request
-        token: Authentication token
+        current_user: The currently authenticated admin user
         db: Database session dependency
         
     Returns:
         dict: Success message
         
     Raises:
-        HTTPException: If there's an error deleting the language
+        HTTPException: If user is not an admin or deletion fails
     """
     try:
-        result = await delete_language(language_name, username, token, db)
-        return result
-    except HTTPException as e:
-        # Re-raise HTTP exceptions with their original status codes
-        raise e
+        # Prevent admins from deleting themselves
+        if username == current_user["username"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Admins cannot delete their own accounts"
+            )
+            
+        result = await delete_user(username, current_user["username"], db)
+        return {
+            "status": "success",
+            "message": f"User '{username}' deleted successfully"
+        }
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        # Log the full error for debugging
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error deleting user: {str(e)}"
+        )
+    finally:
+        if db:
+            db.close()
+
+class LanguageCreate(BaseModel):
+    username: str
+
+@app.post(
+    "/add_language/{language_name}",
+    tags=["languages"],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"description": "Language added successfully"},
+        400: {"description": "Language already exists"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Contributor privileges required"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def add_language_to_db(
+    request: Request,
+    language_name: str,
+    language_data: LanguageCreate,
+    current_user: Dict[str, Any] = Depends(require_contributor),
+    db: Session = Depends(get_languages_db)
+):
+    """
+    Add a new language (Contributor only)
+    
+    This endpoint allows contributors to add a new language to the system.
+    The user must be authenticated as a contributor.
+    
+    Args:
+        language_name: The name of the language to add
+        current_user: The authenticated contributor's information (from token)
+        db: Database session dependency
+        
+    Returns:
+        dict: Success message and language details
+        
+    Raises:
+        HTTPException: If the language already exists or other error occurs
+    """
+    try:
+        # Add the language using the contributor's username and token
+        authorization = request.headers.get("authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        token = authorization.split(" ")[1]
+        
+        # Get the username from the request body
+        username = language_data.username
+        
+        result = await add_language(
+            language_name=language_name,
+            username=username,
+            token=token,
+            db=db
+        )
+        
+        # Commit the transaction
+        db.commit()
+        
+        return {
+            "status": "success", 
+            "message": f"Language '{language_name}' added successfully", 
+            "data": result
+        }
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "already exists" in error_msg or "duplicate" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Language '{language_name}' already exists"
+            )
+        print(f"Error adding language: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while adding the language"
+        )
+    finally:
+        if db:
+            db.close()
+
+@app.delete(
+    "/delete_language/{language_name}",
+    tags=["languages"],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Language deleted successfully"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Contributor privileges required"},
+        404: {"description": "Language not found"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def delete_language_from_db(
+    request: Request,
+    language_name: str,
+    current_user: Dict[str, Any] = Depends(require_contributor),
+    db: Session = Depends(get_languages_db)
+):
+    """
+    Delete a language (Contributor only)
+    
+    This endpoint allows contributors to delete a language from the system.
+    The user must be authenticated as a contributor.
+    
+    Args:
+        language_name: The name of the language to delete
+        current_user: The authenticated contributor's information (from token)
+        db: Database session dependency
+        
+    Returns:
+        dict: Success message
+        
+    Raises:
+        HTTPException: If the language doesn't exist or other error occurs
+    """
+    try:
+        # Get the token from the Authorization header
+        authorization = request.headers.get("authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        token = authorization.split(" ")[1]
+        
+        # Delete the language using the contributor's username and token
+        await delete_language(
+            language_name=language_name,
+            username=current_user["username"],
+            token=token,
+            db=db
+        )
+        
+        # Commit the transaction
+        db.commit()
+        
+        return {
+            "status": "success", 
+            "message": f"Language '{language_name}' deleted successfully"
+        }
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Language '{language_name}' not found"
+            )
         print(f"Error deleting language: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while deleting the language: {str(e)}"
+            detail="An error occurred while deleting the language"
         )
+    finally:
+        if db:
+            db.close()
 
 @app.get("/languages", tags=["languages"])
 async def get_languages_list(db: languages_db_dependency):
@@ -338,46 +830,115 @@ async def get_languages_list(db: languages_db_dependency):
 
 class LectionCreate(BaseModel):
     lection_name: str
-    username: str
-    token: str
     content: dict
     
     class Config:
         json_schema_extra = {
             "example": {
                 "lection_name": "Lektion 1",
-                "username": "user123",
-                "token": "your_jwt_token_here",
-                "content": {"id": "spanish_grammar_101", "title": "Spanish Grammar Basics", "pages": []}  # Your JSON content here
+                "content": {
+                    "id": "spanish_grammar_101", 
+                    "title": "Spanish Grammar Basics", 
+                    "pages": []
+                }
             }
         }
 
 
-@app.post("/languages/{language_name}/lections/add", tags=["lections"])
+@app.post(
+    "/add_lection/{language_name}",
+    tags=["lections"],
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        201: {"description": "Lection created successfully"},
+        400: {"description": "Invalid input data"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Contributor privileges required"},
+        404: {"description": "Language not found"},
+        409: {"description": "Lection already exists"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def add_lection_to_db(
+    request: Request,
     language_name: str,
     lection_data: LectionCreate,
-    db: languages_db_dependency
+    current_user: Dict[str, Any] = Depends(require_contributor),
+    db: Session = Depends(get_languages_db)
 ):
     """
-    Add a new lection
+    Add a new lection (Contributor only)
+    
+    This endpoint allows contributors to add a new lection to a language.
+    The user must be authenticated as a contributor.
     
     Args:
         language_name: The name of the language to add the lection to
-        lection_data: Lection data including name, username, token, and content
+        lection_data: Lection data including name and content
+        current_user: The authenticated contributor's information (from token)
         db: Database session dependency
         
     Returns:
         dict: Success message and lection details
+        
+    Raises:
+        HTTPException: If the lection already exists, language not found, or other error occurs
     """
-    return await add_lection(
-        language_name,
-        lection_data.lection_name,
-        lection_data.username,
-        lection_data.token,
-        lection_data.content,
-        db
-    )
+    try:
+        # Get the token from the Authorization header
+        authorization = request.headers.get("authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        token = authorization.split(" ")[1]
+        
+        # Add the lection using the contributor's username and token
+        result = await add_lection(
+            language_name=language_name,
+            lection_name=lection_data.lection_name,
+            username=current_user["username"],
+            token=token,
+            content=lection_data.content,
+            db=db
+        )
+        
+        # Commit the transaction
+        db.commit()
+        
+        return {
+            "status": "success", 
+            "message": f"Lection '{lection_data.lection_name}' added to '{language_name}' successfully",
+            "data": result
+        }
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "already exists" in error_msg or "duplicate" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Lection '{lection_data.lection_name}' already exists in language '{language_name}'"
+            )
+        elif "not found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Language '{language_name}' not found"
+            )
+        print(f"Error adding lection: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while adding the lection"
+        )
+    finally:
+        if db:
+            db.close()
 
 @app.get("/languages/{language_name}/lections", tags=["lections"])
 def get_lection_list(language_name: str, db: Session = Depends(get_languages_db)):
@@ -515,49 +1076,190 @@ async def get_lection_by_id(
             detail="An error occurred while retrieving the lection content"
         )
 
-@app.put("/languages/{language_name}/lections/edit", tags=["lections"])
+@app.put(
+    "/edit_lection/{language_name}",
+    tags=["lections"],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Lection updated successfully"},
+        400: {"description": "Invalid input data"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Contributor privileges required"},
+        404: {"description": "Lection or language not found"},
+        500: {"description": "Internal server error"}
+    }
+)
 async def edit_lection_to_db(
+    request: Request,
     language_name: str,
     lection_data: LectionCreate,
-    db: languages_db_dependency
+    current_user: Dict[str, Any] = Depends(require_contributor),
+    db: Session = Depends(get_languages_db)
 ):
     """
-    Edit a lection
+    Edit a lection (Contributor only)
+    
+    This endpoint allows contributors to edit an existing lection.
+    The user must be authenticated as a contributor.
     
     Args:
         language_name: The name of the language the lection belongs to
-        lection_data: Updated lection data including name, username, token, and content
+        lection_data: Updated lection data including name and content
+        current_user: The authenticated contributor's information (from token)
         db: Database session dependency
         
     Returns:
-        dict: Success message and lection details
+        dict: Success message and updated lection details
+        
+    Raises:
+        HTTPException: If the lection doesn't exist, permission denied, or other error occurs
     """
-    return await edit_lection(
-        language_name,
-        lection_data.lection_name,
-        lection_data.username,
-        lection_data.token,
-        lection_data.content,
-        db
-    )
+    try:
+        # Get the token from the Authorization header
+        authorization = request.headers.get("authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        token = authorization.split(" ")[1]
+        
+        # Edit the lection using the contributor's username and token
+        result = await edit_lection(
+            language_name=language_name,
+            lection_name=lection_data.lection_name,
+            username=current_user["username"],
+            token=token,
+            content=lection_data.content,
+            db=db
+        )
+        
+        # Commit the transaction
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Lection '{lection_data.lection_name}' updated successfully",
+            "data": result
+        }
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lection or language not found: {error_msg}"
+            )
+        elif "permission" in error_msg or "not authorized" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to edit this lection"
+            )
+        print(f"Error updating lection: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while updating the lection"
+        )
+    finally:
+        if db:
+            db.close()
 
-@app.post("/languages/{language_name}/lections/{lection_name}/delete", tags=["lections"])
-async def delete_lection_from_db(language_name: str, lection_name: str, username: str, token: str, db: languages_db_dependency):
+@app.delete(
+    "/delete_lection/{language_name}/{lection_name}",
+    tags=["lections"],
+    status_code=status.HTTP_200_OK,
+    responses={
+        200: {"description": "Lection deleted successfully"},
+        401: {"description": "Not authenticated"},
+        403: {"description": "Contributor privileges or ownership required"},
+        404: {"description": "Lection or language not found"},
+        500: {"description": "Internal server error"}
+    }
+)
+async def delete_lection_from_db(
+    request: Request,
+    language_name: str,
+    lection_name: str,
+    current_user: Dict[str, Any] = Depends(require_contributor),
+    db: Session = Depends(get_languages_db)
+):
     """
-    Delete a lection
+    Delete a lection (Contributor only)
+    
+    This endpoint allows contributors to delete a lection they own.
+    The user must be authenticated as a contributor and must be the owner of the lection.
     
     Args:
-        language_name: The name of the language to add the lection to
-        lection_name: The name of the lection to add
-        username: The username of the user making the request
-        token: Authentication token
-        content: The content of the lection
+        language_name: The name of the language the lection belongs to
+        lection_name: The name of the lection to delete
+        current_user: The authenticated contributor's information (from token)
         db: Database session dependency
         
     Returns:
-        dict: Success message and lection details
+        dict: Success message
+        
+    Raises:
+        HTTPException: If the lection doesn't exist, permission denied, or other error occurs
     """
-    return await delete_lection(language_name, lection_name, username, token, db)
+    try:
+        # Get the token from the Authorization header
+        authorization = request.headers.get("authorization")
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        token = authorization.split(" ")[1]
+        
+        # Delete the lection using the contributor's username and token
+        await delete_lection(
+            language_name=language_name,
+            lection_name=lection_name,
+            username=current_user["username"],
+            token=token,
+            db=db
+        )
+        
+        # Commit the transaction
+        db.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Lection '{lection_name}' deleted successfully from '{language_name}'"
+        }
+        
+    except HTTPException as he:
+        db.rollback()
+        raise he
+    except Exception as e:
+        db.rollback()
+        error_msg = str(e).lower()
+        if "not found" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Lection '{lection_name}' not found in language '{language_name}'"
+            )
+        elif "permission" in error_msg or "not authorized" in error_msg or "not the owner" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete this lection. Only the owner can delete it."
+            )
+        print(f"Error deleting lection: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while deleting the lection"
+        )
+    finally:
+        if db:
+            db.close()
 
 @app.on_event("startup")
 async def startup_event():
