@@ -9,6 +9,7 @@ from pages.connectingpage import *
 from pages.setuppage import SetupPage
 from pages.Loaders.languagechooser import LanguageChooser
 from pages.Widgetlibary.lectionviewer import LectionViewer
+from pages.downloadlectionpage import DownloadLectionPage
 
 mainpage = None
 
@@ -29,6 +30,17 @@ def route_change(e):
         else:
             page.go("/server")
         #page.go("/lectionviewer")
+
+    elif route == "/download-lection":
+        page.views.append(
+            ft.View(
+                route,
+                [DownloadLectionPage(page)],
+                appbar=ft.AppBar(title=ft.Text("Download Lections", color="white"), bgcolor="#1a73e8", leading=ft.IconButton("arrow_back", on_click=lambda _: page.go("/main")))
+            )
+        )
+        page.update()
+        return
 
     def create_server_appbar(page):
         server_url = page.client_storage.get("server_url") or "No server selected"

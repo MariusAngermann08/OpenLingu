@@ -4,6 +4,7 @@ import sys
 import os
 from pathlib import Path
 from typing import List, Dict, Any
+from googletrans import Translator
 
 # Get the src directory (client/src)
 current_dir = Path(__file__).resolve().parent
@@ -131,8 +132,31 @@ class LectionParser:
             return widget.build()
             
         elif widget_type == "text":
+            translator = Translator()
+            original_text = data["text"]
+            # Get the user's native language from client storage if possible, else default to 'de'
+            lang_code = "de"
+            try:
+                # Try to get from client storage (synchronously if possible)
+                if hasattr(self, 'page') and hasattr(self.page, 'client_storage'):
+                    code = self.page.client_storage.get("native_language")
+                    if code:
+                        lang_code = code
+            except Exception as e:
+                print(f"Could not retrieve native language from storage: {e}")
+            try:
+                detected = translator.detect(original_text).lang
+                detected_short = (detected or '').split('-')[0].lower()
+                lang_code_short = (lang_code or '').split('-')[0].lower()
+                if detected_short != lang_code_short:
+                    translated = translator.translate(original_text, dest=lang_code).text
+                else:
+                    translated = original_text
+            except Exception as e:
+                print(f"Translation failed: {e}")
+                translated = original_text
             return ft.Text(
-                value=data["text"],
+                value=translated,
                 size=data.get("size", 14),
                 weight=data.get("weight", "normal"),
                 color=data.get("color", "black")
@@ -200,6 +224,36 @@ class LectionParser:
                 # Add description if exists
                 if "description" in page_data:
                     print(f"  - Page description: {page_data['description']}")
+                    # On the first page, also show translated lection description above page description
+                    if i == 1 and hasattr(self, 'description') and self.description:
+                        translator = Translator()
+                        # Get the user's native language from client storage if possible, else default to 'de'
+                        lang_code = "de"
+                        try:
+                            if hasattr(self, 'page') and hasattr(self.page, 'client_storage'):
+                                code = self.page.client_storage.get("native_language")
+                                if code:
+                                    lang_code = code
+                        except Exception as e:
+                            print(f"Could not retrieve native language from storage: {e}")
+                        try:
+                            detected = translator.detect(self.description).lang
+                            detected_short = (detected or '').split('-')[0].lower()
+                            lang_code_short = (lang_code or '').split('-')[0].lower()
+                            if detected_short != lang_code_short:
+                                translated_lection_desc = translator.translate(self.description, dest=lang_code).text
+                            else:
+                                translated_lection_desc = self.description
+                        except Exception as e:
+                            print(f"Lection description translation failed: {e}")
+                            translated_lection_desc = self.description
+                        widgets.append(ft.Text(
+                            translated_lection_desc,
+                            size=18,
+                            italic=True,
+                            text_align=ft.TextAlign.CENTER,
+                            color="#333333"
+                        ))
                     widgets.append(ft.Text(
                         page_data["description"],
                         size=16,
