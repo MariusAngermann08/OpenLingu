@@ -216,8 +216,7 @@ class EditorSelection(ft.Container):
                         controls=[
                             self._build_button("Matchable Pairs"),
                             self._build_button("Gap Text"),
-                            self._build_button("Picture Match"),
-                            self._build_button("Underlined Text"),#
+                            self._build_button("Underlined Text"),
                             self._build_button("Plain Text")
                         ],
                         expand=True,
@@ -313,6 +312,13 @@ class EditorSelection(ft.Container):
         return ft.Container(
             content=ft.Column(
                 [
+                    ft.ElevatedButton(
+                        "Zurück",
+                        icon=ft.Icons.ARROW_BACK,
+                        on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
+                        bgcolor="#bbbbbb",
+                        color="black",
+                    ),
                     ft.Text("Matchbare Paare erstellen", size=20, weight=ft.FontWeight.BOLD),
                     self.left_input,
                     self.right_input,
@@ -404,7 +410,7 @@ class EditorSelection(ft.Container):
                     label="Lücke auswählen",
                     width=140,
                     options=dropdown_options,
-                    value=str(option["gap_idx"]),
+                    value=str(option["gap_idx"]),  # always string for dropdown
                     on_change=lambda e, opt=option: update_gap_idx(opt, e.control.value),
                 )
 
@@ -434,8 +440,8 @@ class EditorSelection(ft.Container):
             try:
                 idx = int(new_idx)
                 if (0 <= idx < len(self.gaps_idx)) or idx == 99:
-                    option["gap_idx"] = idx
-            except:
+                    option["gap_idx"] = idx  # store as int!
+            except Exception:
                 pass
 
         def delete_option(index):
@@ -478,7 +484,12 @@ class EditorSelection(ft.Container):
         # --- Build the UI ---
         return ft.Container(
             content=ft.Column(
-                [
+                [   ft.ElevatedButton(
+                        "Zurück",
+                        icon=ft.Icons.ARROW_BACK,
+                        on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
+                        bgcolor="#bbbbbb",
+                        color="black",),
                     ft.Text("Lückentext erstellen", size=20, weight=ft.FontWeight.BOLD),
                     ft.Row(
                         [
@@ -543,6 +554,13 @@ class EditorSelection(ft.Container):
         return ft.Container(
             content=ft.Column(
                 [
+                    ft.ElevatedButton(
+                        "Zurück",
+                        icon=ft.Icons.ARROW_BACK,
+                        on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
+                        bgcolor="#bbbbbb",
+                        color="black",
+                    ),
                     ft.Text("Einfachen Text hinzufügen", size=20, weight=ft.FontWeight.BOLD),
                     self.plain_text_field,
                     ft.ElevatedButton(
@@ -646,3 +664,10 @@ class MainEditor(ft.Container):
     def show_editor_ui(self, editor_ui):
         self.content.content = editor_ui
         self.content.update()
+        ft.ElevatedButton(
+            "Zurück",
+            icon=ft.Icons.ARROW_BACK,
+            on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
+            bgcolor="#bbbbbb",
+            color="black",
+        )
