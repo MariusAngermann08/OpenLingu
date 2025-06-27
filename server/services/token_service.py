@@ -9,11 +9,11 @@ from passlib.context import CryptContext
 
 # Import from server modules
 try:
-    from server.models import Token, DBUser
+    from server.models import Token, DBUser, DBContributor
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 except ImportError:
     # Fall back to direct imports when running directly
-    from models import Token, DBUser
+    from models import Token, DBUser, DBContributor
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 # Import get_users_db only when needed to avoid circular imports
@@ -24,13 +24,14 @@ def _get_users_db():
         from database import get_users_db as _get_db
     return _get_db()
 
-async def generate_token(user: DBUser, db: Session = None):
+async def generate_token(user: DBUser, db: Session = None, save_to_db: bool = True):
     """
     Generate a JWT token for the user
     
     Args:
         user: The user to generate token for
         db: Optional database session to check for token collisions
+        save_to_db: Whether to save the token to the database
         
     Returns:
         str: The generated JWT token
@@ -41,8 +42,8 @@ async def generate_token(user: DBUser, db: Session = None):
         print(f"[DEBUG] SECRET_KEY: {'Set' if SECRET_KEY else 'Not set'}")
         print(f"[DEBUG] ALGORITHM: {ALGORITHM}")
         
-        # Get database session if not provided
-        if db is None:
+        # Get database session if not provided and we need to save to db
+        if db is None and save_to_db:
             db = next(_get_users_db())
             close_db = True
         
@@ -61,21 +62,28 @@ async def generate_token(user: DBUser, db: Session = None):
                     "iat": datetime.utcnow(),
                     "nbf": datetime.utcnow(),
                     "exp": expire,  # Set explicit expiration
-                    "jti": str(uuid.uuid4())  # Add a unique ID to the token
+                    "jti": str(uuid.uuid4()),  # Add a unique ID to the token
+                    "is_contributor": hasattr(user, 'is_contributor') and user.is_contributor or False,
+                    "is_admin": hasattr(user, 'is_admin') and user.is_admin or False
                 }
                 print(f"[DEBUG] Token data: {token_data}")
                 
                 token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
                 print(f"[DEBUG] Token generated: {token}")
                 
-                # Check if token already exists in database
-                existing_token = db.query(Token).filter(Token.token == token).first()
-                if not existing_token:
-                    return token
-                    
-                print(f"[WARNING] Token collision detected, generating new token (attempt {attempt + 1}/{max_attempts})")
-                attempt += 1
+                if save_to_db and db is not None:
+                    # Save the token to the database
+                    db_token = Token(
+                        token=token,
+                        expires=expire
+                    )
+                    db.add(db_token)
+                    db.commit()
+                    db.refresh(db_token)
+                    print(f"[DEBUG] Token saved to database")
                 
+                return token
+                    
             except Exception as e:
                 print(f"[ERROR] Failed to generate token: {str(e)}")
                 if attempt >= max_attempts - 1:
@@ -91,7 +99,7 @@ async def generate_token(user: DBUser, db: Session = None):
         if close_db and 'db' in locals():
             db.close()
 
-async def verify_token(token: str, db: Session = None) -> str:
+async def verify_token(token: str, db: Session = None) -> dict:
     """
     Verify the JWT token and return the username if valid.
     
@@ -139,7 +147,7 @@ async def verify_token(token: str, db: Session = None) -> str:
             
         # Get database session if not provided
         if db is None:
-            db = next(get_users_db())
+            db = next(_get_users_db())
             close_db = True
         
         # Check if token exists in database
@@ -162,16 +170,20 @@ async def verify_token(token: str, db: Session = None) -> str:
                 headers={"WWW-Authenticate": "Bearer"}
             )
             
-        # Check if user exists
+        # Check if user exists in either DBUser or DBContributor
         user = db.query(DBUser).filter(DBUser.username == username).first()
         if not user:
-            raise HTTPException(
-                status_code=401,
-                detail="User not found",
-                headers={"WWW-Authenticate": "Bearer"}
-            )
-            
-        return username
+            # Check if user is a contributor
+            contributor = db.query(DBContributor).filter(DBContributor.username == username).first()
+            if not contributor:
+                raise HTTPException(
+                    status_code=401,
+                    detail="User not found",
+                    headers={"WWW-Authenticate": "Bearer"}
+                )
+        
+        # Return the entire payload with user information
+        return payload
         
     except JWTError as e:
         raise HTTPException(

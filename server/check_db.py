@@ -32,3 +32,12 @@ with engine.connect() as connection:
             print(row)
     except Exception as e:
         print(f"Error reading tokens table: {e}")
+    
+    # Show contents of contributors table if it exists
+    print("\nContents of 'contributors' table:")
+    try:
+        result = connection.execute(text("SELECT * FROM contributors;"))
+        for row in result:
+            print(row)
+    except Exception as e:
+        print(f"Error reading contributors table: {e}")

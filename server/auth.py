@@ -1,20 +1,21 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from typing import Dict, Any, Optional
 
 # Import from server modules
 try:
     from server.database import get_users_db
-    from server.models import DBUser, Token
+    from server.models import DBUser, Token, DBContributor
     from server.parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 except ImportError:
     # Fall back to direct imports when running directly
     from database import get_users_db
-    from models import DBUser, Token
+    from models import DBUser, Token, DBContributor
     from parameters import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 # Lazy import to avoid circular imports
@@ -29,7 +30,10 @@ def _get_token_service():
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    print(f"[DEBUG] Verifying password. Plain: '{plain_password}', Hashed: '{hashed_password}'")
+    result = pwd_context.verify(plain_password, hashed_password)
+    print(f"[DEBUG] Password verification result: {result}")
+    return result
 
 def get_password_hash(password):
     return pwd_context.hash(password)
@@ -198,8 +202,10 @@ async def authenticate_user(username: str, password: str, db: Session, generate_
         # Generate token
         print("[AUTH] Generating token...")
         generate_token_func, _ = _get_token_service()
-        token = await generate_token_func(user, db=db)
-        print(f"[AUTH] Token generated successfully for user: {username}")
+        
+        # Generate token and let the generate_token function handle saving to DB
+        token = await generate_token_func(user, db=db, save_to_db=True)
+        print(f"[AUTH] Token generated and saved successfully for user: {username}")
         
         # Get the expiration time from the token
         from jose import jwt
@@ -208,16 +214,6 @@ async def authenticate_user(username: str, password: str, db: Session, generate_
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             expires = datetime.utcfromtimestamp(payload['exp'])
             print(f"[AUTH] Token expires at: {expires}")
-            
-            # Create and save token entry
-            token_entry = Token(
-                token=token,
-                expires=expires
-            )
-            
-            db.add(token_entry)
-            db.commit()
-            print("[AUTH] Token saved to database")
             
             return {"access_token": token, "token_type": "bearer"}
             
@@ -243,3 +239,166 @@ async def authenticate_user(username: str, password: str, db: Session, generate_
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Authentication failed. Please try again."
         )
+
+async def create_contributer(username: str, password: str, db: Session):
+    """
+    Create a new contributor
+    
+    Args:
+        username: The username for the new contributor
+        password: The password for the new contributor
+        db: Database session
+        
+    Returns:
+        dict: Success message
+    """
+
+    #Check if contributer already exists
+    existing_contributer = db.query(DBContributor).filter(DBContributor.username == username).first()
+    if existing_contributer:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Contributer already registered"
+        )
+    
+    #Create new contributor
+    try:
+        contributor = DBContributor(username=username, hashed_password=get_password_hash(password))
+        db.add(contributor)
+        db.commit()
+        db.refresh(contributor)
+        
+        print(f"Successfully created contributor: {username}")
+        return {"msg": "Contributor created successfully"}
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating contributor: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating contributor: {str(e)}"
+        )
+
+async def authenticate_contributer(username: str, password: str, db: Session, generate_token: bool = False):
+    """
+    Authenticate a contributor and optionally generate an access token
+    
+    Args:
+        username: The username to authenticate
+        password: The plain text password
+        db: Database session
+        generate_token: Whether to generate and return an access token
+        
+    Returns:
+        dict: If generate_token is True, returns dict with access_token and token_type
+        DBContributor: If generate_token is False, returns the contributor object
+        
+    Raises:
+        HTTPException: If authentication fails
+    """
+    print(f"[DEBUG] authenticate_contributer called with username: {username}")
+    
+    # Check if contributor exists
+    contributor = db.query(DBContributor).filter(DBContributor.username == username).first()
+    print(f"[DEBUG] Found contributor in DB: {contributor is not None}")
+    
+    if not contributor:
+        print(f"[DEBUG] Contributor '{username}' not found in database")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    print(f"[DEBUG] Contributor found. Username: {contributor.username}, Hashed password: {contributor.hashed_password}")
+    
+    # Verify password
+    print("[DEBUG] Starting password verification")
+    if not verify_password(password, contributor.hashed_password):
+        print("[DEBUG] Password verification failed")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    print("[DEBUG] Password verification successful")
+    
+    # Set is_contributor flag before generating token
+    setattr(contributor, 'is_contributor', True)
+    
+    # Generate token
+    if generate_token:
+        print("[DEBUG] Generating token")
+        generate_token_func, _ = _get_token_service()
+        token = await generate_token_func(contributor, db=db)
+        print("[DEBUG] Token generated successfully")
+        return {"access_token": token, "token_type": "bearer"}
+    
+    print("[DEBUG] Returning contributor object")
+    return contributor
+
+
+async def get_current_user(token: str, db: Session = None) -> Dict[str, Any]:
+    """
+    Get the current user from the token
+    
+    Args:
+        token: The JWT token
+        db: Database session (optional)
+        
+    Returns:
+        dict: User information from the token
+        
+    Raises:
+        HTTPException: If the token is invalid or user not found
+    """
+    close_db = False
+    try:
+        # Get database session if not provided
+        if db is None:
+            db = next(get_users_db())
+            close_db = True
+            
+        # Verify token and get payload
+        _, verify_token_func = _get_token_service()
+        payload = await verify_token(token, db)
+        
+        if not payload:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        # Get username from token
+        username: str = payload.get("sub")
+        if not username:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+            
+        # Get user information from the token
+        user_info = {
+            "username": username,
+            "is_contributor": bool(payload.get("is_contributor", False)),
+            "is_admin": bool(payload.get("is_admin", False))
+        }
+        
+        return user_info
+        
+    except JWTError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error getting current user: {str(e)}"
+        )
+    finally:
+        if close_db and 'db' in locals():
+            db.close()

@@ -13,20 +13,20 @@ except ImportError:
     from services.token_service import verify_token
 
 
-async def get_user_profile(username: str, token: str, db: Session = None):
+async def get_user_profile(username: str, requesting_username: str, db: Session = None):
     """
     Get user profile information
     
     Args:
         username: The username of the user to retrieve
-        token: Authentication token
+        requesting_username: The username of the user making the request
         db: Optional database session. If not provided, a new one will be created.
         
     Returns:
-        dict: User profile information
+        dict: User profile information including roles
         
     Raises:
-        HTTPException: If user is not authorized, not found, or other error occurs
+        HTTPException: If user is not found or other error occurs
     """
     close_db = False
     try:
@@ -35,32 +35,39 @@ async def get_user_profile(username: str, token: str, db: Session = None):
             db = next(get_users_db())
             close_db = True
             
-        # Check if token is valid and matches the username
-        try:
-            token_username = await verify_token(token, db)
-        except HTTPException as e:
-            raise e
-        
-        # Check if given username matches token username
-        if token_username != username:
-            print("Token username does not match requested username")
-            raise HTTPException(
-                status_code=403,
-                detail="Not authorized to access this User"
-            )
-        
         # Get user from database
         user = db.query(DBUser).filter(DBUser.username == username).first()
 
         if not user:
             print(f"User '{username}' not found in database")
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(
+                status_code=404, 
+                detail="User not found"
+            )
 
         print(f"Successfully retrieved user: {username}")
-        return {
+        
+        # Determine if the requesting user is an admin
+        requesting_user = db.query(DBUser).filter(DBUser.username == requesting_username).first()
+        is_admin = requesting_user and getattr(requesting_user, "is_admin", False)
+        
+        # Prepare user data
+        user_data = {
             "username": user.username, 
-            "email": user.email
+            "email": user.email,
+            "is_contributor": getattr(user, "is_contributor", False),
+            "is_admin": getattr(user, "is_admin", False),
+            "created_at": user.created_at.isoformat() if user.created_at else None
         }
+        
+        # Add additional admin-only fields if the requesting user is an admin
+        if is_admin:
+            user_data.update({
+                "last_login": user.last_login.isoformat() if user.last_login else None,
+                "is_active": getattr(user, "is_active", True)
+            })
+            
+        return user_data
             
     except HTTPException as e:
         raise e
@@ -74,13 +81,13 @@ async def get_user_profile(username: str, token: str, db: Session = None):
         if close_db and 'db' in locals():
             db.close()
 
-async def delete_user(username: str, token: str, db: Session = None):
+async def delete_user(username: str, requesting_username: str, db: Session = None):
     """
-    Delete a user
+    Delete a user (admin only)
     
     Args:
         username: The username of the user to delete
-        token: Authentication token
+        requesting_username: The username of the admin making the request
         db: Optional database session. If not provided, a new one will be created.
         
     Returns:
@@ -96,15 +103,19 @@ async def delete_user(username: str, token: str, db: Session = None):
             db = next(get_users_db())
             close_db = True
             
-        # Check if token is valid and matches the username
-        token_username = await verify_token(token, db)
-        
-        # Check if given username matches token username
-        if token_username != username:
-            print("Token username does not match requested username")
+        # Verify the requesting user is an admin
+        admin_user = db.query(DBUser).filter(DBUser.username == requesting_username).first()
+        if not admin_user or not getattr(admin_user, "is_admin", False):
             raise HTTPException(
                 status_code=403,
-                detail="Not authorized to delete this User"
+                detail="Admin privileges required to delete users"
+            )
+            
+        # Prevent admins from deleting themselves
+        if username == requesting_username:
+            raise HTTPException(
+                status_code=400,
+                detail="Admins cannot delete their own accounts"
             )
         
         # Get user from database
@@ -112,14 +123,20 @@ async def delete_user(username: str, token: str, db: Session = None):
 
         if not user:
             print(f"User '{username}' not found in database")
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(
+                status_code=404, 
+                detail="User not found"
+            )
 
         try:
-            # Delete the user directly instead of calling remove_user
+            # Delete the user
             db.delete(user)
             db.commit()
             print(f"Successfully deleted user: {username}")
-            return {"message": "User deleted successfully"}
+            return {
+                "status": "success",
+                "message": f"User '{username}' deleted successfully"
+            }
         except Exception as e:
             db.rollback()
             print(f"Error deleting user from database: {str(e)}")

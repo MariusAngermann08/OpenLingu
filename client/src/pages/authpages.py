@@ -479,10 +479,10 @@ class SignUpPage(ft.Container):
             if not server_url.startswith(('http://', 'https://')):
                 server_url = f"http://{server_url}"
             
-            # Make the API request
+            # Make the API request with JSON body
             response = requests.post(
                 f"{server_url}/register",
-                params={
+                json={
                     "username": username,
                     "email": email,
                     "password": password
@@ -494,7 +494,7 @@ class SignUpPage(ft.Container):
             print("Status Code: ", response.status_code)
             print("Response: ", response.text)
             
-            if response.status_code == 200:
+            if response.status_code == 201:
                 # Registration successful, redirect to sign in
                 self.show_error("Registration successful! Please sign in.")
                 self._reset_sign_up_button()

@@ -28,13 +28,20 @@ async def add_language(language_name: str, username: str, token: str, db: Sessio
     """
     # Check if token is valid
     try:
-        name = await verify_token(token)
+        payload = await verify_token(token)
+        token_username = payload.get("sub")  # Get username from token payload
+        if not token_username:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token format: No username in token"
+            )
     except HTTPException as e:
-        raise e
+        print(f"Token verification failed: {e.detail}")
+        raise
     
     # Check if token username matches requested username
-    if name != username:
-        print("Token username does not match requested username")
+    if token_username != username:
+        print(f"Token username '{token_username}' does not match requested username '{username}'")
         raise HTTPException(
             status_code=403,
             detail="Not authorized to add this Language"
@@ -75,13 +82,20 @@ async def delete_language(language_name: str, username: str, token: str, db: Ses
     try:
         # Check if token is valid
         try:
-            name = await verify_token(token)
+            payload = await verify_token(token)
+            token_username = payload.get("sub")  # Get username from token payload
+            if not token_username:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Invalid token format: No username in token"
+                )
         except HTTPException as e:
-            raise e
+            print(f"Token verification failed: {e.detail}")
+            raise
         
         # Check if token username matches requested username
-        if name != username:
-            print("Token username does not match requested username")
+        if token_username != username:
+            print(f"Token username '{token_username}' does not match requested username '{username}'")
             raise HTTPException(
                 status_code=403,
                 detail="Not authorized to delete this Language"
@@ -168,14 +182,22 @@ async def add_lection(language_name: str, lection_name: str, username: str, toke
     
     # Verify token
     try:
-        name = await verify_token(token)
-        if name != username:
-            print("Token username does not match requested username")
+        payload = await verify_token(token)
+        token_username = payload.get("sub")  # Get username from token payload
+        if not token_username:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token format: No username in token"
+            )
+            
+        if token_username != username:
+            print(f"Token username '{token_username}' does not match requested username '{username}'")
             raise HTTPException(
                 status_code=403,
                 detail="Not authorized to add this Lection"
             )
     except HTTPException as e:
+        print(f"Token verification failed: {e.detail}")
         raise e
     
     # Check if lection already exists
@@ -261,16 +283,23 @@ async def edit_lection(language_name: str, lection_name: str, username: str, tok
 
     #Check if token username matches requested username
     try:
-        name = await verify_token(token)
+        payload = await verify_token(token)
+        token_username = payload.get("sub")  # Get username from token payload
+        if not token_username:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token format: No username in token"
+            )
+            
+        if token_username != username:
+            print(f"Token username '{token_username}' does not match requested username '{username}'")
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to edit this Lection"
+            )
     except HTTPException as e:
+        print(f"Token verification failed: {e.detail}")
         raise e
-    
-    if name != username:
-        print("Token username does not match requested username")
-        raise HTTPException(
-            status_code=403,
-            detail="Not authorized to edit this Lection"
-        )
 
     #Edit lection
     try:
@@ -339,16 +368,23 @@ async def delete_lection(language_name: str, lection_name: str, username: str, t
     
     #Check if token username matches requested username
     try:
-        name = await verify_token(token)
+        payload = await verify_token(token)
+        token_username = payload.get("sub")  # Get username from token payload
+        if not token_username:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token format: No username in token"
+            )
+            
+        if token_username != username:
+            print(f"Token username '{token_username}' does not match requested username '{username}'")
+            raise HTTPException(
+                status_code=403,
+                detail="Not authorized to delete this Lection"
+            )
     except HTTPException as e:
+        print(f"Token verification failed: {e.detail}")
         raise e
-    
-    if name != username:
-        print("Token username does not match requested username")
-        raise HTTPException(
-            status_code=403,
-            detail="Not authorized to delete this Lection"
-        )
     
     #Delete lection
     db.delete(lection)
