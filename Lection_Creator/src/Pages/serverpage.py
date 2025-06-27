@@ -1,5 +1,6 @@
 import flet as ft
 import requests
+import threading
 
 class ServerPage(ft.Container):
     def __init__(self, page: ft.Page):
@@ -67,6 +68,22 @@ class ServerPage(ft.Container):
     
     def save_server(self, e):
         """Handle server configuration save"""
+        # Disable save button during verification
+        self.save_button.disabled = True
+        self.save_button.text = "Verifying..."
+        
+        # Create or update error message control
+        if not hasattr(self, 'message'):
+            self.message = ft.Text("", color="#e53935")
+            # Add it to the content if not already there
+            if self.message not in self.content.controls:
+                self.content.controls.append(self.message)
+        else:
+            # Clear any existing error
+            self.message.value = ""
+            
+        self.update()
+        
         if self.server_type.value == "localhost":
             server_url = "http://localhost:8000"
         else:
@@ -74,7 +91,64 @@ class ServerPage(ft.Container):
             if not server_url.startswith(('http://', 'https://')):
                 server_url = f"https://{server_url}"
         
-        #Save server url to client storage
-        self.page.client_storage.set("server_url", server_url)
-        
-        self.page.go("/main")
+        # Start verification in a separate thread
+        threading.Thread(
+            target=self.verify_server,
+            args=(server_url,),
+            daemon=True
+        ).start()
+    
+    def verify_server(self, server_url):
+        """Verify if the server is a valid OpenLingu server"""
+        try:
+            # Make a request to the server to verify it's an OpenLingu server
+            response = requests.get(server_url.rstrip('/'), timeout=5)
+            
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    if isinstance(data, dict) and data.get('msg') == 'OpenLingu':
+                        # Server is valid, save and navigate to login
+                        self.page.client_storage.set("server_url", server_url)
+                        self.page.run_task(self._navigate_to_login)
+                        return
+                    else:
+                        # Server responded but doesn't have the expected format
+                        self._show_error("This server is not an OpenLingu server")
+                except ValueError:
+                    # Invalid JSON response
+                    self._show_error("This server is not an OpenLingu server (invalid response format)")
+            else:
+                # Server responded with an error status code
+                self._show_error(f"Server returned error: {response.status_code}")
+            
+        except requests.exceptions.Timeout:
+            self._show_error("Connection timed out. Could not connect to the server.")
+        except requests.exceptions.ConnectionError:
+            self._show_error("Could not connect to the server. Please check the URL and try again.")
+        except requests.exceptions.RequestException as e:
+            self._show_error(f"Connection error: {str(e)}")
+        except Exception as e:
+            self._show_error(f"An unexpected error occurred: {str(e)}")
+        finally:
+            # Re-enable the save button
+            self._reset_save_button()
+    
+    async def _navigate_to_login(self):
+        """Navigate to login page"""
+        self.page.go("/login")
+    
+    def _show_error(self, message):
+        """Show error message in the UI, replacing any existing message"""
+        if hasattr(self, 'message'):
+            self.message.value = message
+            self.message.color = "#e53935"
+            if self.page is not None:
+                self.page.update()
+    
+    def _reset_save_button(self):
+        """Reset the save button state"""
+        if hasattr(self, 'save_button'):
+            self.save_button.disabled = False
+            self.save_button.text = "Save"
+            self.page.update()

@@ -136,6 +136,7 @@ class ExpandableLanguage(ft.Container):
         if lection_name in self.lection_buttons:
             self.lection_buttons[lection_name].selected = selected
             self.lection_buttons[lection_name].update_style()
+
 class MainMenu(ft.Container):
     def __init__(self, page: ft.Page):
         super().__init__(
@@ -319,7 +320,7 @@ class MainMenu(ft.Container):
     
     def on_create_click(self, e):
         # Handle create button click
-        pass
+        self.page.go("/editor")
     
     def create_app_bar(self):
         # Create action buttons (initially hidden)

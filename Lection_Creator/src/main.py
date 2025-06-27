@@ -46,14 +46,14 @@ def route_change(e):
         page.theme_mode = "light"
         
         # Create and add login view
+        login_page = LoginPage(page)
         view = ft.View(
             route=route,
             padding=0,
             bgcolor="#f5f5f5",
             spacing=0,
-            controls=[
-                LoginPage(page)
-            ]
+            appbar=login_page.app_bar,
+            controls=[login_page]
         )
         page.views.append(view)
     
