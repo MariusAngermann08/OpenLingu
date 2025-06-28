@@ -65,13 +65,14 @@ class LectionButton(ft.ElevatedButton):
         self.update()
 
 class ExpandableLanguage(ft.Container):
-    def __init__(self, page: ft.Page, language: str, lections: list, on_lection_select):
+    def __init__(self, page: ft.Page, language: str, lections: list, on_lection_select, on_delete_language=None):
         super().__init__(animate_rotation=True)
         self.page = page
         self.expanded = False
         self.language = language
         self.lections = lections
         self.on_lection_select = on_lection_select
+        self.on_delete_language = on_delete_language
         self.lection_buttons = {}
 
         self.expand_icon = ft.Icon(
@@ -79,21 +80,35 @@ class ExpandableLanguage(ft.Container):
             animate_rotation=ft.Animation(300, curve="ease"),
             color="#5f6368"
         )
-
-
+        
+        self.delete_button = ft.IconButton(
+            "delete_outline",
+            icon_color="#5f6368",
+            icon_size=20,
+            tooltip="Delete language",
+            on_click=self._on_delete_click,
+            visible=False,
+            bgcolor="#f5f5f5",
+        )
+        
+        # Show delete button on hover
+        self.header_row = ft.Row(
+            [
+                ft.Text(language, size=20, weight=ft.FontWeight.BOLD, color="#202124"),
+                ft.Container(expand=True),
+                self.delete_button,
+                self.expand_icon
+            ],
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        )
+        
         self.header = ft.Container(
-            content=ft.Row(
-                [
-                    ft.Text(language, size=20, weight=ft.FontWeight.BOLD, color="#202124"),
-                    ft.Container(expand=True),
-                    self.expand_icon
-                ],
-                alignment=ft.MainAxisAlignment.START,
-                vertical_alignment=ft.CrossAxisAlignment.CENTER,
-            ),
+            content=self.header_row,
             padding=ft.padding.symmetric(vertical=14, horizontal=20),
             border_radius=12,
             bgcolor="#ffffff",
+            on_hover=self._on_header_hover,
             on_click=self.toggle_expand,
             border=ft.border.all(1, "#e0e0e0"),
             shadow=ft.BoxShadow(
@@ -136,6 +151,20 @@ class ExpandableLanguage(ft.Container):
         self.expand_icon.rotate = pi / 2 if self.expanded else 0
         self.update()
     
+    def _on_header_hover(self, e):
+        self.delete_button.visible = e.data == "true"
+        self.update()
+        
+    def _on_delete_click(self, e):
+        # Disable the button to prevent multiple clicks
+        e.control.disabled = True
+        e.control.icon_color = "#9e9e9e"
+        self.update()
+        
+        # Proceed directly with deletion
+        if self.on_delete_language:
+            self.on_delete_language(self.language)
+        
     def select_lection(self, lection_name, selected):
         if lection_name in self.lection_buttons:
             self.lection_buttons[lection_name].selected = selected
@@ -184,10 +213,31 @@ class MainMenu(ft.Container):
             ], alignment=ft.MainAxisAlignment.CENTER, spacing=30)
         )
         
+        # Add Language button
+        self.add_language_button = ft.ElevatedButton(
+            "Add Language",
+            icon="add",
+            on_click=lambda e: self.page.go("/add_language"),
+            style=ft.ButtonStyle(
+                shape=ft.RoundedRectangleBorder(radius=8),
+                padding=ft.padding.symmetric(horizontal=16, vertical=12),
+                bgcolor="#1a73e8",
+                color="#ffffff",
+            ),
+            height=48,
+        )
+        
         # Main content container
         self.language_sections_container = ft.Column(
             [
-                ft.Text("Meine Lektionen", size=28, weight=ft.FontWeight.BOLD),
+                ft.Row(
+                    [
+                        ft.Text("Meine Lektionen", size=28, weight=ft.FontWeight.BOLD),
+                        ft.Container(expand=True),
+                        self.add_language_button
+                    ],
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                ),
                 ft.Divider(height=24, color="transparent"),
             ],
             spacing=16,
@@ -203,7 +253,10 @@ class MainMenu(ft.Container):
             width=140,
             height=48,
             shape=ft.RoundedRectangleBorder(radius=24),
+            disabled=True,  # Start disabled until we have languages
         )
+        # Set disabled color through theme
+        self.create_button.disabled = True
         
         # Main content
         self._main_content = ft.Column(
@@ -243,7 +296,8 @@ class MainMenu(ft.Container):
             languages = languages_data if isinstance(languages_data, list) else languages_data.get("languages", [])
             
             if not languages:
-                self._show_error("No languages found on the server.")
+                # Update UI to show empty state
+                self._update_ui_with_languages([])
                 return
                 
             # Fetch lections for each language
@@ -278,12 +332,13 @@ class MainMenu(ft.Container):
                         else:
                             self.languages[lang_name].append(str(lec))
                     
-                    # Create language section
+                    # Create language section with delete handler
                     language_section = ExpandableLanguage(
                         page=self.page,
                         language=lang_name,
                         lections=self.languages[lang_name],
-                        on_lection_select=self.handle_lection_select
+                        on_lection_select=self.handle_lection_select,
+                        on_delete_language=self._delete_language
                     )
                     self.language_sections[lang_name] = language_section
                     language_sections.append(language_section)
@@ -315,12 +370,39 @@ class MainMenu(ft.Container):
         self.page.update()
     
     def _update_ui_with_languages(self, language_sections):
-        # Clear existing content but keep the title
+        # Update create button state based on whether there are any languages
+        has_languages = len(language_sections) > 0
+        self.create_button.disabled = not has_languages
+        
+        # Update button style based on disabled state
+        self.create_button.bgcolor = "#1a73e8" if has_languages else "#e0e0e0"
+        
+        # Create empty state message if no languages
+        empty_state = ft.Container(
+            content=ft.Column(
+                [
+                    ft.Icon("language_off", size=48, color="#9e9e9e"),
+                    ft.Text("No languages found", size=20, weight=ft.FontWeight.W_500, color="#5f6368"),
+                    ft.Text("Be the first to add a language!", size=16, color="#9e9e9e"),
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=16,
+            ),
+            padding=ft.padding.all(40),
+            border_radius=12,
+            bgcolor="#ffffff",
+            border=ft.border.all(1, "#e0e0e0"),
+            visible=not has_languages,
+        )
+        
+        # Update the content
         self.language_sections_container.controls = [
-            self.language_sections_container.controls[0],  # Keep the title
+            self.language_sections_container.controls[0],  # Keep the title row
             ft.Divider(height=24, color="transparent"),
+            empty_state,
             *language_sections
         ]
+        
         self.content = self._main_content
         self.page.update()
     
@@ -429,12 +511,131 @@ class MainMenu(ft.Container):
             self.page.go(f"/editor?new=false&lection_name={lection}&language={language}")
     
     def on_delete_lection(self, e):
-        if self.selected_lections:
-            language, lection = next(iter(self.selected_lections))
-            print(f"Deleting {language} - {lection}")
-            # TODO: Implement delete functionality
-            # After deletion, clear selection
-            self.clear_selection()
+        if not self.selected_lections:
+            return
+            
+        language, lection = next(iter(self.selected_lections))
+        self._delete_lection(language, lection)
+    
+    def _delete_lection(self, language: str, lection: str):
+        """Handle the actual deletion of a lection"""
+        server_url = self.page.client_storage.get("server_url")
+        auth_token = self.page.client_storage.get("auth_token")
+        
+        if not server_url or not auth_token:
+            self._show_error("Server URL or authentication token not found. Please log in again.")
+            return
+        
+        # Show loading overlay
+        self.content = self.loading_overlay
+        self._loading_status_text.value = f"Deleting {lection}..."
+        self.loading_overlay.content.controls[1].value = 0.5  # Update progress bar
+        self.page.update()
+        
+        try:
+            # Use language name directly in the URL as done in the CLI
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            url = f"{server_url.rstrip('/')}/delete_lection/{language}/{lection}"
+            
+            response = requests.delete(url, headers=headers)
+            response.raise_for_status()
+            
+            # Show success message
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text(f"Successfully deleted '{lection}'"),
+                bgcolor="#4caf50"
+            )
+            self.page.snack_bar.open = True
+            
+            # Refresh the lections list
+            self._refresh_lections()
+            
+        except requests.RequestException as ex:
+            error_msg = f"Failed to delete lection: {str(ex)}"
+            if hasattr(ex, 'response') and ex.response is not None:
+                try:
+                    error_data = ex.response.json()
+                    error_msg += f"\n{error_data.get('detail', 'Unknown error')}"
+                except:
+                    error_msg += f"\nStatus code: {ex.response.status_code}"
+            
+            self._show_error(error_msg)
+            self.content = self._main_content
+            self.page.update()
+        except Exception as ex:
+            self._show_error(f"An error occurred: {str(ex)}")
+            self.content = self._main_content
+            self.page.update()
+    
+        # Removed _on_add_language_click and _add_language methods as they're now handled by AddLanguagePage
+    
+    def _delete_language(self, language_name: str):
+        """Delete a language"""
+        server_url = self.page.client_storage.get("server_url")
+        auth_token = self.page.client_storage.get("auth_token")
+        
+        if not server_url or not auth_token:
+            self._show_error("Server URL or authentication token not found. Please log in again.")
+            return
+            
+        # Show loading overlay
+        self.content = self.loading_overlay
+        self._loading_status_text.value = f"Deleting {language_name}..."
+        self.loading_overlay.content.controls[1].value = 0.5
+        self.page.update()
+        
+        try:
+            headers = {"Authorization": f"Bearer {auth_token}"}
+            url = f"{server_url.rstrip('/')}/delete_language/{language_name}"
+            
+            response = requests.delete(url, headers=headers)
+            response.raise_for_status()
+            
+            # Show success message
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text(f"Successfully deleted language '{language_name}'"),
+                bgcolor="#4caf50"
+            )
+            self.page.snack_bar.open = True
+            
+            # Refresh the languages list
+            self._refresh_lections()
+            
+        except requests.RequestException as ex:
+            error_msg = f"Failed to delete language: {str(ex)}"
+            if hasattr(ex, 'response') and ex.response is not None:
+                try:
+                    error_data = ex.response.json()
+                    error_msg += f"\n{error_data.get('detail', 'Unknown error')}"
+                except:
+                    error_msg += f"\nStatus code: {ex.response.status_code}"
+            
+            self._show_error(error_msg)
+            self.content = self._main_content
+            self.page.update()
+        except Exception as ex:
+            self._show_error(f"An error occurred: {str(ex)}")
+            self.content = self._main_content
+            self.page.update()
+    
+    def _refresh_lections(self):
+        """Refresh the list of languages and lections from the server"""
+        self.content = self.loading_overlay
+        self._loading_status_text.value = "Refreshing..."
+        self.loading_overlay.content.controls[1].value = 0  # Reset progress bar
+        self.page.update()
+        
+        # Clear current selection and fetch fresh data
+        self.selected_lections.clear()
+        self.languages = {}
+        self.language_sections = {}
+        self.language_sections_container.controls = [
+            self.language_sections_container.controls[0],  # Keep the title row
+            ft.Divider(height=24, color="transparent"),
+        ]
+        
+        # Fetch fresh data in a new thread
+        threading.Thread(target=self.fetch_languages_and_lections, daemon=True).start()
     
     def on_cancel_selection(self, e):
         self.clear_selection()

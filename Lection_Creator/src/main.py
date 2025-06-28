@@ -75,6 +75,24 @@ def route_change(e):
             controls=[main_menu]
         )
         page.views.append(view)
+        
+    elif route == "/add_language":
+        # Set window size for add language
+        page.window_width = 500
+        page.window_height = 300
+        page.window_resizable = False
+        page.theme_mode = "light"
+        
+        # Create and add language view
+        from Pages.add_language import AddLanguagePage
+        add_lang_page = AddLanguagePage(page)
+        view = ft.View(
+            route=route,
+            padding=40,
+            bgcolor="#f5f5f5",
+            controls=[add_lang_page]
+        )
+        page.views.append(view)
 
     elif route.startswith("/editor"):
         # Parse query parameters
