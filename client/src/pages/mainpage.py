@@ -305,6 +305,17 @@ class MainPage(ft.Container):
 
         self.current_shown_content = self.daily_tasks_page
 
+        def navigate_to_lections(page):
+            self.content = self.learning_page
+            self.current_shown_content = self.learning_page
+            self.appbar_title = "Learning Page"
+            self.drawer.selected_index = 1  # Set drawer to "Learning Page"
+            self.drawer.open = False        # Optionally close the drawer
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+            self.page.update()
+
+        self.daily_tasks_page.button.on_click = navigate_to_lections
+
         
         
         # Main content
