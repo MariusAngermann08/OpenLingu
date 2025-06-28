@@ -203,7 +203,7 @@ class DraggableText:
                     bgcolor=ft.Colors.BLUE_GREY_100,
                     border_radius=8,
                     alignment=ft.alignment.center,
-                    content=ft.Text(word, size=16, color=ft.Colors.WHITE),
+                    content=ft.Text(word, size=16, color=ft.Colors.BLACK),
                 ),
             )
             self.buttons.append(btn)
