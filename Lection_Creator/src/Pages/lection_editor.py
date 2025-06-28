@@ -82,18 +82,46 @@ class EditorField(ft.Container):
             on_add=self.add_new_page,
         )
 
+        # Create loading indicator
+        self.loading_indicator = ft.Container(
+            content=ft.Column(
+                [
+                    ft.ProgressRing(width=50, height=50, stroke_width=4, color="#1565C0"),
+                    ft.Text("Loading lection...", size=16, weight=ft.FontWeight.W_500, color="#555555")
+                ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=20,
+                alignment=ft.MainAxisAlignment.CENTER,
+                expand=True,
+            ),
+            visible=False,
+            bgcolor="#fefefeee",  # Slightly transparent white
+            border_radius=16,
+            expand=True,
+        )
+        
+        # Create the main content container
+        self.field_content = ft.Column(
+            [],  # Start empty, will be filled in update_view
+            expand=True,
+            scroll=ft.ScrollMode.ALWAYS,
+        )
+        
+        # Stack the loading indicator on top of the content
         self.field = ft.Container(
             expand=True,
             bgcolor="#fefefe",
             border_radius=16,
             shadow=ft.BoxShadow(blur_radius=14, color="#00000033", offset=ft.Offset(3, 3)),
             padding=30,
-            content=ft.Column(
-                [],  # Start empty, will be filled in update_view
+            content=ft.Stack(
+                [
+                    self.field_content,
+                    self.loading_indicator
+                ],
                 expand=True,
-                scroll=ft.ScrollMode.ALWAYS,
             ),
-)
+        )    
 
         self.editor_panel_label = ft.Text("Editor Panel - Page 1", size=18, weight=ft.FontWeight.W_600)
 
@@ -112,7 +140,8 @@ class EditorField(ft.Container):
                 spacing=16,
                 expand=True,
             )
-)
+        )
+
     def go_to_previous_page(self, e=None):
         if self.page_index > 0:
             self.page_index -= 1
@@ -130,19 +159,37 @@ class EditorField(ft.Container):
         self.page_index = self.page_count - 1
         self.update_view()
 
-    def update_view(self):
-        self.navigator.content.controls[1].value = f"{self.page_index + 1} / {self.page_count}"
-        self.editor_panel_label.value = f"Editor Panel - Page {self.page_index + 1}"
-
-        # Clear and rebuild all widgets for this page
-        self.field.content.controls.clear()
-        for i, widget_cfg in enumerate(self.pages_content[self.page_index]):
-            if i > 0:
-                self.field.content.controls.append(ft.Divider())
-            widget = self.build_widget_from_config(widget_cfg)
-            self.field.content.controls.append(widget)
-        self.field.content.update()
+    def show_loading(self, show: bool = True):
+        """Show or hide the loading indicator"""
+        self.loading_indicator.visible = show
+        self.field_content.visible = not show
         self.update()
+
+    def update_view(self):
+        """Update the view to show the current page's widgets"""
+        # Show loading indicator while updating
+        self.show_loading(True)
+        
+        try:
+            # Clear existing content
+            self.field_content.controls.clear()
+            
+            # Add all widgets from the current page
+            if self.pages_content and self.page_index < len(self.pages_content):
+                for widget_config in self.pages_content[self.page_index]:
+                    widget = self.build_widget_from_config(widget_config)
+                    if widget:
+                        self.field_content.controls.append(widget)
+            
+            # Update the page counter
+            self.navigator.content.controls[1].value = f"{self.page_index + 1} / {self.page_count}"
+            self.editor_panel_label.value = f"Editor Panel - Page {self.page_index + 1}"
+            
+            # Update the UI
+            self.update()
+        finally:
+            # Hide loading indicator when done
+            self.show_loading(False)
 
     def set_editor_content(self, content: ft.Control, label: str = "Editor Panel", config=None):
         # Save config (type, data) instead of widget instance
@@ -755,6 +802,7 @@ class MainEditor(ft.Container):
         self.new = new
         self.lection_name = lection_name
         self.language = language
+        self.lection_data = None
 
         self.editor_field = EditorField(page)
         self.editor_selection = EditorSelection(
@@ -838,7 +886,194 @@ class MainEditor(ft.Container):
                 expand=True,
             ),
         )
+        
+    def did_mount(self):
+        # Load existing lection if not creating a new one
+        # This runs after the component is mounted and has access to page context
+        if not self.new and self.lection_name:
+            self._load_existing_lection()
 
+    def _load_existing_lection(self):
+        """Load an existing lection from the server and update the editor"""
+        # Show loading state
+        self.editor_field.show_loading(True)
+        self.page.update()
+        
+        try:
+            # Get server URL from client storage
+            server_url = self.page.client_storage.get("server_url")
+            if not server_url:
+                print("Server URL not set")
+                self._show_error("Server URL not configured")
+                return
+                
+            # Make the API request to get the lection
+            url = f"{server_url.rstrip('/')}/languages/{self.language}/lections/by_title/{self.lection_name}"
+            print(f"Fetching lection from: {url}")
+            
+            # Show loading message
+            self.editor_field.loading_indicator.content.controls[1].value = "Fetching lection data..."
+            self.editor_field.update()
+            
+            response = requests.get(url)
+            response.raise_for_status()
+            
+            # Store the raw lection data
+            self.lection_data = response.json()
+            print("Raw lection data received:", json.dumps(self.lection_data, indent=2))
+            
+            # Parse the lection data into editor format
+            self.editor_field.loading_indicator.content.controls[1].value = "Parsing lection content..."
+            self.editor_field.update()
+            
+            from .lection_parser import LectionParser
+            parsed_data = LectionParser.to_editor_format(self.lection_data)
+            print("Parsed lection data:", json.dumps(parsed_data, indent=2))
+            
+            # Update the UI with the parsed data
+            self._update_editor_with_lection(parsed_data)
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Error loading lection: {e}"
+            print(error_msg)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    print(f"Error details: {error_data}")
+                    error_msg += f"\n{json.dumps(error_data, indent=2)}"
+                except:
+                    status = getattr(e.response, 'status_code', 'Unknown')
+                    text = getattr(e.response, 'text', 'No details')
+                    print(f"Status code: {status}")
+                    print(f"Response: {text}")
+                    error_msg += f"\nStatus: {status}\n{text}"
+            self._show_error(error_msg)
+            
+        except Exception as e:
+            error_msg = f"Unexpected error loading lection: {e}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            self._show_error(error_msg)
+    
+    def _update_editor_with_lection(self, lection_data: dict):
+        """Update the editor UI with the loaded lection data"""
+        # Update loading message
+        self.editor_field.loading_indicator.content.controls[1].value = "Building editor..."
+        self.editor_field.update()
+        try:
+            # Update basic lection info
+            self.lection_name_field.value = lection_data.get("title", "")
+            self.lection_description_field.value = lection_data.get("description", "")
+            
+            # Clear existing pages
+            self.editor_field.pages_content = []
+            
+            # Add pages from the lection data
+            for page_data in lection_data.get("pages", []):
+                self._add_page_from_data(page_data)
+            
+            # Update the UI
+            self.lection_name_field.update()
+            self.lection_description_field.update()
+            self.editor_field.update_view()
+            
+            print("Editor updated with lection data")
+            
+        except Exception as e:
+            error_msg = f"Error updating editor with lection data: {e}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            self._show_error(error_msg)
+    
+    def _add_page_from_data(self, page_data: dict):
+        """Add a page to the editor from page data"""
+        try:
+            # Create a new page in the editor
+            self.editor_field.add_new_page()
+            current_page_idx = len(self.editor_field.pages_content) - 1
+            
+            # Add widgets to the page
+            for widget_data in page_data.get("widgets", []):
+                self._add_widget_from_data(current_page_idx, widget_data)
+                
+        except Exception as e:
+            print(f"Error adding page from data: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _add_widget_from_data(self, page_idx: int, widget_data: dict):
+        """Add a widget to a page from widget data"""
+        try:
+            widget_type = widget_data.get("type")
+            data = widget_data.get("data", {})
+            
+            if widget_type == "text":
+                # For plain text, we can directly add it without going through the editor
+                config = {
+                    "type": "plain_text",
+                    "data": {
+                        "text": data.get("text", ""),
+                        "size": data.get("size", 16),
+                        "weight": data.get("weight", "normal")
+                    }
+                }
+                self.editor_field.set_editor_content(None, "Plain Text", config)
+                
+            elif widget_type == "matchable_pairs":
+                # For matchable pairs, we need to set up the editor first
+                self.editor_selection.on_editor_selected("Matchable Pairs")
+                # Wait for the editor to be ready
+                time.sleep(0.1)
+                # Create the config for matchable pairs
+                config = {
+                    "type": "matchable_pairs",
+                    "data": {
+                        "left": data.get("left_items", []),
+                        "right": data.get("right_items", [])
+                    }
+                }
+                # Add the widget with config
+                self.editor_field.set_editor_content(None, "Matchable Pairs", config)
+                
+            elif widget_type == "draggable_text":
+                # For gap text, we need to set up the editor first
+                self.editor_selection.on_editor_selected("Gap Text")
+                # Wait for the editor to be ready
+                time.sleep(0.1)
+                # Create the config for gap text
+                config = {
+                    "type": "gap_text",
+                    "data": {
+                        "text": data.get("text", ""),
+                        "gaps": data.get("gaps_idx", []),
+                        "options": data.get("options", {})
+                    }
+                }
+                # Add the widget with config
+                self.editor_field.set_editor_content(None, "Gap Text Activity", config)
+                
+            elif widget_type == "underlined_text":
+                # For underlined text, we can directly add it without going through the editor
+                config = {
+                    "type": "underlined_text",
+                    "data": {
+                        "text": data.get("text", ""),
+                        "underlined": data.get("underlined", {})
+                    }
+                }
+                # Add the widget with config
+                self.editor_field.set_editor_content(None, "Underlined Text", config)
+                
+            # Update the view after adding the widget
+            self.editor_field.update_view()
+            
+        except Exception as e:
+            print(f"Error adding widget from data: {e}")
+            import traceback
+            traceback.print_exc()
+    
     def close_editor(self, e=None):
         """Close the editor and return to main menu"""
         self.page.go("/main")
@@ -874,10 +1109,6 @@ class MainEditor(ft.Container):
         return self.app_bar
 
     def save_lection(self, e):
-        if not self.new:
-            # For existing lections, we'll implement this later
-            return
-            
         # Show loading indicator
         self.save_button.disabled = True
         self.save_button.text = "Saving..."
@@ -901,31 +1132,35 @@ class MainEditor(ft.Container):
                 "Content-Type": "application/json"
             }
             
-            # Prepare request data - match CLI format
-            data = {
-                "lection_name": lection_data["title"],
-                "content": lection_data
-            }
-            
             # Get the language name from the URL or use the one from lection_data
             language_name = self.language  # This comes from the URL parameter
             
+            if self.new:
+                # For new lections
+                request_data = {
+                    "lection_name": lection_data["title"],
+                    "content": lection_data
+                }
+                endpoint = f"{server_url.rstrip('/')}/add_lection/{language_name}"
+                method = requests.post
+            else:
+                # For existing lections
+                request_data = {
+                    "lection_name": self.lection_name,  # Original name for identification
+                    "content": lection_data
+                }
+                endpoint = f"{server_url.rstrip('/')}/edit_lection/{language_name}"
+                method = requests.put
+            
             # Make the request
-            response = requests.post(
-                f"{server_url.rstrip('/')}/add_lection/{language_name}",
+            response = method(
+                endpoint,
                 headers=headers,
-                json=data
+                json=request_data
             )
             response.raise_for_status()  # Will raise an exception for 4XX/5XX responses
             
             # Show success message
-            self.page.snack_bar = ft.SnackBar(
-                content=ft.Text("Lection saved successfully!"),
-                bgcolor="#43a047"
-            )
-            self.page.snack_bar.open = True
-            
-            # Show success message and navigate back to main menu after a short delay
             self.page.snack_bar = ft.SnackBar(
                 content=ft.Text("Lection saved successfully!", color="white"),
                 bgcolor="#43a047"
@@ -958,7 +1193,6 @@ class MainEditor(ft.Container):
             # Re-enable save button
             self.save_button.disabled = False
             self.save_button.text = "Save"
-            self.page.update()
             self.page.update()
             
     def _show_error(self, message):

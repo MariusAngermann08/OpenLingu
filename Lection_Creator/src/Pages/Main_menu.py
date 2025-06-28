@@ -425,8 +425,8 @@ class MainMenu(ft.Container):
         if self.selected_lections:
             language, lection = next(iter(self.selected_lections))
             print(f"Editing {language} - {lection}")
-            # Navigate to editor with new=False and the selected lection name
-            self.page.go(f"/editor?new=false&lection_name={lection}")
+            # Navigate to editor with new=False, lection_name, and language
+            self.page.go(f"/editor?new=false&lection_name={lection}&language={language}")
     
     def on_delete_lection(self, e):
         if self.selected_lections:
