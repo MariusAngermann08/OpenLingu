@@ -221,11 +221,11 @@ class LectionParser:
                         width=float("inf"),
                     ))
                 
-                # Add description if exists
-                if "description" in page_data:
+                # Add description if exists and not empty
+                if "description" in page_data and page_data["description"].strip():
                     print(f"  - Page description: {page_data['description']}")
                     # On the first page, also show translated lection description above page description
-                    if i == 1 and hasattr(self, 'description') and self.description:
+                    if i == 1 and hasattr(self, 'description') and self.description and self.description.strip():
                         translator = Translator()
                         # Get the user's native language from client storage if possible, else default to 'de'
                         lang_code = "de"
@@ -247,19 +247,38 @@ class LectionParser:
                         except Exception as e:
                             print(f"Lection description translation failed: {e}")
                             translated_lection_desc = self.description
-                        widgets.append(ft.Text(
-                            translated_lection_desc,
-                            size=18,
-                            italic=True,
-                            text_align=ft.TextAlign.CENTER,
-                            color="#333333"
+                        # Add lection description with distinct styling
+                        widgets.append(ft.Container(
+                            content=ft.Column(
+                                [
+                                    ft.Text(
+                                        translated_lection_desc,
+                                        size=18,
+                                        weight="w500",
+                                        text_align=ft.TextAlign.CENTER,
+                                        color="#1a73e8",  # Primary blue color
+                                    ),
+                                    ft.Divider(height=10, color="transparent"),
+                                    ft.Text(
+                                        page_data["description"],
+                                        size=16,
+                                        italic=True,
+                                        text_align=ft.TextAlign.CENTER,
+                                        color="#5f6368"  # Dark gray for better readability
+                                    ),
+                                    ft.Divider(height=20, color="#e0e0e0"),  # Light gray divider
+                                ],
+                                spacing=0,
+                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            ),
+                            padding=ft.padding.symmetric(vertical=16, horizontal=24),
+                            margin=ft.margin.only(bottom=16),
+                            bgcolor="#f8f9fa",  # Light gray background
+                            border_radius=8,
+                            border=ft.border.all(1, "#e0e0e0"),
+                            width=float("inf"),
                         ))
-                    widgets.append(ft.Text(
-                        page_data["description"],
-                        size=16,
-                        italic=True,
-                        text_align=ft.TextAlign.CENTER
-                    ))
+                # For pages without a description, don't show anything
                 
                 # Add widgets
                 if "widgets" not in page_data or not page_data["widgets"]:

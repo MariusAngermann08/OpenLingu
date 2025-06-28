@@ -296,10 +296,19 @@ class LectionViewer(ft.Container):
                 
                 if self.pages:
                     print(f"10. First page type: {type(self.pages[0])}")
+                    # Set the first page content
                     self.content_area.content = self.pages[0]
                     self.page_number.value = f"Page: 1/{len(self.pages)}"
                     self.prev_btn.disabled = True
-                    self.next_btn.disabled = len(self.pages) <= 1
+                    
+                    # Initialize task widgets for the first page
+                    if hasattr(self.pages[0], 'task_widgets'):
+                        self.task_widgets = self.pages[0].task_widgets
+                        for widget in self.task_widgets:
+                            widget.page = self
+                    
+                    # Update next button state based on task completion
+                    self._update_next_btn_state()
                     
                     print("11. Updating page content...")
                     page.update()
