@@ -666,8 +666,8 @@ class MainPage(ft.Container):
                     "• The <b>menu button</b> (☰) opens the navigation drawer.<br>"
                     "• The <b>language button</b> lets you change your learning language.<br>"
                     "• The <b>Globe Icon</b> lets you change your native language.<br>"
-                    "• The <b>server info</b> and <b>download</b> icons are for advanced features.<br><br>"
-                    "Let's see the drawer next!"
+                    "• The <b>Server info</b> and <b>Download</b> icons are for advanced features.<br><br>"
+                    "Let's look at the drawer next!"
                 ),
             },
             {
@@ -675,7 +675,7 @@ class MainPage(ft.Container):
                 "message": (
                     "📚 <b>This is the Navigation Drawer.</b><br><br>"
                     "• Use it to switch between Daily Tasks, Learning Page, Vocabulary Trainer, and more.<br>"
-                    "• The <b>Account</b> and <b>Settings</b> are at the bottom.<br> They allow you to customize your Expierince with Openlingu<br>"
+                    "• The <b>Account</b> and <b>Settings</b> are at the bottom.They allow you to customize your Experience with Openlingu<br>"
                     "• You can always open this drawer from the menu button in the AppBar."
                 ),
             },
@@ -722,17 +722,16 @@ class TutorialOverlay(ft.Stack):
             if not part:
                 spans.append(ft.TextSpan("\n"))
                 continue
-            # Bold
-            bold_match = re.match(r"(.*)<b>(.*?)</b>(.*)", part)
-            if bold_match:
-                before, bold, after = bold_match.groups()
-                if before:
-                    spans.append(ft.TextSpan(before))
-                spans.append(ft.TextSpan(bold, style=ft.TextStyle(weight=ft.FontWeight.BOLD)))
-                if after:
-                    spans.append(ft.TextSpan(after))
-            else:
-                spans.append(ft.TextSpan(part))
+            # Split by <b>...</b> and process all segments
+            tokens = re.split(r"(<b>.*?</b>)", part)
+            for token in tokens:
+                if not token:
+                    continue
+                bold_match = re.match(r"<b>(.*?)</b>", token)
+                if bold_match:
+                    spans.append(ft.TextSpan(bold_match.group(1), style=ft.TextStyle(weight=ft.FontWeight.BOLD)))
+                else:
+                    spans.append(ft.TextSpan(token))
             spans.append(ft.TextSpan("\n"))
         # Remove last extra newline
         if spans and spans[-1].text == "\n":
