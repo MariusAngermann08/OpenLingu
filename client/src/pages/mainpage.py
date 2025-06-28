@@ -315,7 +315,9 @@ class MainPage(ft.Container):
             self.page.update()
 
         self.daily_tasks_page.button.on_click = navigate_to_lections
-
+        
+        # Connect the tutorial button to start the tutorial
+        self.daily_tasks_page.tutorial_button.on_click = self.start_tutorial
         
         
         # Main content
@@ -645,3 +647,141 @@ class MainPage(ft.Container):
             print(f"[ERROR] Error in update_language: {e}")
             import traceback
             traceback.print_exc()
+
+
+    # Tutorial methods
+    
+    def start_tutorial(self, e=None):
+        self.tutorial_step = 0
+        self.tutorial_overlay_instance = None
+        self.show_tutorial_step()
+
+    def show_tutorial_step(self):
+        steps = [
+            {
+                "target": self,  # For AppBar explanation, just center on page
+                "message": (
+                    "👋 <b>Welcome to OpenLingu!</b><br><br>"
+                    "At the top, you'll find the <b>AppBar</b>.<br>"
+                    "• The <b>menu button</b> (☰) opens the navigation drawer.<br>"
+                    "• The <b>language button</b> lets you change your learning language.<br>"
+                    "• The <b>Globe Icon</b> lets you change your native language.<br>"
+                    "• The <b>server info</b> and <b>download</b> icons are for advanced features.<br><br>"
+                    "Let's see the drawer next!"
+                ),
+            },
+            {
+                "target": self.drawer,
+                "message": (
+                    "📚 <b>This is the Navigation Drawer.</b><br><br>"
+                    "• Use it to switch between Daily Tasks, Learning Page, Vocabulary Trainer, and more.<br>"
+                    "• The <b>Account</b> and <b>Settings</b> are at the bottom.<br> They allow you to customize your Expierince with Openlingu<br>"
+                    "• You can always open this drawer from the menu button in the AppBar."
+                ),
+            },
+        ]
+
+        if self.tutorial_step < len(steps):
+            step = steps[self.tutorial_step]
+            # Remove previous overlay if present
+            if hasattr(self, "tutorial_overlay_instance") and self.tutorial_overlay_instance:
+                self.page.overlay.remove(self.tutorial_overlay_instance)
+            # Create and show overlay
+            self.tutorial_overlay_instance = TutorialOverlay(
+                target_control=step["target"],
+                message=step["message"],
+                on_next=lambda e: self.next_tutorial_step(),
+                on_skip=lambda e: self.end_tutorial()
+            )
+            self.page.overlay.append(self.tutorial_overlay_instance)
+            self.page.update()
+        else:
+            self.end_tutorial()
+
+    def next_tutorial_step(self, e=None):
+        if hasattr(self, "tutorial_overlay_instance") and self.tutorial_overlay_instance:
+            self.page.overlay.remove(self.tutorial_overlay_instance)
+            self.tutorial_overlay_instance = None
+        self.tutorial_step += 1
+        self.show_tutorial_step()
+
+    def end_tutorial(self, e=None):
+        if hasattr(self, "tutorial_overlay_instance") and self.tutorial_overlay_instance:
+            self.page.overlay.remove(self.tutorial_overlay_instance)
+            self.tutorial_overlay_instance = None
+        self.page.update()
+
+class TutorialOverlay(ft.Stack):
+    def __init__(self, target_control, message, on_next, on_skip):
+        # Convert message (with <b> and <br>) to RichText spans
+        spans = []
+        import re
+        # Split by <br>
+        for part in re.split(r"<br\s*/?>", message):
+            part = part.strip()
+            if not part:
+                spans.append(ft.TextSpan("\n"))
+                continue
+            # Bold
+            bold_match = re.match(r"(.*)<b>(.*?)</b>(.*)", part)
+            if bold_match:
+                before, bold, after = bold_match.groups()
+                if before:
+                    spans.append(ft.TextSpan(before))
+                spans.append(ft.TextSpan(bold, style=ft.TextStyle(weight=ft.FontWeight.BOLD)))
+                if after:
+                    spans.append(ft.TextSpan(after))
+            else:
+                spans.append(ft.TextSpan(part))
+            spans.append(ft.TextSpan("\n"))
+        # Remove last extra newline
+        if spans and spans[-1].text == "\n":
+            spans.pop()
+
+        super().__init__(
+            controls=[
+                ft.Container(
+                    bgcolor="#00000088",  # semi-transparent overlay
+                    expand=True,
+                    on_click=on_skip
+                ),
+                ft.Container(
+                    alignment=ft.alignment.center,
+                    expand=True,
+                    content=ft.Container(
+                        width=420,
+                        margin=ft.margin.symmetric(horizontal=32, vertical=64),
+                        padding=ft.padding.all(28),
+                        bgcolor="#eeeeeecc",  # light gray, semi-transparent
+                        border_radius=18,
+                        shadow=ft.BoxShadow(blur_radius=18, color="#00000033"),
+                        content=ft.Column([
+                            ft.Text("Tutorial", size=26, weight=ft.FontWeight.BOLD, color="#1976D2"),
+                            ft.Text(spans=spans, selectable=False, style=ft.TextStyle(size=17, color="#222")),
+                            ft.Row([
+                                ft.ElevatedButton(
+                                    "Next",
+                                    on_click=on_next,
+                                    bgcolor="#1976D2",
+                                    color="white",
+                                    style=ft.ButtonStyle(
+                                        shape=ft.RoundedRectangleBorder(radius=12),
+                                        padding=ft.padding.symmetric(horizontal=24, vertical=12),
+                                    ),
+                                ),
+                                ft.TextButton(
+                                    "Skip",
+                                    on_click=on_skip,
+                                    style=ft.ButtonStyle(
+                                        shape=ft.RoundedRectangleBorder(radius=12),
+                                        padding=ft.padding.symmetric(horizontal=18, vertical=12),
+                                    ),
+                                ),
+                            ], alignment=ft.MainAxisAlignment.END, spacing=18)
+                        ], spacing=22),
+                    ),
+                )
+            ],
+            expand=True,
+            alignment=ft.alignment.center,
+        )

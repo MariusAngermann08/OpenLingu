@@ -31,12 +31,25 @@ class DailyTasksPage(ft.Container):
             ),
             on_click= None
     )
-
+        
+        self.tutorial_button = ft.ElevatedButton(
+            text="Start Tutorial",
+            style=ft.ButtonStyle(
+                bgcolor=ft.Colors.ORANGE_500,
+                color=ft.Colors.WHITE,
+                padding=20,
+                shape=ft.RoundedRectangleBorder(radius=12),
+                overlay_color=ft.Colors.BLUE_700,
+            ),
+            on_click= None 
+        )
+        
         self.content = ft.Column(
             controls=[
                ft.Text("This Page is currently under Construction", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
                 ft.Text("Please check back later for updates", size=20, weight=ft.FontWeight.NORMAL, color=ft.Colors.GREY_600),
                 self.button,
+                self.tutorial_button,
                 
 
             ],
