@@ -20,14 +20,23 @@ class DailyTasksPage(ft.Container):
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
+        self.button = ft.ElevatedButton(
+            text="Go to the Lections",
+            style=ft.ButtonStyle(
+                bgcolor=ft.Colors.BLUE_500,
+                color=ft.Colors.WHITE,
+                padding=20,
+                shape=ft.RoundedRectangleBorder(radius=12),
+                overlay_color=ft.Colors.BLUE_700,
+            ),
+            on_click= None
+    )
+
         self.content = ft.Column(
             controls=[
-               MatchablePairs(
-                   page,
-                   left_items=["Dog", "Cat", "Fish"],
-                   right_items=["Hund","Katze","Fisch"],
-               ).build()
-               
+               ft.Text("This Page is currently under Construction", size=30, weight=ft.FontWeight.BOLD, color=ft.Colors.BLACK),
+                ft.Text("Please check back later for updates", size=20, weight=ft.FontWeight.NORMAL, color=ft.Colors.GREY_600),
+                self.button,
                 
 
             ],
