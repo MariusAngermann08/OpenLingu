@@ -1,14 +1,16 @@
 import flet as ft
 import os
 import sys
+import time
 from pathlib import Path
 import json
+import requests
 
-# Versuche, die Widgets zu importieren, ansonsten hilfreiche Debug-Infos ausgeben
+# Try to import widgets, otherwise print helpful debug information
 try:
     from Pages.Creator_widgets import MatchablePairs, DraggableText, UnderlinedText
 except ImportError as e:
-    print(f"Fehler beim Importieren der Widgets: {e}")
+    print(f"Error importing widgets: {e}")
     print(f"Working Directory: {os.getcwd()}")
     print(f"sys.path: {sys.path}")
     raise
@@ -25,7 +27,7 @@ class PageNavigator(ft.Container):
                 [
                     ft.IconButton(
                         icon=ft.Icons.ARROW_LEFT,
-                        tooltip="Vorherige Seite",
+                        tooltip="Previous page",
                         on_click=on_back,
                         icon_color="#1565C0",
                         style=ft.ButtonStyle(
@@ -41,7 +43,7 @@ class PageNavigator(ft.Container):
                     ),
                     ft.IconButton(
                         icon=ft.Icons.ARROW_RIGHT,
-                        tooltip="Nächste Seite",
+                        tooltip="Next page",
                         on_click=on_next,
                         icon_color="#1565C0",
                         style=ft.ButtonStyle(
@@ -52,7 +54,7 @@ class PageNavigator(ft.Container):
                     ft.Container(width=20),  # Abstand
                     ft.FloatingActionButton(
                         icon=ft.Icons.ADD,
-                        tooltip="Neue Seite hinzufügen",
+                        tooltip="Add new page",
                         bgcolor="#1976D2",
                         mini=True,
                         on_click=on_add,
@@ -93,7 +95,7 @@ class EditorField(ft.Container):
             ),
 )
 
-        self.editor_panel_label = ft.Text("Editor Panel", size=18, weight=ft.FontWeight.W_600)
+        self.editor_panel_label = ft.Text("Editor Panel - Page 1", size=18, weight=ft.FontWeight.W_600)
 
         super().__init__(
             expand=True,
@@ -130,7 +132,7 @@ class EditorField(ft.Container):
 
     def update_view(self):
         self.navigator.content.controls[1].value = f"{self.page_index + 1} / {self.page_count}"
-        self.editor_panel_label.value = f"Editor Panel - Seite {self.page_index + 1}"
+        self.editor_panel_label.value = f"Editor Panel - Page {self.page_index + 1}"
 
         # Clear and rebuild all widgets for this page
         self.field.content.controls.clear()
@@ -169,17 +171,20 @@ class EditorField(ft.Container):
                 font_size=18,
                 bgcolor="#f5f5f5"
             )
-        return ft.Text("Unbekannter Widget-Typ")
+        return ft.Text("Unknown widget type")
 
 
 class EditorSelection(ft.Container):
-    def __init__(self, page: ft.Page, on_select_editor_callback):
+    def __init__(self, page: ft.Page, on_select_editor_callback, new: bool = False, lection_name: str = "", language: str = "en"):
         super().__init__(
             expand=True,
-            padding=10,
-            alignment=ft.alignment.center,
+            padding=ft.padding.symmetric(horizontal=24, vertical=16),
+            bgcolor="#f5f5f5"
         )
         self.page = page
+        self.new = new
+        self.lection_name = lection_name
+        self.language = language  # Store the selected language
         self.on_select_editor_callback = on_select_editor_callback
 
         self.content = ft.Container(
@@ -219,7 +224,7 @@ class EditorSelection(ft.Container):
             alignment=ft.alignment.center,
             content=ft.Column(
                 [
-                    ft.Text("Aktivitätstyp auswählen", size=18, weight=ft.FontWeight.W_600, color="white"),
+                    ft.Text("Select Activity Type", size=18, weight=ft.FontWeight.W_600, color="white"),
                     ft.GridView(
                         controls=[
                             self._build_button("Matchable Pairs"),
@@ -256,8 +261,8 @@ class EditorSelection(ft.Container):
 
     # — Matchable Pairs Editor, unverändert —
     def build_matchable_pairs_editor(self) -> ft.Control:
-        self.left_input = ft.TextField(label="Linker Eintrag", filled=True, border_radius=8)
-        self.right_input = ft.TextField(label="Rechter Eintrag", filled=True, border_radius=8)
+        self.left_input = ft.TextField(label="Left item", filled=True, border_radius=8)
+        self.right_input = ft.TextField(label="Right item", filled=True, border_radius=8)
         self.pairs_display = ft.Column()
         self.left_items = []
         self.right_items = []
@@ -268,7 +273,7 @@ class EditorSelection(ft.Container):
                 pair_text = ft.Text(f"{left} ↔ {right}", expand=True)
                 edit_button = ft.IconButton(
                     icon=ft.Icons.EDIT,
-                    tooltip="Bearbeiten",
+                    tooltip="Edit",
                     on_click=lambda e, index=i: edit_pair(index),
                 )
                 self.pairs_display.controls.append(
@@ -299,14 +304,14 @@ class EditorSelection(ft.Container):
         def finish_editor(e):
             if len(self.left_items) != len(self.right_items) or not self.left_items:
                 self.page.snack_bar = ft.SnackBar(
-                    ft.Text("Ungültige Paare! Bitte mindestens ein gültiges Paar hinzufügen.")
+                    ft.Text("Invalid pairs! Please add at least one valid pair.")
                 )
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
             self.on_select_editor_callback(
                 None,
-                "Matchable Pairs Aktivität",
+                "Matchable Pairs Activity",
                 config={
                     "type": "matchable_pairs",
                     "data": {
@@ -321,20 +326,20 @@ class EditorSelection(ft.Container):
             content=ft.Column(
                 [
                     ft.ElevatedButton(
-                        "Zurück",
+                        "Back",
                         icon=ft.Icons.ARROW_BACK,
                         on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
                         bgcolor="#bbbbbb",
                         color="black",
                     ),
-                    ft.Text("Matchbare Paare erstellen", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Create Matchable Pairs", size=20, weight=ft.FontWeight.BOLD),
                     self.left_input,
                     self.right_input,
                     ft.Row(
                         [
-                            ft.ElevatedButton(text="Paar hinzufügen", icon=ft.Icons.ADD, on_click=add_pair),
+                            ft.ElevatedButton(text="Add pair", icon=ft.Icons.ADD, on_click=add_pair),
                             ft.ElevatedButton(
-                                text="Fertig",
+                                text="Done",
                                 icon=ft.Icons.CHECK,
                                 on_click=finish_editor,
                                 bgcolor="#4CAF50",
@@ -360,7 +365,7 @@ class EditorSelection(ft.Container):
 
     def build_gap_text_editor(self) -> ft.Control:
         self.text_field = ft.TextField(
-            label="Text mit Lücken (Cursor an gewünschte Stelle setzen, dann Lücke einfügen)",
+            label="Text with gaps (place cursor and click 'Insert Gap' to add a gap)",
             multiline=True,
             filled=True,
             border_radius=8,
@@ -379,7 +384,7 @@ class EditorSelection(ft.Container):
 
         def add_option(e):
             if not self.gaps_idx:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte zuerst mindestens eine Lücke im Text einfügen!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please add at least one gap in the text first!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
@@ -403,7 +408,7 @@ class EditorSelection(ft.Container):
             self.options_container.controls.clear()
             for i, option in enumerate(self.options):
                 word_field = ft.TextField(
-                    label="Option Wort",
+                    label="Option word",
                     value=option["word"],
                     width=220,
                     on_change=lambda e, opt=option: update_word(opt, e.control.value),
@@ -415,7 +420,7 @@ class EditorSelection(ft.Container):
                 dropdown_options.append(ft.dropdown.Option("99", "Incorrect Option"))
 
                 gap_dropdown = ft.Dropdown(
-                    label="Lücke auswählen",
+                    label="Select gap",
                     width=140,
                     options=dropdown_options,
                     value=str(option["gap_idx"]),  # always string for dropdown
@@ -425,7 +430,7 @@ class EditorSelection(ft.Container):
                 delete_button = ft.IconButton(
                     icon=ft.Icons.DELETE,
                     icon_color="red",
-                    tooltip="Option löschen",
+                    tooltip="Delete option",
                     on_click=lambda e, idx=i: delete_option(idx),
                 )
 
@@ -459,19 +464,19 @@ class EditorSelection(ft.Container):
         def finish_editor(e):
             # Validation
             if not self.gaps_idx:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Keine Lücken im Text gefunden!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("No gaps found in the text!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
             if not self.options:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte mindestens eine Option hinzufügen!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please add at least one option!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
             assigned_indices = {opt["gap_idx"] for opt in self.options if opt["gap_idx"] != 99}
             missing = [i for i in range(len(self.gaps_idx)) if i not in assigned_indices]
             if missing:
-                self.page.snack_bar = ft.SnackBar(ft.Text(f"Lücke(n) {missing} ohne zugeordnete Option!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text(f"Gap(s) {missing} without assigned option!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
@@ -484,7 +489,7 @@ class EditorSelection(ft.Container):
             # Add to page and reset editor UI
             self.on_select_editor_callback(
                 None,
-                "Gap Text Aktivität",
+                "Gap Text Activity",
                 config={"type": "gap_text", "data": {"text": text, "gaps": gaps, "options": options}}
             )
             self.show_editor_ui(self._build_selection_options())
@@ -493,21 +498,21 @@ class EditorSelection(ft.Container):
         return ft.Container(
             content=ft.Column(
                 [   ft.ElevatedButton(
-                        "Zurück",
+                        "Back",
                         icon=ft.Icons.ARROW_BACK,
                         on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
                         bgcolor="#bbbbbb",
                         color="black",),
-                    ft.Text("Lückentext erstellen", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Create Gap Text", size=20, weight=ft.FontWeight.BOLD),
                     ft.Row(
                         [
                             self.text_field,
                             ft.Column(
                                 [
-                                    ft.ElevatedButton("Lücke einfügen", icon=ft.Icons.ADD, on_click=insert_gap),
-                                    ft.ElevatedButton("Option hinzufügen", icon=ft.Icons.ADD, on_click=add_option),
+                                    ft.ElevatedButton("Insert Gap", icon=ft.Icons.ADD, on_click=insert_gap),
+                                    ft.ElevatedButton("Add Option", icon=ft.Icons.ADD, on_click=add_option),
                                     ft.ElevatedButton(
-                                        "Fertig",
+                                        "Done",
                                         icon=ft.Icons.CHECK,
                                         on_click=finish_editor,
                                         bgcolor="#4CAF50",
@@ -537,7 +542,7 @@ class EditorSelection(ft.Container):
 
     def build_plain_text_editor(self) -> ft.Control:
         self.plain_text_field = ft.TextField(
-            label="Einfacher Text",
+            label="Simple Text",
             multiline=True,
             filled=True,
             border_radius=8,
@@ -548,7 +553,7 @@ class EditorSelection(ft.Container):
         def finish_editor(e):
             text = self.plain_text_field.value.strip()
             if not text:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte Text eingeben!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please enter text!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
@@ -563,16 +568,16 @@ class EditorSelection(ft.Container):
             content=ft.Column(
                 [
                     ft.ElevatedButton(
-                        "Zurück",
+                        "Back",
                         icon=ft.Icons.ARROW_BACK,
                         on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
                         bgcolor="#bbbbbb",
                         color="black",
                     ),
-                    ft.Text("Einfachen Text hinzufügen", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Add Simple Text", size=20, weight=ft.FontWeight.BOLD),
                     self.plain_text_field,
                     ft.ElevatedButton(
-                        "Fertig",
+                        "Done",
                         icon=ft.Icons.CHECK,
                         on_click=finish_editor,
                         bgcolor="#4CAF50",
@@ -591,7 +596,7 @@ class EditorSelection(ft.Container):
 
     def build_underlined_text_editor(self) -> ft.Control:
         self.underlined_text_field = ft.TextField(
-            label="Text eingeben",
+            label="Text with underlines (select text and click 'Underline Selected' to underline)",
             multiline=True,
             filled=True,
             border_radius=8,
@@ -602,21 +607,21 @@ class EditorSelection(ft.Container):
         self.selected_word = None
         self.selected_color = "#1976D2"
         self.words_dropdown = ft.Dropdown(
-            label="Wort auswählen",
+            label="Select word",
             width=200,
             options=[],
             on_change=lambda e: setattr(self, "selected_word", e.control.value),
         )
         self.color_dropdown = ft.Dropdown(
-            label="Farbe auswählen",
+            label="Select color",
             width=160,
             options=[
-                ft.dropdown.Option("#1976D2", "Blau"),
-                ft.dropdown.Option("#E53935", "Rot"),
-                ft.dropdown.Option("#43A047", "Grün"),
-                ft.dropdown.Option("#FBC02D", "Gelb"),
-                ft.dropdown.Option("#8E24AA", "Lila"),
-                ft.dropdown.Option("#000000", "Schwarz"),
+                ft.dropdown.Option("#1976D2", "Blue"),
+                ft.dropdown.Option("#E53935", "Red"),
+                ft.dropdown.Option("#43A047", "Green"),
+                ft.dropdown.Option("#FBC02D", "Yellow"),
+                ft.dropdown.Option("#8E24AA", "Purple"),
+                ft.dropdown.Option("#000000", "Black"),
             ],
             value="#1976D2",
             on_change=lambda e: setattr(self, "selected_color", e.control.value),
@@ -635,7 +640,7 @@ class EditorSelection(ft.Container):
 
         def add_underlined_word(e):
             if not self.words_dropdown.value:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte ein Wort auswählen!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please select a word!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
@@ -667,9 +672,9 @@ class EditorSelection(ft.Container):
                     )
             self.underlined_display.content = ft.Column(
                 [
-                    ft.Text("Vorschau:", size=16, weight=ft.FontWeight.W_600),
+                    ft.Text("Preview:", size=16, weight=ft.FontWeight.W_600),
                     preview,
-                    ft.Row(chips, spacing=8) if chips else ft.Text("Keine unterstrichenen Wörter."),
+                    ft.Row(chips, spacing=8) if chips else ft.Text("No underlined words."),
                 ],
                 spacing=8,
             )
@@ -678,12 +683,12 @@ class EditorSelection(ft.Container):
         def finish_editor(e):
             text = self.underlined_text_field.value.strip()
             if not text:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte Text eingeben!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please enter text!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
             if not self.underlined_words:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Bitte mindestens ein Wort unterstreichen!"))
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please underline at least one word!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
@@ -706,17 +711,17 @@ class EditorSelection(ft.Container):
             content=ft.Column(
                 [
                     ft.ElevatedButton(
-                        "Zurück",
+                        "Back",
                         icon=ft.Icons.ARROW_BACK,
                         on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
                         bgcolor="#bbbbbb",
                         color="black",
                     ),
-                    ft.Text("Unterstrichene Wörter markieren", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Underline Selected Words", size=20, weight=ft.FontWeight.BOLD),
                     self.underlined_text_field,
                     self.words_row,
                     ft.ElevatedButton(
-                        "Wort unterstreichen",
+                        "Underline Word",
                         icon=ft.Icons.ADD,
                         on_click=add_underlined_word,
                         bgcolor="#1976D2",
@@ -744,19 +749,42 @@ class EditorSelection(ft.Container):
 
 
 class MainEditor(ft.Container):
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, new: bool, lection_name: str, language: str = "en"):
         self.page = page
 
+        self.new = new
+        self.lection_name = lection_name
+        self.language = language
+
         self.editor_field = EditorField(page)
-        self.editor_selection = EditorSelection(page, self.editor_field.set_editor_content)
+        self.editor_selection = EditorSelection(
+            page=page, 
+            on_select_editor_callback=self.editor_field.set_editor_content,
+            new=new,
+            lection_name=lection_name,
+            language=language
+        )
 
         self.lection_name_field = ft.TextField(
             label="Lection Name",
-            hint_text="Name der Lektion eingeben",
+            hint_text="Enter lesson name",
+            expand=True,
+            value=self.lection_name if not self.new else "New Lection",
+            border_radius=8,
+            filled=True,
+            bgcolor="#ffffff",
+        )
+        
+        self.lection_description_field = ft.TextField(
+            label="Description",
+            hint_text="Enter lesson description",
             expand=True,
             border_radius=8,
             filled=True,
             bgcolor="#ffffff",
+            multiline=True,
+            min_lines=2,
+            max_lines=3,
         )
 
         super().__init__(
@@ -766,13 +794,26 @@ class MainEditor(ft.Container):
             content=ft.Column(
                 [
                     ft.Container(
-                        content=ft.Row(
+                        content=ft.Column(
                             [
-                                ft.Text("Lection Name:", size=20, weight=ft.FontWeight.W_600),
-                                self.lection_name_field,
+                                ft.Row(
+                                    [
+                                        ft.Text("Lesson Name:", size=20, weight=ft.FontWeight.W_600),
+                                        self.lection_name_field,
+                                    ],
+                                    alignment=ft.MainAxisAlignment.START,
+                                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                                ),
+                                ft.Row(
+                                    [
+                                        ft.Text("Description:", size=16, weight=ft.FontWeight.W_500),
+                                        self.lection_description_field,
+                                    ],
+                                    alignment=ft.MainAxisAlignment.START,
+                                    vertical_alignment=ft.CrossAxisAlignment.START,
+                                ),
                             ],
-                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                            spacing=10,
                         ),
                         padding=ft.Padding(16, 10, 16, 10),
                         bgcolor="#eeeeee",
@@ -789,6 +830,7 @@ class MainEditor(ft.Container):
                         expand=True,
                         spacing=20,
                     ),
+
                 ],
                 alignment=ft.MainAxisAlignment.START,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -797,28 +839,134 @@ class MainEditor(ft.Container):
             ),
         )
 
+    def close_editor(self, e=None):
+        """Close the editor and return to main menu"""
+        self.page.go("/main")
+        self.page.update()
+
     def create_app_bar(self):
+        # Create save button
         self.save_button = ft.IconButton(
-            icon=ft.Icons.SAVE,
-            tooltip="Lection speichern",
-            icon_color="white",
+            icon="save",
+            tooltip="Save Lection",
+            icon_color="#FFFFFF",
             on_click=self.save_lection,
             visible=True,
         )
+        
+        # Create close button
+        self.close_button = ft.IconButton(
+            icon="close",
+            tooltip="Close Editor",
+            icon_color="#FFFFFF",
+            on_click=self.close_editor,
+        )
+        
         self.app_bar = ft.AppBar(
             title=ft.Text("Lection Creator", color="white", weight=ft.FontWeight.BOLD),
             bgcolor="#1565C0",
             elevation=4,
             actions=[
                 self.save_button,
-                ft.IconButton(icon=ft.Icons.ACCOUNT_CIRCLE, tooltip="Profil", icon_color="white"),
+                self.close_button,
             ],
         )
         return self.app_bar
 
     def save_lection(self, e):
-        # TODO: Implementiere das Speichern
-        self.page.snack_bar = ft.SnackBar(ft.Text("Speichern-Funktion noch nicht implementiert."))
+        if not self.new:
+            # For existing lections, we'll implement this later
+            return
+            
+        # Show loading indicator
+        self.save_button.disabled = True
+        self.save_button.text = "Saving..."
+        self.page.update()
+        
+        try:
+            # Get server URL and auth token
+            server_url = self.page.client_storage.get("server_url")
+            auth_token = self.page.client_storage.get("auth_token")
+            
+            if not server_url or not auth_token:
+                self._show_error("Not authenticated. Please log in first.")
+                return
+                
+            # Generate lection data
+            lection_data = self.export_lection()
+            
+            # Prepare headers with auth token
+            headers = {
+                "Authorization": f"Bearer {auth_token}",
+                "Content-Type": "application/json"
+            }
+            
+            # Prepare request data - match CLI format
+            data = {
+                "lection_name": lection_data["title"],
+                "content": lection_data
+            }
+            
+            # Get the language name from the URL or use the one from lection_data
+            language_name = self.language  # This comes from the URL parameter
+            
+            # Make the request
+            response = requests.post(
+                f"{server_url.rstrip('/')}/add_lection/{language_name}",
+                headers=headers,
+                json=data
+            )
+            response.raise_for_status()  # Will raise an exception for 4XX/5XX responses
+            
+            # Show success message
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text("Lection saved successfully!"),
+                bgcolor="#43a047"
+            )
+            self.page.snack_bar.open = True
+            
+            # Show success message and navigate back to main menu after a short delay
+            self.page.snack_bar = ft.SnackBar(
+                content=ft.Text("Lection saved successfully!", color="white"),
+                bgcolor="#43a047"
+            )
+            self.page.snack_bar.open = True
+            self.page.update()
+            
+            # Navigate back to main menu after a short delay
+            def navigate_back():
+                # Reset the view to the main menu
+                self.page.go("/main")
+                # Force a page update to ensure the navigation happens
+                self.page.update()
+                
+            # Use the page's timer to navigate after a delay
+            self.page.run_thread(lambda: (time.sleep(1.5), navigate_back()))
+            
+        except requests.exceptions.RequestException as e:
+            error_msg = str(e)
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    error_msg = error_data.get('detail', str(error_data))
+                except:
+                    error_msg = e.response.text or str(e)
+            self._show_error(f"Failed to save lection: {error_msg}")
+        except Exception as e:
+            self._show_error(f"An error occurred: {str(e)}")
+        finally:
+            # Re-enable save button
+            self.save_button.disabled = False
+            self.save_button.text = "Save"
+            self.page.update()
+            self.page.update()
+            
+    def _show_error(self, message):
+        """Display an error message to the user"""
+        self.page.snack_bar = ft.SnackBar(
+            content=ft.Text(message, color="white"),
+            bgcolor="#f44336"
+        )
         self.page.snack_bar.open = True
         self.page.update()
 
@@ -826,11 +974,104 @@ class MainEditor(ft.Container):
         self.content.content = editor_ui
         self.content.update()
         ft.ElevatedButton(
-            "Zurück",
+            "Back",
             icon=ft.Icons.ARROW_BACK,
             on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
             bgcolor="#bbbbbb",
             color="black",
         )
 
-    
+    def export_lection(self, e=None):
+        """Export the current lection to JSON format and return as a dictionary"""
+        import uuid
+        from datetime import datetime
+        
+        # Basic lection info
+        lection_data = {
+            "id": f"lection_{uuid.uuid4().hex[:8]}",
+            "title": self.lection_name_field.value or "Untitled Lection",
+            "description": self.lection_description_field.value or "",
+            "language": self.language,  # Use the selected language
+            "difficulty": "beginner",  # Default difficulty
+            "created_at": datetime.now().isoformat(),
+            "updated_at": datetime.now().isoformat(),
+            "pages": []
+        }
+        
+        # Convert each page's widgets to the required format
+        for page_idx, page_widgets in enumerate(self.editor_field.pages_content):
+            if not page_widgets:
+                continue
+                
+            page_data = {
+                "title": f"Page {page_idx + 1}",
+                "description": f"Description for page {page_idx + 1}",
+                "widgets": []
+            }
+            
+            # Use a set to track unique widget indices we've already processed
+            processed_indices = set()
+            
+            for widget in page_widgets:
+                # Skip if we've already processed this widget
+                widget_id = id(widget)
+                if widget_id in processed_indices:
+                    continue
+                processed_indices.add(widget_id)
+                
+                widget_type = widget.get("type")
+                widget_data = widget.get("data", {})
+                
+                if not all([widget_type, widget_data]):
+                    continue
+                
+                widget_export = None
+                
+                if widget_type == "plain_text":
+                    widget_export = {
+                        "type": "text",
+                        "data": {
+                            "text": widget_data.get("text", ""),
+                            "size": 16,
+                            "weight": "normal"
+                        }
+                    }
+                    
+                elif widget_type == "underlined_text":
+                    widget_export = {
+                        "type": "underlined_text",
+                        "data": {
+                            "text": widget_data.get("text", ""),
+                            "underlined": widget_data.get("underlined", {}),
+                            "font_size": 16,
+                            "bgcolor": "#F0F8FF"
+                        }
+                    }
+                    
+                elif widget_type == "matchable_pairs":
+                    widget_export = {
+                        "type": "matchable_pairs",
+                        "data": {
+                            "left_items": list(widget_data.get("left", [])),
+                            "right_items": list(widget_data.get("right", []))
+                        }
+                    }
+                    
+                elif widget_type == "gap_text":
+                    widget_export = {
+                        "type": "draggable_text",
+                        "data": {
+                            "text": widget_data.get("text", ""),
+                            "gaps_idx": list(widget_data.get("gaps", [])),
+                            "options": dict(widget_data.get("options", {}))
+                        }
+                    }
+                
+                if widget_export:
+                    page_data["widgets"].append(widget_export)
+            
+            if page_data["widgets"]:  # Only add page if it has widgets
+                lection_data["pages"].append(page_data)
+        
+        return lection_data
+        return lection_data

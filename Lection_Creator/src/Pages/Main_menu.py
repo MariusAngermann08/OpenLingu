@@ -2,18 +2,23 @@ import flet as ft
 from math import pi
 import requests
 import threading
+import sys
+import os
+
+# Add Components directory to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from Components.language_chooser import LanguageChooser
 
 class LectionButton(ft.ElevatedButton):
-    def __init__(self, page, language: str, lection: str, index: int, on_select):
+    def __init__(self, page, language: str, lection: str, on_select):
         super().__init__()
         self.page = page
         self.language = language
         self.lection = lection
-        self.index = index
         self.on_select_callback = on_select
         self.selected = False
 
-        self.text = f"Lektion {index + 1}: {lection}"
+        self.text = lection  # Just show the lection name
         self.width = 300
         self.height = 50
         self.style = ft.ButtonStyle(
@@ -110,7 +115,6 @@ class ExpandableLanguage(ft.Container):
                 page=page,
                 language=language,
                 lection=lection,
-                index=i,
                 on_select=self.on_lection_select
             )
             self.lection_buttons[lection] = btn
@@ -253,7 +257,7 @@ class MainMenu(ft.Container):
                     lang_name = lang.get("name", lang_code)
                 else:
                     lang_code = str(lang)
-                    lang_name = lang_code.capitalize()
+                    lang_name = lang_code  # Keep original case
                 
                 # Fetch lections for this language
                 self._update_loading_status(f"Loading lections for {lang_name}...", (idx + 1) / (total_languages + 1))
@@ -268,7 +272,9 @@ class MainMenu(ft.Container):
                     self.languages[lang_name] = []
                     for lec in lections:
                         if isinstance(lec, dict):
-                            self.languages[lang_name].append(lec.get("title", str(lec)))
+                            # Try to get the title, fall back to name, then to string representation
+                            lection_name = lec.get("title") or lec.get("name") or str(lec)
+                            self.languages[lang_name].append(lection_name)
                         else:
                             self.languages[lang_name].append(str(lec))
                     
@@ -319,8 +325,26 @@ class MainMenu(ft.Container):
         self.page.update()
     
     def on_create_click(self, e):
-        # Handle create button click
-        self.page.go("/editor")
+        # Show language chooser dialog
+        def on_language_selected(language_code):
+            # Navigate to editor with selected language
+            self.page.go(f"/editor?new=true&lection_name=&language={language_code}")
+            
+        def on_cancel():
+            # Just close the dialog
+            self.content = self._main_content
+            self.page.update()
+        
+        # Create and show language chooser
+        language_chooser = LanguageChooser(
+            page=self.page,
+            on_language_selected=on_language_selected,
+            on_cancel=on_cancel
+        )
+        
+        # Show the language chooser
+        self.content = language_chooser
+        self.page.update()
     
     def create_app_bar(self):
         # Create action buttons (initially hidden)
@@ -401,7 +425,8 @@ class MainMenu(ft.Container):
         if self.selected_lections:
             language, lection = next(iter(self.selected_lections))
             print(f"Editing {language} - {lection}")
-            # TODO: Implement edit functionality
+            # Navigate to editor with new=False and the selected lection name
+            self.page.go(f"/editor?new=false&lection_name={lection}")
     
     def on_delete_lection(self, e):
         if self.selected_lections:
