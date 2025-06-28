@@ -76,16 +76,43 @@ def route_change(e):
         )
         page.views.append(view)
 
-    elif route == "/editor":
+    elif route.startswith("/editor"):
+        # Parse query parameters
+        from urllib.parse import parse_qs, urlparse
+        
+        # Default values
+        is_new = True
+        lection_name = ""
+        
+        # Parse query parameters from URL
+        parsed_url = urlparse(route)
+        params = parse_qs(parsed_url.query)
+        
+        # Get values from query parameters
+        if 'new' in params:
+            is_new = params['new'][0].lower() == 'true'
+        if 'lection_name' in params:
+            lection_name = params['lection_name'][0]
+        if 'language' in params:
+            language = params['language'][0]
+        else:
+            language = "en"  # Default to English if not specified
+        
         # Set window size for editor
         page.window_width = 1200
         page.window_height = 800
         page.window_resizable = True
         page.theme_mode = "light"
-        main_editor = MainEditor(page)
-
         
-        # Create and add editor view (placeholder)
+        # Create MainEditor with parameters
+        main_editor = MainEditor(
+            page=page, 
+            new=is_new, 
+            lection_name=lection_name,
+            language=language
+        )
+        
+        # Create and add editor view
         view = ft.View(
             route=route,
             padding=0,
@@ -96,7 +123,7 @@ def route_change(e):
                 main_editor
             ]
         )
-        page.views.append(view)        
+        page.views.append(view)
     
     page.update()
 
