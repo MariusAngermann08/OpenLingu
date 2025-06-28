@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - OpenLingu</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/main.js" defer></script>
+    <script src="../js/fluid.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenLingu API Reference</h1>
+            <p>Technical documentation for developers</p>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="../index.html" data-section="home">Home</a></li>
+                <li><a href="../getting-started/index.html" data-section="getting-started">Getting Started</a></li>
+                <li><a href="../server/index.html" data-section="server">Server Guide</a></li>
+                <li><a href="../client/index.html" data-section="client">Client Guide</a></li>
+                <li><a href="../lectioncreator/index.html" data-section="lectioncreator">Lection Creator</a></li>
+                <li><a href="index.html" data-section="api" class="active">API Reference</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section>
+                <h2>API Overview</h2>
+                <p>The OpenLingu API follows RESTful principles and uses JSON for data exchange. All endpoints require authentication unless otherwise noted.</p>
+                
+                <h3>Base URL</h3>
+                <p>All API endpoints are relative to the server's base URL. For example, if your server is running at <code>https://api.openlingu.example.com</code>, the full URL for the authentication endpoint would be <code>https://api.openlingu.example.com/api/auth/login</code>.</p>
+                
+                <h3>Authentication</h3>
+                <p>Most endpoints require an authentication token. Include the token in the <code>Authorization</code> header:</p>
+                <pre><code>Authorization: Bearer your_token_here</code></pre>
+                
+                <h3>Endpoints</h3>
+                
+                <h4>Authentication</h4>
+                <div class="endpoint">
+                    <div class="method get">POST</div>
+                    <div class="path">/api/auth/register</div>
+                    <div class="description">Register a new user</div>
+                </div>
+                
+                <div class="endpoint">
+                    <div class="method post">POST</div>
+                    <div class="path">/api/auth/login</div>
+                    <div class="description">Authenticate and get token</div>
+                </div>
+                
+                <h4>Lections</h4>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="path">/api/lections</div>
+                    <div class="description">List all available lections</div>
+                </div>
+                
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="path">/api/lections/{id}</div>
+                    <div class="description">Get a specific lection</div>
+                </div>
+                
+                <div class="endpoint">
+                    <div class="method post">POST</div>
+                    <div class="path">/api/lections</div>
+                    <div class="description">Create a new lection (requires contributor role)</div>
+                </div>
+                
+                <h4>Progress</h4>
+                <div class="endpoint">
+                    <div class="method get">GET</div>
+                    <div class="path">/api/progress</div>
+                    <div class="description">Get user's progress across all lections</div>
+                </div>
+                
+                <div class="endpoint">
+                    <div class="method post">POST</div>
+                    <div class="path">/api/progress</div>
+                    <div class="description">Update progress for a lection</div>
+                </div>
+                
+                <h3>Error Responses</h3>
+                <p>The API uses standard HTTP status codes to indicate success or failure:</p>
+                <ul>
+                    <li><code>200 OK</code> - Request successful</li>
+                    <li><code>201 Created</code> - Resource created successfully</li>
+                    <li><code>400 Bad Request</code> - Invalid request data</li>
+                    <li><code>401 Unauthorized</code> - Authentication required</li>
+                    <li><code>403 Forbidden</code> - Insufficient permissions</li>
+                    <li><code>404 Not Found</code> - Resource not found</li>
+                    <li><code>500 Internal Server Error</code> - Server error</li>
+                </ul>
+                
+                <h3>Example Request</h3>
+                <pre><code>GET /api/lections/123 HTTP/1.1
+Host: api.openlingu.example.com
+Authorization: Bearer your_token_here
+Accept: application/json</code></pre>
+                
+                <h3>Example Response</h3>
+                <pre><code>{
+  "id": 123,
+  "title": "Basic Greetings",
+  "language": "Spanish",
+  "difficulty": "beginner",
+  "description": "Learn basic Spanish greetings",
+  "pages": [
+    {
+      "number": 1,
+      "widgets": [
+        {
+          "type": "text",
+          "content": "# Hello in Spanish\n\nIn Spanish, you say 'Hola' to greet someone."
+        },
+        {
+          "type": "audio",
+          "url": "/media/audio/hola.mp3"
+        }
+      ]
+    }
+  ]
+}</code></pre>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 OpenLingu Project</p>
+        </footer>
+    </div>
+</body>
+</html>

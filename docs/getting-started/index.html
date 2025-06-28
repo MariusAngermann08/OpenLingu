@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Getting Started - OpenLingu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/main.js" defer></script>
+    <script src="../js/fluid.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Getting Started with OpenLingu</h1>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="../index.html" data-section="home">Home</a></li>
+                <li><a href="index.html" data-section="getting-started" class="active">Getting Started</a></li>
+                <li><a href="../server/index.html" data-section="server">Server Guide</a></li>
+                <li><a href="../client/index.html" data-section="client">Client Guide</a></li>
+                <li><a href="../lectioncreator/index.html" data-section="lectioncreator">Lection Creator</a></li>
+                <li><a href="../api/index.html" data-section="api">API Reference</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <div class="info-banner">
+                <div class="info-header">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Requires Python 3.12.0 or older</span>
+                    <button class="info-toggle" aria-expanded="false" aria-controls="python-version-info">
+                        <span class="toggle-text">Why is that?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="info-content" id="python-version-info">
+                    <p>OpenLingu uses an older version of the Google Translate API wrapper that implements a synchronous language translation approach for lections. This older version is not compatible with Python 3.13 and newer.</p>
+                    <p>The translation functionality is a core feature that allows live translation of learning materials to your native language, and maintaining compatibility with the older version ensures reliable and consistent translation behavior.</p>
+                </div>
+            </div>
+
+            <section>
+                <h2>Quick Start</h2>
+                <p>Get up and running with OpenLingu in just a few simple steps:</p>
+                
+                <div class="steps">
+                    <div class="step">
+                        <h3>1. Clone the Repository</h3>
+                        <div class="code-block">
+                            <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                            <pre><code>git clone https://github.com/MariusAngermann08/OpenLingu.git
+cd OpenLingu</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <h3>2. Install Dependencies</h3>
+                        <p>Run the installation script to set up all required dependencies:</p>
+                        <div class="code-block">
+                            <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                            <pre><code>python install.py</code></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <h3>3. Run the Application</h3>
+                        <p>Start the OpenLingu application:</p>
+                        <div class="code-block">
+                            <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                            <pre><code>python run.py</code></pre>
+                        </div>
+                        <p>Or use the web interface:</p>
+                        <div class="code-block">
+                            <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                            <pre><code>python run.py --web</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 OpenLingu Project</p>
+        </footer>
+    </div>
+</body>
+</html>

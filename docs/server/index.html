@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Guide - OpenLingu</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/main.js" defer></script>
+    <script src="../js/fluid.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenLingu Server Guide</h1>
+            <p>Learn how to set up and manage an OpenLingu server</p>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="../index.html" data-section="home">Home</a></li>
+                <li><a href="../getting-started/index.html" data-section="getting-started">Getting Started</a></li>
+                <li><a href="index.html" data-section="server" class="active">Server Guide</a></li>
+                <li><a href="../client/index.html" data-section="client">Client Guide</a></li>
+                <li><a href="../lectioncreator/index.html" data-section="lectioncreator">Lection Creator</a></li>
+                <li><a href="../api/index.html" data-section="api">API Reference</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section>
+                <h2>Server Overview</h2>
+                <p>The OpenLingu server handles user authentication, content delivery, and data storage. It provides a RESTful API that the client application uses to interact with the system.</p>
+                
+                <h2>Server Administration</h2>
+                
+                <h3>Starting the Server</h3>
+                <p>To start the OpenLingu server:</p>
+                <pre><code>python -m server.main</code></pre>
+                
+                <h3>Configuration</h3>
+                <p>Server configuration is stored in <code>server/config.ini</code>. You can modify settings such as:</p>
+                <ul>
+                    <li>Server port and host</li>
+                    <li>Database connection</li>
+                    <li>Session settings</li>
+                    <li>File storage locations</li>
+                </ul>
+                
+                <h3>User Management</h3>
+                <p>Standard users can register through the client interface. To create a contributor account, use the admin tools while the server is offline:</p>
+                <pre><code>python -m server.admin.tools --add-contributor username</code></pre>
+                
+                <h3>Backup and Restore</h3>
+                <p>Regularly back up your server data. The server stores data in the following locations:</p>
+                <ul>
+                    <li>Database: <code>server/data/database.db</code></li>
+                    <li>Uploaded files: <code>server/data/uploads/</code></li>
+                    <li>Lection content: <code>server/data/lections/</code></li>
+                </ul>
+                
+                <h2>Troubleshooting</h2>
+                <div class="troubleshooting">
+                    <h4>Server won't start</h4>
+                    <p>Check the following:</p>
+                    <ul>
+                        <li>Required ports are not in use</li>
+                        <li>Database file is not corrupted</li>
+                        <li>File permissions are set correctly</li>
+                    </ul>
+                    
+                    <h4>Users can't connect</h4>
+                    <p>Verify:</p>
+                    <ul>
+                        <li>Server is running and accessible</li>
+                        <li>Firewall allows traffic on the configured port</li>
+                        <li>Client is using the correct server URL</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 OpenLingu Project</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenLingu - Language Learning Platform</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js" defer></script>
+    <script src="js/fluid.js" defer></script>
+    <style>
+        /* SVG Filter for Oil Painting Effect */
+        svg {
+            position: absolute;
+            width: 0;
+            height: 0;
+            overflow: hidden;
+        }
+    </style>
+    <svg>
+        <filter id="noise" x="0%" y="0%" width="100%" height="100%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" />
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.1 0" />
+        </filter>
+    </svg>
+    <style>
+        /* Initial loading animation */
+        body.loading {
+            overflow: hidden;
+        }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(26, 115, 232, 0.2);
+            border-radius: 50%;
+            border-top-color: #1a73e8;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="loading">
+    <div class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading OpenLingu</p>
+        </div>
+    </div>
+    <div class="container">
+        <header class="fluid-header">
+            <canvas id="fluid-canvas"></canvas>
+            <div class="header-content">
+                <h1>OpenLingu</h1>
+                <p>Your Gateway to Language Learning</p>
+            </div>
+        </header>
+        
+        <nav>
+            <ul>
+                <li><a href="index.html" data-section="home" class="active">Home</a></li>
+                <li><a href="getting-started/index.html" data-section="getting-started">Getting Started</a></li>
+                <li><a href="server/index.html" data-section="server">Server Guide</a></li>
+                <li><a href="client/index.html" data-section="client">Client Guide</a></li>
+                <li><a href="lectioncreator/index.html" data-section="lectioncreator">Lection Creator</a></li>
+                <li><a href="api/index.html" data-section="api">API Reference</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="home" class="section">
+                <h2>Welcome to OpenLingu</h2>
+                <p>OpenLingu is a flexible, open-source language learning platform that allows users to learn languages through interactive lessons while providing tools for content creators to build and share educational content.</p>
+                
+                <div class="intro-features">
+                    <div class="intro-feature">
+                        <div class="intro-icon">🛠️</div>
+                        <h3>For Content Creators</h3>
+                        <p>Create and share language learning content with our intuitive tools and templates.</p>
+                        
+                        <div class="component-card" data-type="lection">
+                            <div class="component-icon" role="img" aria-label="Lection Creator">
+                                ✏️
+                            </div>
+                            <h4>Lection Creator</h4>
+                            <p>Design and publish engaging language lessons with our visual editor. Create exercises and assessments with ease.</p>
+                            <a href="lectioncreator/index.html" class="btn">Get Started <i class="fas fa-arrow-right"></i></a>
+                            <div class="hover-hint">
+                                <i class="fas fa-hand-pointer"></i>
+                                <span>Hover to view details</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="intro-feature">
+                        <div class="intro-icon">📚</div>
+                        <h3>For Learners</h3>
+                        <p>Access interactive language lessons, track your progress, and learn at your own pace with our adaptive learning system.</p>
+                        
+                        <div class="component-card" data-type="client">
+                            <div class="component-icon" role="img" aria-label="Client">
+                                📱
+                            </div>
+                            <h4>Client Application</h4>
+                            <p>Access language courses, complete lessons, and track your learning progress through our intuitive client.</p>
+                            <a href="client/index.html" class="btn">Start Learning <i class="fas fa-arrow-right"></i></a>
+                            <div class="hover-hint">
+                                <i class="fas fa-hand-pointer"></i>
+                                <span>Hover to view details</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="intro-feature">
+                        <div class="intro-icon">🌐</div>
+                        <h3>For Self-Hosters</h3>
+                        <p>Deploy your own OpenLingu server to host language courses and manage users with full control over your data and customization options.</p>
+                        
+                        <div class="component-card" data-type="server">
+                            <div class="component-icon" role="img" aria-label="Server">
+                                🔧
+                            </div>
+                            <h4>Self-Hosted Server</h4>
+                            <p>Set up your own OpenLingu instance with our easy-to-deploy server solution.</p>
+                            <a href="server/index.html" class="btn">Server Setup <i class="fas fa-arrow-right"></i></a>
+                            <div class="hover-hint">
+                                <i class="fas fa-hand-pointer"></i>
+                                <span>Hover to view details</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 OpenLingu Project</p>
+        </footer>
+    </div>
+</body>
+</html>
