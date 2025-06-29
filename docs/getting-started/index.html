@@ -8,6 +8,349 @@
     <link rel="stylesheet" href="../css/style.css">
     <script src="../js/main.js" defer></script>
     <script src="../js/fluid.js" defer></script>
+    <script>
+        // Enhanced Tab functionality with smooth animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabIndicator = document.querySelector('.tab-indicator');
+            let activeTab = document.querySelector('.tab-button.active');
+            
+            function updateIndicator(button) {
+                if (!button) return;
+                const container = button.closest('.tab-buttons');
+                const containerRect = container.getBoundingClientRect();
+                const buttonRect = button.getBoundingClientRect();
+                
+                // Calculate position and width with pixel-perfect precision
+                const left = buttonRect.left - containerRect.left;
+                const width = buttonRect.width;
+                
+                // Add a temporary class for the animation
+                tabIndicator.classList.add('animating');
+                
+                // Ensure the indicator is visible before starting the animation
+                tabIndicator.style.opacity = '1';
+                
+                // Update indicator position and width with smooth transition
+                requestAnimationFrame(() => {
+                    tabIndicator.style.transform = `translateX(${left}px)`;
+                    tabIndicator.style.width = `${width}px`;
+                    
+                    // Add a subtle scale effect during the animation
+                    tabIndicator.style.transform = `translateX(${left}px) scaleX(1.05)`;
+                    setTimeout(() => {
+                        tabIndicator.style.transform = `translateX(${left}px) scaleX(1)`;
+                    }, 150);
+                });
+                
+                // Remove the animation class after it completes
+                setTimeout(() => {
+                    tabIndicator.classList.remove('animating');
+                }, 500);
+                
+                // Add ripple effect
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                button.appendChild(ripple);
+                
+                // Position ripple at click position (for future enhancement)
+                // const rect = button.getBoundingClientRect();
+                // const x = event.clientX - rect.left;
+                // const y = event.clientY - rect.top;
+                // ripple.style.left = `${x}px`;
+                // ripple.style.top = `${y}px`;
+                
+                // Remove ripple after animation
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            }
+            
+            // Initialize indicator position immediately
+            if (activeTab) {
+                // Force a reflow to ensure the DOM is ready
+                void activeTab.offsetWidth;
+                updateIndicator(activeTab);
+            }
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Don't do anything if clicking the active tab
+                    if (button === activeTab) return;
+                    
+                    // Update active states
+                    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                    
+                    button.classList.add('active');
+                    const tabId = button.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                    
+                    // Update indicator with animation
+                    updateIndicator(button);
+                    activeTab = button;
+                    
+                    // Add active class to tab content with a slight delay for smoother transition
+                    const activeContent = document.getElementById(`${tabId}-tab`);
+                    activeContent.style.opacity = '0';
+                    setTimeout(() => {
+                        activeContent.style.transition = 'opacity 0.3s ease';
+                        activeContent.style.opacity = '1';
+                    }, 50);
+                });
+                
+                // Add hover effect
+                button.addEventListener('mouseenter', () => {
+                    if (button !== activeTab) {
+                        button.style.transform = 'translateY(-2px)';
+                        button.style.transition = 'transform 0.2s ease';
+                    }
+                });
+                
+                button.addEventListener('mouseleave', () => {
+                    button.style.transform = '';
+                });
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                updateIndicator(activeTab);
+            });
+        });
+    </script>
+    <style>
+        /* Tab styles for virtual environment setup */
+        .tab-container {
+            margin: 1.5rem 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tab-buttons {
+            display: flex;
+            background-color: #f0f2f5;
+            border-radius: 12px 12px 0 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            padding: 4px 4px 0 4px;
+            margin: 0 0 1px 0;
+            list-style: none;
+            z-index: 1;
+            gap: 4px;
+        }
+        
+        .tab-buttons::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        
+        .tab-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(26, 115, 232, 0.1), rgba(66, 133, 244, 0.1));
+            border-radius: 8px 8px 0 0;
+            will-change: transform, width, height, background;
+            z-index: 0;
+            transform-origin: left center;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 25px rgba(26, 115, 232, 0.2);
+            /* Start with zero width to prevent flash of incorrect position */
+            width: 0 !important;
+            opacity: 0;
+            mix-blend-mode: multiply;
+        }
+        
+        .tab-button {
+            position: relative;
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+            overflow: hidden;
+            outline: none;
+            letter-spacing: 0.3px;
+            margin: 0;
+            white-space: nowrap;
+            flex: 1;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+            transform: translateZ(0);
+            perspective: 1000px;
+        }
+        
+        .tab-button:hover {
+            color: #1a73e8;
+            background-color: rgba(26, 115, 232, 0.05);
+            transform: translateY(-1px) scale(1.01);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tab-button:active {
+            transform: translateY(1px) scale(0.99);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tab-button.active {
+            color: #1a73e8;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.98) 100%);
+            position: relative;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            box-shadow: 0 10px 30px -5px rgba(26, 115, 232, 0.15);
+            border-radius: 8px 8px 0 0;
+            transform: translateY(-3px) scale(1.03);
+            z-index: 3;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .tab-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(26, 115, 232, 0.1), rgba(66, 133, 244, 0.1));
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: -1;
+            transform: scale(0.9);
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .tab-button.active::before {
+            opacity: 1;
+            transform: scale(1);
+            box-shadow: 0 5px 15px rgba(26, 115, 232, 0.2);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: white;
+            z-index: 2;
+            border-radius: 0 0 4px 4px;
+        }
+        
+        /* Ripple effect */
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background-color: rgba(26, 115, 232, 0.1);
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+            width: 100px;
+            height: 100px;
+            margin-top: -50px;
+            margin-left: -50px;
+            opacity: 0;
+        }
+        
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            transform: translateY(0);
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: top center;
+            perspective: 1000px;
+        }
+        
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+            height: auto;
+            animation: contentFadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            transform-style: preserve-3d;
+        }
+        
+        @keyframes contentFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(10px) rotateX(-5deg);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) rotateX(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(10px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .note {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background-color: #f8f9fa;
+            border-left: 3px solid #1a73e8;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        
+        .note i {
+            color: #1a73e8;
+            margin-top: 0.2rem;
+        }
+        
+        .note p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .note code {
+            background-color: rgba(0,0,0,0.05);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -57,7 +400,51 @@ cd OpenLingu</code></pre>
                     </div>
                     
                     <div class="step">
-                        <h3>2. Install Dependencies</h3>
+                        <h3>2. Set Up Virtual Environment (Optional but Recommended)</h3>
+                        <p>We recommend using a virtual environment to manage dependencies. Choose your operating system:</p>
+                        
+                        <div class="tab-container">
+                            <div class="tab-buttons">
+                                <div class="tab-indicator"></div>
+                                <button class="tab-button active" data-tab="windows">
+                                    <i class="fab fa-windows" style="margin-right: 8px;"></i>Windows
+                                </button>
+                                <button class="tab-button" data-tab="macos-linux">
+                                    <i class="fab fa-apple" style="margin-right: 8px;"></i>macOS/
+                                    <i class="fab fa-linux" style="margin-right: 0;"></i>Linux
+                                </button>
+                            </div>
+                            
+                            <div class="tab-content active" id="windows-tab">
+                                <div class="code-block">
+                                    <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                    <pre><code># Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+.\venv\Scripts\activate</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="tab-content" id="macos-linux-tab">
+                                <div class="code-block">
+                                    <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                    <pre><code># Create a virtual environment
+python3 -m venv venv
+
+# Activate the virtual environment
+source venv/bin/activate</code></pre>
+                                </div>
+                                <div class="note">
+                                    <i class="fas fa-info-circle"></i>
+                                    <p>On some Linux distributions, you might need to install the Python virtual environment package first: <code>sudo apt-get install python3-venv</code> (Debian/Ubuntu) or <code>sudo dnf install python3-venv</code> (Fedora)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="step">
+                        <h3>3. Install Dependencies</h3>
                         <p>Run the installation script to set up all required dependencies:</p>
                         <div class="code-block">
                             <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
@@ -66,7 +453,7 @@ cd OpenLingu</code></pre>
                     </div>
                     
                     <div class="step">
-                        <h3>3. Run the Application</h3>
+                        <h3>4. Run the Application</h3>
                         <p>Start the OpenLingu application:</p>
                         <div class="code-block">
                             <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>

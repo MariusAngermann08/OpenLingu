@@ -4,9 +4,280 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Server Guide - OpenLingu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../css/style.css">
     <script src="../js/main.js" defer></script>
     <script src="../js/fluid.js" defer></script>
+    <script>
+        // Add copy functionality to all copy buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const codeBlock = this.nextElementSibling;
+                    const code = codeBlock.textContent;
+                    
+                    // Create a temporary textarea to copy from
+                    const textarea = document.createElement('textarea');
+                    textarea.value = code;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    
+                    try {
+                        // Copy the text
+                        document.execCommand('copy');
+                        
+                        // Change icon to checkmark temporarily
+                        const icon = this.querySelector('i');
+                        const originalIcon = icon.className;
+                        icon.className = 'fas fa-check';
+                        
+                        // Reset icon after 2 seconds
+                        setTimeout(() => {
+                            icon.className = originalIcon;
+                        }, 2000);
+                        
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                    }
+                    
+                    // Clean up
+                    document.body.removeChild(textarea);
+                });
+            });
+        });
+    </script>
+    <style>
+        /* Highlight Section Styles */
+        .highlight-section {
+            background: linear-gradient(135deg, rgba(26, 115, 232, 0.04), rgba(26, 115, 232, 0.08));
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin: 2rem 0;
+            border-left: 4px solid #1a73e8;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        
+        .section-header i {
+            font-size: 1.75rem;
+            color: #1a73e8;
+        }
+        
+        .highlight-section h2 {
+            color: #1a73e8;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        
+        .important-note {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1.5rem 0;
+            border: 1px solid rgba(26, 115, 232, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .note-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .note-header i {
+            color: #1a73e8;
+            font-size: 1.25rem;
+        }
+        
+        .note-header h4 {
+            margin: 0;
+            color: #1a73e8;
+            font-size: 1.1rem;
+        }
+        
+        .important-note p {
+            margin: 0;
+            line-height: 1.6;
+        }
+        
+        .important-note code {
+            background: rgba(26, 115, 232, 0.1);
+            color: #1a4b8c;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        /* Code block styles */
+        .code-block {
+            position: relative;
+            margin: 1.5rem 0;
+            background: #2d2d2d;
+            border-radius: 8px;
+            border: 1px solid #3e3e3e;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .code-block pre {
+            margin: 0;
+            padding: 1.5rem 1.25rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', 'Andale Mono', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+        
+        .code-block code {
+            font-family: inherit;
+            white-space: pre;
+            color: inherit;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(30, 30, 30, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            opacity: 0;
+            transform: scale(0.8) translateY(2px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .code-block:hover .copy-btn {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        .copy-btn:hover {
+            background: rgba(30, 30, 30, 0.9);
+            transform: scale(1.1) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95) !important;
+            background: rgba(30, 30, 30, 0.8);
+        }
+        
+        .copy-btn i {
+            font-size: 14px;
+            transition: transform 0.2s ease;
+            pointer-events: none;
+        }
+        
+        /* Endpoint styles */
+        .endpoint {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-family: 'Fira Code', monospace;
+            border-left: 4px solid #4a6cf7;
+            transition: all 0.2s ease;
+        }
+        
+        .endpoint:hover {
+            background: #f1f3f9;
+            transform: translateX(4px);
+        }
+        
+        .endpoint-method {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            min-width: 70px;
+            text-align: center;
+            text-transform: uppercase;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .endpoint-method.get {
+            background-color: #61affe;
+        }
+        
+        .endpoint-method.post {
+            background-color: #49cc90;
+        }
+        
+        .env-file {
+            background-color: #f8f9fa;
+            color: #d63384;
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.9em;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .endpoint-method.put {
+            background-color: #fca130;
+        }
+        
+        .endpoint-method.delete {
+            background-color: #f93e3e;
+        }
+        
+        .endpoint-path {
+            font-family: 'Fira Code', monospace;
+            color: #3b4151;
+            margin-right: 1rem;
+            flex-grow: 1;
+            word-break: break-word;
+        }
+        
+        .endpoint-description {
+            color: #666;
+            font-size: 0.95rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        @media (max-width: 768px) {
+            .endpoint {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .endpoint-method {
+                margin-bottom: 0.5rem;
+            }
+            
+            .endpoint-path {
+                margin-bottom: 0.5rem;
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -27,54 +298,383 @@
         </nav>
 
         <main>
-            <section>
-                <h2>Server Overview</h2>
-                <p>The OpenLingu server handles user authentication, content delivery, and data storage. It provides a RESTful API that the client application uses to interact with the system.</p>
-                
-                <h2>Server Administration</h2>
-                
-                <h3>Starting the Server</h3>
-                <p>To start the OpenLingu server:</p>
-                <pre><code>python -m server.main</code></pre>
-                
-                <h3>Configuration</h3>
-                <p>Server configuration is stored in <code>server/config.ini</code>. You can modify settings such as:</p>
-                <ul>
-                    <li>Server port and host</li>
-                    <li>Database connection</li>
-                    <li>Session settings</li>
-                    <li>File storage locations</li>
-                </ul>
-                
-                <h3>User Management</h3>
-                <p>Standard users can register through the client interface. To create a contributor account, use the admin tools while the server is offline:</p>
-                <pre><code>python -m server.admin.tools --add-contributor username</code></pre>
-                
-                <h3>Backup and Restore</h3>
-                <p>Regularly back up your server data. The server stores data in the following locations:</p>
-                <ul>
-                    <li>Database: <code>server/data/database.db</code></li>
-                    <li>Uploaded files: <code>server/data/uploads/</code></li>
-                    <li>Lection content: <code>server/data/lections/</code></li>
-                </ul>
-                
-                <h2>Troubleshooting</h2>
-                <div class="troubleshooting">
-                    <h4>Server won't start</h4>
-                    <p>Check the following:</p>
-                    <ul>
-                        <li>Required ports are not in use</li>
-                        <li>Database file is not corrupted</li>
-                        <li>File permissions are set correctly</li>
-                    </ul>
+            <section id="before-you-begin" class="highlight-section">
+                <div class="section-header">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h2>Before You Begin</h2>
+                </div>
+                <div class="section-content">
+                    <p>This guide assumes you have basic knowledge of Python, virtual environments, and working with the command line. You'll need:</p>
                     
-                    <h4>Users can't connect</h4>
-                    <p>Verify:</p>
-                    <ul>
-                        <li>Server is running and accessible</li>
-                        <li>Firewall allows traffic on the configured port</li>
-                        <li>Client is using the correct server URL</li>
-                    </ul>
+                    <div class="important-note">
+                        <div class="note-header">
+                            <i class="fas fa-server"></i>
+                            <h4>Server Files Location</h4>
+                        </div>
+                        <p>All the files needed to set up your own OpenLingu server are located in the <code>server</code> directory of the repository. Make sure you're in this directory when running the server commands.</p>
+                    </div>
+                </div>
+                <h2>Server Overview</h2>
+                <p>OpenLingu's backend is built with <strong>FastAPI</strong>, a modern, high-performance web framework for building APIs with Python. The server is designed to be hosted using <strong>Uvicorn</strong>, a lightning-fast ASGI server implementation.</p>
+                
+                <div class="server-features">
+                    <h3>What are OpenLingu Servers?</h3>
+                    <p>OpenLingu's decentralized approach allows anyone to create and host their own server with custom learning content. Each server can offer unique learning experiences through:</p>
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <h4>Custom Courses</h4>
+                            <p>Create and share your own language courses with tailored content and exercises.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h4>Community Content</h4>
+                            <p>Build a community around your teaching methods and resources.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <h4>Teaching Styles</h4>
+                            <p>Implement your unique teaching approach through customizable exercises.</p>
+                        </div>
+                    </div>
+                    <p class="feature-cta">This ecosystem enables learners to access diverse learning materials through the OpenLingu client application.</p>
+                </div>
+                
+                <style>
+                    .server-features {
+                        background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+                        border-radius: 12px;
+                        padding: 2rem;
+                        margin: 2rem 0;
+                        border: 1px solid #e0e4ff;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+                    }
+                    
+                    .feature-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                        gap: 1.5rem;
+                        margin: 2rem 0;
+                    }
+                    
+                    .feature-card {
+                        background: white;
+                        border-radius: 10px;
+                        padding: 1.5rem;
+                        transition: transform 0.3s ease, box-shadow 0.3s ease;
+                        border: 1px solid #e3e9ff;
+                    }
+                    
+                    .feature-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 10px 30px rgba(74, 108, 247, 0.1);
+                    }
+                    
+                    .feature-icon {
+                        width: 50px;
+                        height: 50px;
+                        border-radius: 50%;
+                        background: #4a6cf7;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin-bottom: 1rem;
+                        color: white;
+                        font-size: 1.5rem;
+                    }
+                    
+                    .feature-card h4 {
+                        color: #2d3748;
+                        margin: 0.5rem 0;
+                        font-size: 1.2rem;
+                    }
+                    
+                    .feature-card p {
+                        color: #4a5568;
+                        font-size: 0.95rem;
+                        line-height: 1.5;
+                    }
+                    
+                    .feature-cta {
+                        text-align: center;
+                        font-weight: 500;
+                        color: #4a6cf7;
+                        margin-top: 1.5rem;
+                        padding-top: 1.5rem;
+                        border-top: 1px solid #e0e4ff;
+                    }
+                    
+                    @media (max-width: 768px) {
+                        .feature-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
+
+                <h2>Server Setup & Requirements</h2>
+                <div class="setup-requirements">
+                    <div class="requirements-grid">
+                        <div class="requirements-card">
+                            <h3>System Requirements</h3>
+                            <ul>
+                                <li>Python 3.8 or higher</li>
+                                <li>PostgreSQL 12+ (recommended) or SQLite (for development)</li>
+                                <li>At least 1GB RAM (2GB+ recommended for production)</li>
+                                <li>At least 1GB free disk space (more depending on media storage needs)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="dependencies-card">
+                            <h3>Core Dependencies</h3>
+                            <div class="dependencies">
+                                <div class="dependency">
+                                    <span class="name">fastapi</span>
+                                    <span class="version">≥0.68.0</span>
+                                    <span class="purpose">Web framework</span>
+                                </div>
+                                <div class="dependency">
+                                    <span class="name">uvicorn</span>
+                                    <span class="version">≥0.15.0</span>
+                                    <span class="purpose">ASGI server</span>
+                                </div>
+                                <div class="dependency">
+                                    <span class="name">python-jose</span>
+                                    <span class="version">≥3.3.0</span>
+                                    <span class="purpose">JWT auth</span>
+                                </div>
+                                <div class="dependency">
+                                    <span class="name">passlib[bcrypt]</span>
+                                    <span class="version">≥1.7.4</span>
+                                    <span class="purpose">Hashing</span>
+                                </div>
+                                <div class="dependency">
+                                    <span class="name">sqlalchemy</span>
+                                    <span class="version">≥1.4.23</span>
+                                    <span class="purpose">Database ORM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="setup-steps">
+                        <h3>Installation & Setup</h3>
+                        <div class="step">
+                            <h4>1. Create Virtual Environment</h4>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code># Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <h4>2. Install Dependencies</h4>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code># Install system dependencies (Linux/Ubuntu)
+sudo apt update
+sudo apt install -y python3-pip python3-venv python3-dev python3-tk \
+    build-essential libssl-dev libffi-dev libxml2-dev libxslt1-dev \
+    zlib1g-dev libjpeg-dev libpng-dev libpq-dev
+
+# Install Python packages
+pip install fastapi>=0.68.0 uvicorn>=0.15.0 python-jose>=3.3.0 \
+    passlib[bcrypt]>=1.7.4 sqlalchemy>=1.4.23 python-multipart \
+    python-dotenv pydantic[email] psycopg2-binary</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <h4>3. Configure Environment</h4>
+                            <p>Create a <code class="env-file">.env</code> file with these settings:</p>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code># .env
+DATABASE_URL=sqlite:///./data/database.db
+# or for PostgreSQL:
+# DATABASE_URL=postgresql://user:password@localhost:5432/openlingu
+
+# Security
+SECRET_KEY=your-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# CORS (comma-separated list of allowed origins)
+CORS_ORIGINS=["*"]</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div class="step">
+                            <h4>4. Run the Server</h4>
+                            <p>For development with auto-reload:</p>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code>uvicorn server.main:app --reload</code></pre>
+                            </div>
+                            
+                            <p>For production with Gunicorn:</p>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code>gunicorn -k uvicorn.workers.UvicornWorker server.main:app \
+    --workers 4 \
+    --bind 0.0.0.0:8000 \
+    --timeout 120 \
+    --keep-alive 5</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    .setup-requirements {
+                        margin: 2rem 0;
+                    }
+                    
+                    .requirements-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                        gap: 1.5rem;
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .requirements-card, .dependencies-card {
+                        background: #f8fafc;
+                        border-radius: 10px;
+                        padding: 1.5rem;
+                        border: 1px solid #e2e8f0;
+                    }
+                    
+                    .dependencies {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                        gap: 0.75rem;
+                        margin-top: 1rem;
+                    }
+                    
+                    .dependency {
+                        background: white;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 6px;
+                        padding: 0.75rem;
+                        font-size: 0.9em;
+                    }
+                    
+                    .dependency .name {
+                        font-family: 'Fira Code', monospace;
+                        font-weight: 600;
+                        color: #2d3748;
+                        display: block;
+                    }
+                    
+                    .dependency .version {
+                        color: #4a5568;
+                        font-size: 0.85em;
+                        font-family: 'Fira Code', monospace;
+                        margin-right: 0.5em;
+                    }
+                    
+                    .dependency .purpose {
+                        color: #718096;
+                        font-size: 0.85em;
+                    }
+                    
+                    .setup-steps {
+                        background: white;
+                        border-radius: 10px;
+                        padding: 2rem;
+                        border: 1px solid #e2e8f0;
+                        margin-top: 1.5rem;
+                    }
+                    
+                    .step {
+                        margin-bottom: 2rem;
+                    }
+                    
+                    .step:last-child {
+                        margin-bottom: 0;
+                    }
+                    
+                    .step h4 {
+                        margin-top: 0;
+                        color: #2d3748;
+                        font-size: 1.1em;
+                        margin-bottom: 0.75rem;
+                    }
+                    
+                    @media (max-width: 768px) {
+                        .dependencies {
+                            grid-template-columns: 1fr 1fr;
+                        }
+                        
+                        .requirements-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
+                
+                <style>
+                    .requirements {
+                        background: #f8fafc;
+                        border-radius: 10px;
+                        padding: 1.5rem;
+                        margin: 1.5rem 0;
+                    }
+                    
+                    .dependencies {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                        gap: 1rem;
+                        margin: 1.5rem 0;
+                    }
+                    
+                    .dependency {
+                        background: white;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 8px;
+                        padding: 1rem;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    
+                    .dependency .name {
+                        font-family: 'Fira Code', monospace;
+                        font-weight: 600;
+                        color: #2d3748;
+                    }
+                    
+                    .dependency .version {
+                        color: #4a5568;
+                        font-size: 0.9em;
+                        margin: 0.2em 0;
+                        font-family: 'Fira Code', monospace;
+                    }
+                    
+                    .dependency .purpose {
+                        color: #718096;
+                        font-size: 0.9em;
+                    }
+                    
+                    @media (max-width: 768px) {
+                        .dependencies {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                </style>
+                </div>
+                
+                <div class="api-reference" style="text-align: center; margin: 4rem 0 2rem; padding: 2rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <h3 style="margin-bottom: 1.5rem; color: #1a365d;">API Documentation</h3>
+                    <a href="../api/index.html" class="button primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2rem; font-size: 1.1em; background: #4a6cf7; color: white; text-decoration: none; border-radius: 6px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <i class="fas fa-book"></i> View Full API Documentation
+                    </a>
+                    <p style="margin-top: 1rem; color: #4a5568; font-size: 0.95em;">Detailed API endpoints, request/response examples, and more</p>
                 </div>
             </section>
         </main>
