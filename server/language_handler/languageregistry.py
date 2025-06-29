@@ -108,12 +108,21 @@ async def delete_language(language_name: str, username: str, token: str, db: Ses
             print(f"Language '{language_name}' not found")
             raise HTTPException(status_code=404, detail="Language not found")
         
-        # Delete language
+        # First, delete all lections associated with this language
+        from models import Lection
+        lections_deleted = db.query(Lection).filter(
+            Lection.language == language_name
+        ).delete(synchronize_session=False)
+        
+        # Then delete the language
         db.delete(language)
         db.commit()
         
-        print(f"Successfully deleted language: {language_name}")
-        return {"msg": "Language deleted successfully"}
+        print(f"Successfully deleted language: {language_name} and {lections_deleted} associated lections")
+        return {
+            "msg": f"Language and {lections_deleted} associated lections deleted successfully",
+            "deleted_lections_count": lections_deleted
+        }
         
     except HTTPException as e:
         # Re-raise HTTP exceptions
