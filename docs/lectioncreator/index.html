@@ -5,8 +5,412 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lection Creator - OpenLingu</title>
     <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Hero Section */
+        .hero-section {
+            padding: 4rem 2rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: #495057;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 3rem;
+            line-height: 1.6;
+        }
+
+        /* Info Banner */
+        .info-banner {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin: 0 auto 3rem;
+            max-width: 900px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+            will-change: box-shadow, transform;
+        }
+        
+        .info-banner:not(.expanded):hover {
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .info-header {
+            display: flex;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            cursor: pointer;
+            background: #f8f9fa;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .info-header i {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin-right: 1rem;
+        }
+
+        .info-header h3 {
+            margin: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .info-toggle {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center;
+        }
+        
+        .info-toggle:active {
+            transform: scale(0.9);
+        }
+
+        .info-toggle:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--primary-color);
+        }
+
+        .info-content {
+            padding: 0 2rem;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: 
+                max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease-out,
+                padding 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0;
+            will-change: max-height, opacity, padding;
+        }
+
+        .info-banner.expanded .info-content {
+            padding: 0 2rem 2rem;
+            max-height: 1000px;
+            opacity: 1;
+            margin: 0;
+            display: block;
+            transition: 
+                max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease-in 0.1s,
+                padding 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .info-content p {
+            color: #495057;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-content ul {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .info-content li {
+            margin-bottom: 0.5rem;
+            color: #495057;
+            line-height: 1.6;
+        }
+
+        /* CTA Cards */
+        .cta-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin: 3rem auto 4rem;
+            max-width: 1200px;
+        }
+
+        .cta-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .cta-card.highlight {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(26, 115, 232, 0.15);
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .cta-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .cta-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 1.5rem;
+            background: #f1f8ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            color: var(--primary-color);
+        }
+
+        .cta-card:nth-child(2) .cta-icon {
+            background: #e6f7ed;
+            color: #34a853;
+        }
+
+        .cta-card:nth-child(3) .cta-icon {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+
+        .cta-card h3 {
+            font-size: 1.5rem;
+            margin: 0 0 1rem;
+            color: #212529;
+        }
+
+        .cta-card p {
+            color: #6c757d;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .btn i {
+            margin-left: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .btn:hover i {
+            transform: translateX(3px);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1557b0;
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: #f8f9fa;
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Features Grid */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 4rem auto 0;
+            max-width: 1200px;
+        }
+
+        .feature {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.5rem;
+            background: #f1f8ff;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        .feature h4 {
+            font-size: 1.25rem;
+            margin: 0 0 1rem;
+            color: #212529;
+        }
+
+        .feature p {
+            color: #6c757d;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.25rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .cta-cards, .features-grid {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+            }
+        }
+    </style>
     <script src="../js/main.js" defer></script>
     <script src="../js/fluid.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle info banner
+            const toggleButton = document.querySelector('.info-toggle');
+            const infoBanner = document.querySelector('.info-banner');
+            const infoContent = document.querySelector('.info-content');
+            
+            if (toggleButton && infoBanner && infoContent) {
+                // Function to toggle the content
+                const toggleContent = (e) => {
+                    e.preventDefault();
+                    const willBeExpanded = !infoBanner.classList.contains('expanded');
+                    
+                    // Update button state
+                    toggleButton.setAttribute('aria-expanded', willBeExpanded);
+                    
+                    // Toggle chevron icon
+                    const icon = toggleButton.querySelector('i');
+                    if (icon) {
+                        icon.className = willBeExpanded ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                    }
+                    
+                    // Update content visibility with proper transitions
+                    updateContentVisibility(willBeExpanded);
+                };
+                
+                // Click handler
+                toggleButton.addEventListener('click', toggleContent);
+                
+                        // Function to update content visibility
+                const updateContentVisibility = (show) => {
+                    if (show) {
+                        infoContent.style.display = 'block';
+                        // Force reflow to ensure transition works
+                        void infoContent.offsetHeight;
+                        // Small delay to ensure browser has processed display: block
+                        requestAnimationFrame(() => {
+                            infoBanner.classList.add('expanded');
+                        });
+                    } else {
+                        infoBanner.classList.remove('expanded');
+                        // Wait for transition to complete before hiding
+                        // Slightly faster timeout to match the faster animation
+                        setTimeout(() => {
+                            if (!infoBanner.classList.contains('expanded')) {
+                                infoContent.style.display = 'none';
+                            }
+                        }, 250); // Reduced from 300ms to match faster animation
+                    }
+                };
+
+                // Start with the banner collapsed
+                updateContentVisibility(false);
+                toggleButton.setAttribute('aria-expanded', 'false');
+                
+                // Set initial chevron icon
+                const icon = toggleButton.querySelector('i');
+                if (icon) {
+                    icon.className = 'fas fa-chevron-down';
+                }
+                
+                // Add click handler to the header as well for better UX
+                const infoHeader = document.querySelector('.info-header');
+                if (infoHeader) {
+                    infoHeader.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            toggleContent(e);
+                        }
+                    });
+                }
+            }
+            
+            // Add smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+        });
+    </script>
 </head>
 <body>
     <div class="container">
@@ -27,70 +431,101 @@
         </nav>
 
         <main>
-            <section>
-                <h2>Creating Lections</h2>
-                <p>The Lection Creator is a powerful tool for designing interactive language learning content. You must have contributor privileges to use these features.</p>
-                
-                <h3>Getting Started</h3>
-                <ol>
-                    <li>Log in with a contributor account</li>
-                    <li>Navigate to the Lection Creator from the main menu</li>
-                    <li>Create a new lection or open an existing one</li>
-                </ol>
-                
-                <h3>Lection Structure</h3>
-                <p>Each lection consists of:</p>
-                <ul>
-                    <li><strong>Metadata:</strong> Title, description, language, difficulty level</li>
-                    <li><strong>Pages:</strong> Individual screens in the lection</li>
-                    <li><strong>Widgets:</strong> Interactive elements on each page</li>
-                </ul>
-                
-                <h3>Available Widgets</h3>
-                <div class="widgets">
-                    <div class="widget">
-                        <h4>Text</h4>
-                        <p>Display formatted text with support for Markdown</p>
-                    </div>
-                    <div class="widget">
-                        <h4>Image</h4>
-                        <p>Add images with optional captions</p>
-                    </div>
-                    <div class="widget">
-                        <h4>Audio</h4>
-                        <p>Embed audio files with playback controls</p>
-                    </div>
-                    <div class="widget">
-                        <h4>Multiple Choice</h4>
-                        <p>Create questions with single or multiple correct answers</p>
-                    </div>
-                    <div class="widget">
-                        <h4>Matching Pairs</h4>
-                        <p>Create matching exercises with draggable elements</p>
-                    </div>
-                    <div class="widget">
-                        <h4>Fill in the Blanks</h4>
-                        <p>Create cloze tests with text input fields</p>
+            <section id="lection-creator" class="hero-section">
+                <div class="container">
+                    <div class="hero-content">
+                        <div class="info-banner">
+                            <div class="info-header">
+                                <i class="fas fa-info-circle"></i>
+                                <h3>What is the Lection Creator?</h3>
+                                <button class="info-toggle" aria-expanded="false" aria-controls="creator-info">
+                                    <span class="sr-only">Toggle info</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div id="creator-info" class="info-content">
+                                <p>The Lection Creator is a powerful web interface that allows you to manage the languages and learning content offered by your OpenLingu server. With this visual editor, you can:</p>
+                                <ul>
+                                    <li>Create and edit interactive language learning lections</li>
+                                    <li>Add various exercise types (matching, drag & drop, quizzes, etc.)</li>
+                                    <li>Organize content into structured learning paths</li>
+                                    <li>Preview your lections before publishing</li>
+                                    <li>Collaborate with other contributors</li>
+                                </ul>
+                                <p>To get started, you'll need contributor access to an OpenLingu server.</p>
+                            </div>
+                        </div>
+
+                        <div class="cta-cards">
+                            <div class="cta-card">
+                                <div class="cta-icon">
+                                    <i class="fas fa-server"></i>
+                                </div>
+                                <h3>Server Administrator?</h3>
+                                <p>Set up contributor accounts and manage server settings</p>
+                                <a href="../server/index.html#user-management" class="btn btn-primary">
+                                    <span>Server Administration</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+
+                            <div class="cta-card highlight">
+                                <div class="cta-icon">
+                                    <i class="fas fa-laptop-code"></i>
+                                </div>
+                                <h3>Try It Locally</h3>
+                                <p>Test the Lection Creator on your local machine without setting up a server</p>
+                                <a href="../server/index.html#local-setup" class="btn btn-outline">
+                                    <span>Local Development Guide</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+
+                            <div class="cta-card">
+                                <div class="cta-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <h3>Documentation</h3>
+                                <p>Learn how to create effective language learning content</p>
+                                <a href="#" class="btn btn-outline" disabled>
+                                    <span>Coming Soon</span>
+                                    <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="features-grid">
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-puzzle-piece"></i>
+                                </div>
+                                <h4>Interactive Exercises</h4>
+                                <p>Create engaging activities with various exercise types</p>
+                            </div>
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-language"></i>
+                                </div>
+                                <h4>Multi-language Support</h4>
+                                <p>Build content for any language combination</p>
+                            </div>
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h4>Collaborative</h4>
+                                <p>Work with other contributors in real-time</p>
+                            </div>
+                            <div class="feature">
+                                <div class="feature-icon">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <h4>Responsive Design</h4>
+                                <p>Create content that works on all devices</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <h3>Best Practices</h3>
-                <ul>
-                    <li>Keep lections focused on a specific topic or grammar point</li>
-                    <li>Use a variety of widget types to maintain engagement</li>
-                    <li>Include clear instructions for each interactive element</li>
-                    <li>Test your lection thoroughly before publishing</li>
-                    <li>Use images and audio to support learning</li>
-                </ul>
-                
-                <h3>Publishing Lections</h3>
-                <p>When your lection is ready:</p>
-                <ol>
-                    <li>Click "Save" to save your progress</li>
-                    <li>Use "Preview" to test the lection</li>
-                    <li>Click "Publish" to make it available to users</li>
-                    <li>You can update published lections at any time</li>
-                </ol>
             </section>
         </main>
 

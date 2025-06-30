@@ -1,10 +1,290 @@
 <!DOCTYPE html>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Reference - OpenLingu</title>
     <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .endpoints-container {
+            margin-top: 1.5rem;
+            position: relative;
+        }
+        
+        .endpoints-container::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(26, 115, 232, 0.15), transparent);
+        }
+        
+        .endpoints-container h3 {
+            color: #1a1a1a;
+            margin: 3rem 0 1.5rem 0;
+            padding: 0.5rem 0 0.5rem 1.5rem;
+            position: relative;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            background: linear-gradient(90deg, rgba(26, 115, 232, 0.1), transparent);
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .endpoints-container h3::before {
+            content: '#';
+            color: #1a73e8;
+            margin-right: 0.5rem;
+            opacity: 0.7;
+            font-weight: 800;
+        }
+        
+        .endpoint {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.25rem;
+            margin: 0.75rem 0;
+            background: #ffffff;
+            border-radius: 8px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .endpoint:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+            border-color: rgba(26, 115, 232, 0.2);
+        }
+        
+        .endpoint::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(to bottom, #1a73e8, #34a853);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .endpoint:hover::before {
+            opacity: 1;
+        }
+        
+        .method {
+            font-weight: 700;
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            margin-right: 1.25rem;
+            min-width: 70px;
+            text-align: center;
+            text-transform: uppercase;
+            color: white;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+            transition: all 0.2s ease;
+        }
+        
+        .method::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: -1;
+        }
+        
+        .endpoint:hover .method::after {
+            opacity: 0.2;
+        }
+        
+        .method.get {
+            background: linear-gradient(135deg, #34a853, #2d8e4a);
+            border: 1px solid #2d8e4a;
+        }
+        .method.get::after {
+            background: linear-gradient(135deg, #34a853, #2d8e4a);
+        }
+        
+        .method.post {
+            background: linear-gradient(135deg, #1a73e8, #1557b0);
+            border: 1px solid #1557b0;
+        }
+        .method.post::after {
+            background: linear-gradient(135deg, #1a73e8, #1557b0);
+        }
+        
+        .method.put {
+            background: linear-gradient(135deg, #f9ab00, #e08f00);
+            border: 1px solid #e08f00;
+            color: #1a1a1a;
+        }
+        .method.put::after {
+            background: linear-gradient(135deg, #f9ab00, #e08f00);
+        }
+        
+        .method.delete {
+            background: linear-gradient(135deg, #d93025, #b3261e);
+            border: 1px solid #b3261e;
+        }
+        .method.delete::after {
+            background: linear-gradient(135deg, #d93025, #b3261e);
+        }
+        
+        .path {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            color: #1a1a1a;
+            font-size: 0.95rem;
+            margin-right: 1.5rem;
+            flex: 0 0 300px;
+            font-weight: 500;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        
+        .path::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #1a73e8;
+            font-weight: bold;
+            opacity: 0.7;
+        }
+        
+        .description {
+            color: #5f6368;
+            font-size: 0.95rem;
+            flex: 1;
+            position: relative;
+            padding-left: 1.25rem;
+            margin-left: 0.5rem;
+        }
+        
+        .description::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: #1a73e8;
+            font-weight: bold;
+        }
+        
+        .api-info {
+            background: linear-gradient(145deg, #ffffff, #f5f7fa);
+            border-radius: 12px;
+            padding: 1.75rem 2rem;
+            margin: 2rem 0 3rem;
+            border: 1px solid rgba(26, 115, 232, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .api-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, #1a73e8, #34a853);
+        }
+        
+        .api-info h3 {
+            color: #1a1a1a;
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .api-info h4 {
+            color: #1a73e8;
+            margin: 1.5rem 0 0.75rem 0;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-left: 1.75rem;
+        }
+        
+        .api-info h4::before {
+            content: '🔹';
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .api-info ul {
+            margin: 0.5rem 0 1rem 1.25rem;
+            padding: 0;
+        }
+        
+        .api-info li {
+            margin-bottom: 0.5rem;
+            line-height: 1.5;
+        }
+        
+        .api-info code {
+            background: rgba(0,0,0,0.05);
+            padding: 0.2em 0.4em;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-family: 'Courier New', monospace;
+            color: #1a73e8;
+            font-weight: 500;
+            border: 1px solid rgba(26, 115, 232, 0.2);
+        }
+        
+        /* Style for HTTP status codes */
+        .http-code {
+            display: inline-block;
+            padding: 0.2em 0.6em;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin-right: 0.5em;
+        }
+        
+        .http-2xx { background-color: #e6f7e6; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .http-4xx { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .http-5xx { background-color: #fff3e0; color: #e65100; border: 1px solid #ffe0b2; }
+        
+        @media (max-width: 768px) {
+            .endpoint {
+                flex-wrap: wrap;
+                padding: 0.75rem;
+            }
+            
+            .path {
+                flex: 0 0 100%;
+                margin: 0.5rem 0 0 0;
+                order: 3;
+                padding-left: 2.5rem;
+                font-size: 0.85rem;
+            }
+            
+            .description {
+                margin-left: auto;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
     <script src="../js/main.js" defer></script>
     <script src="../js/fluid.js" defer></script>
 </head>
@@ -28,104 +308,124 @@
 
         <main>
             <section>
-                <h2>API Overview</h2>
-                <p>The OpenLingu API follows RESTful principles and uses JSON for data exchange. All endpoints require authentication unless otherwise noted.</p>
-                
-                <h3>Base URL</h3>
-                <p>All API endpoints are relative to the server's base URL. For example, if your server is running at <code>https://api.openlingu.example.com</code>, the full URL for the authentication endpoint would be <code>https://api.openlingu.example.com/api/auth/login</code>.</p>
-                
-                <h3>Authentication</h3>
-                <p>Most endpoints require an authentication token. Include the token in the <code>Authorization</code> header:</p>
-                <pre><code>Authorization: Bearer your_token_here</code></pre>
-                
-                <h3>Endpoints</h3>
-                
-                <h4>Authentication</h4>
-                <div class="endpoint">
-                    <div class="method get">POST</div>
-                    <div class="path">/api/auth/register</div>
-                    <div class="description">Register a new user</div>
+                <h2>API Endpoints</h2>
+                <div class="api-info">
+                    <h3>About This API</h3>
+                    <p>This API is built with <strong>FastAPI</strong>, a modern, fast (high-performance) web framework for building APIs with Python 3.7+ based on standard Python type hints.</p>
+                    
+                    <h4>Authentication</h4>
+                    <ul>
+                        <li>Most endpoints require authentication using a Bearer token</li>
+                        <li>Obtain a token by using the <code>/login</code> or <code>/login_contributer</code> endpoints</li>
+                        <li>Include the token in the <code>Authorization: Bearer your_token_here</code> header</li>
+                        <li>User operations (get/delete) require the token to match the target username</li>
+                        <li>Contributor endpoints require a valid contributor token</li>
+                    </ul>
+                    
+
                 </div>
                 
-                <div class="endpoint">
-                    <div class="method post">POST</div>
-                    <div class="path">/api/auth/login</div>
-                    <div class="description">Authenticate and get token</div>
+                <div class="endpoints-container">
+                    <h3>Authentication</h3>
+                    <div class="endpoint">
+                        <div class="method post">POST</div>
+                        <div class="path">/login</div>
+                        <div class="description">Authenticate and get token</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method post">POST</div>
+                        <div class="path">/login_contributer</div>
+                        <div class="description">Authenticate as a contributor and get token</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method post">POST</div>
+                        <div class="path">/register</div>
+                        <div class="description">Register a new user account</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method post">POST</div>
+                        <div class="path">/logout</div>
+                        <div class="description">Log out by removing the current token</div>
+                    </div>
+                    
+                    <h3>Users</h3>
+                    <div class="endpoint">
+                        <div class="method get">GET</div>
+                        <div class="path">/users/me</div>
+                        <div class="description">Get current user's profile (requires valid token)</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method get">GET</div>
+                        <div class="path">/users/{username}</div>
+                        <div class="description">Get a user's profile (requires matching token)</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method delete">DELETE</div>
+                        <div class="path">/users/{username}</div>
+                        <div class="description">Delete a user account (requires matching token)</div>
+                    </div>
+                    
+                    <h3>Languages</h3>
+                    <div class="endpoint">
+                        <div class="method get">GET</div>
+                        <div class="path">/languages</div>
+                        <div class="description">Get list of all languages</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method post">POST</div>
+                        <div class="path">/languages/{language_name}</div>
+                        <div class="description">Add a new language (contributor only)</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method delete">DELETE</div>
+                        <div class="path">/languages/{language_name}</div>
+                        <div class="description">Delete a language (contributor only)</div>
+                    </div>
+                    
+                    <h3>Lections</h3>
+                    <div class="endpoint">
+                        <div class="method get">GET</div>
+                        <div class="path">/languages/{language_name}/lections</div>
+                        <div class="description">Get list of all lections for a language</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method get">GET</div>
+                        <div class="path">/languages/{language_name}/lections/title/{title}</div>
+                        <div class="description">Get a lection by title</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method get">GET</div>
+                        <div class="path">/languages/{language_name}/lections/{lection_id}</div>
+                        <div class="description">Get a lection by ID</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method post">POST</div>
+                        <div class="path">/languages/{language_name}/lections</div>
+                        <div class="description">Create a new lection (contributor only)</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method put">PUT</div>
+                        <div class="path">/languages/{language_name}/lections</div>
+                        <div class="description">Update an existing lection (contributor only)</div>
+                    </div>
+                    
+                    <div class="endpoint">
+                        <div class="method delete">DELETE</div>
+                        <div class="path">/languages/{language_name}/lections/{lection_name}</div>
+                        <div class="description">Delete a lection (contributor only)</div>
+                    </div>
                 </div>
-                
-                <h4>Lections</h4>
-                <div class="endpoint">
-                    <div class="method get">GET</div>
-                    <div class="path">/api/lections</div>
-                    <div class="description">List all available lections</div>
-                </div>
-                
-                <div class="endpoint">
-                    <div class="method get">GET</div>
-                    <div class="path">/api/lections/{id}</div>
-                    <div class="description">Get a specific lection</div>
-                </div>
-                
-                <div class="endpoint">
-                    <div class="method post">POST</div>
-                    <div class="path">/api/lections</div>
-                    <div class="description">Create a new lection (requires contributor role)</div>
-                </div>
-                
-                <h4>Progress</h4>
-                <div class="endpoint">
-                    <div class="method get">GET</div>
-                    <div class="path">/api/progress</div>
-                    <div class="description">Get user's progress across all lections</div>
-                </div>
-                
-                <div class="endpoint">
-                    <div class="method post">POST</div>
-                    <div class="path">/api/progress</div>
-                    <div class="description">Update progress for a lection</div>
-                </div>
-                
-                <h3>Error Responses</h3>
-                <p>The API uses standard HTTP status codes to indicate success or failure:</p>
-                <ul>
-                    <li><code>200 OK</code> - Request successful</li>
-                    <li><code>201 Created</code> - Resource created successfully</li>
-                    <li><code>400 Bad Request</code> - Invalid request data</li>
-                    <li><code>401 Unauthorized</code> - Authentication required</li>
-                    <li><code>403 Forbidden</code> - Insufficient permissions</li>
-                    <li><code>404 Not Found</code> - Resource not found</li>
-                    <li><code>500 Internal Server Error</code> - Server error</li>
-                </ul>
-                
-                <h3>Example Request</h3>
-                <pre><code>GET /api/lections/123 HTTP/1.1
-Host: api.openlingu.example.com
-Authorization: Bearer your_token_here
-Accept: application/json</code></pre>
-                
-                <h3>Example Response</h3>
-                <pre><code>{
-  "id": 123,
-  "title": "Basic Greetings",
-  "language": "Spanish",
-  "difficulty": "beginner",
-  "description": "Learn basic Spanish greetings",
-  "pages": [
-    {
-      "number": 1,
-      "widgets": [
-        {
-          "type": "text",
-          "content": "# Hello in Spanish\n\nIn Spanish, you say 'Hola' to greet someone."
-        },
-        {
-          "type": "audio",
-          "url": "/media/audio/hola.mp3"
-        }
-      ]
-    }
-  ]
-}</code></pre>
             </section>
         </main>
 
