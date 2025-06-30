@@ -7,6 +7,81 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* Code block styles */
+        .code-block {
+            position: relative;
+            margin: 1.5rem 0;
+            background: #2d2d2d;
+            border-radius: 8px;
+            border: 1px solid #3e3e3e;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .code-block pre {
+            margin: 0;
+            padding: 1.5rem 1.25rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Consolas', 'Monaco', 'Andale Mono', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+        
+        .code-block code {
+            font-family: inherit;
+            white-space: pre;
+            color: inherit;
+        }
+        
+        .copy-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(30, 30, 30, 0.7);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            margin: 0;
+            opacity: 0;
+            transform: scale(0.8) translateY(2px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        
+        .code-block:hover .copy-btn {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        
+        .copy-btn:hover {
+            background: rgba(30, 30, 30, 0.9);
+            transform: scale(1.1) !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .copy-btn:active {
+            transform: scale(0.95) !important;
+            background: rgba(30, 30, 30, 0.8);
+        }
+        
+        .copy-btn i {
+            font-size: 14px;
+            transition: transform 0.2s ease;
+            pointer-events: none;
+        }
+
         /* Hero Section */
         .hero-section {
             padding: 4rem 2rem;
@@ -326,6 +401,189 @@
     <script src="../js/main.js" defer></script>
     <script src="../js/fluid.js" defer></script>
     <script>
+        // Add copy functionality to all copy buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const codeBlock = this.nextElementSibling;
+                    const code = codeBlock.textContent;
+                    
+                    // Create a temporary textarea to copy from
+                    const textarea = document.createElement('textarea');
+                    textarea.value = code;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    
+                    try {
+                        // Copy the text
+                        document.execCommand('copy');
+                        
+                        // Change icon to checkmark temporarily
+                        const icon = this.querySelector('i');
+                        const originalIcon = icon.className;
+                        icon.className = 'fas fa-check';
+                        
+                        // Reset icon after 2 seconds
+                        setTimeout(() => {
+                            icon.className = originalIcon;
+                        }, 2000);
+                        
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                    }
+                    
+                    // Clean up
+                    document.body.removeChild(textarea);
+                });
+            });
+        });
+    </script>
+    <script>
+        // Carousel functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const carousel = document.querySelector('.carousel-inner');
+            const items = document.querySelectorAll('.carousel-item');
+            const prevBtn = document.querySelector('.carousel-control.prev');
+            const nextBtn = document.querySelector('.carousel-control.next');
+            const indicators = document.querySelectorAll('.indicator');
+            const carouselContainer = document.querySelector('.carousel');
+            
+            let currentIndex = 0;
+            let isTransitioning = false;
+            let userInteracted = false;
+            let slideInterval;
+            const totalItems = items.length;
+            const itemWidth = 100; // 100% of container width
+            const autoSlideDelay = 5000; // 5 seconds
+            const transitionDuration = 400; // Match this with CSS transition duration
+
+            // Initialize carousel
+            function initCarousel() {
+                updateCarousel();
+                startAutoSlide();
+                setupEventListeners();
+            }
+
+            function updateCarousel() {
+                carousel.style.transform = `translateX(-${currentIndex * itemWidth}%)`;
+                
+                // Update active indicator
+                indicators.forEach((indicator, index) => {
+                    indicator.style.opacity = index === currentIndex ? '1' : '0.5';
+                });
+            }
+
+            function goToSlide(index) {
+                if (isTransitioning || index === currentIndex) return;
+                
+                isTransitioning = true;
+                currentIndex = (index + totalItems) % totalItems;
+                updateCarousel();
+                
+                // Reset auto-slide timer on user interaction
+                if (userInteracted) {
+                    resetAutoSlideTimer();
+                }
+                
+                // Allow transition to complete before allowing another
+                setTimeout(() => {
+                    isTransitioning = false;
+                }, transitionDuration);
+            }
+
+            function nextSlide() {
+                goToSlide(currentIndex + 1);
+            }
+
+            function prevSlide() {
+                goToSlide(currentIndex - 1);
+            }
+
+            function startAutoSlide() {
+                if (slideInterval) clearInterval(slideInterval);
+                slideInterval = setInterval(() => {
+                    if (!document.hidden && !userInteracted) {
+                        nextSlide();
+                    }
+                }, autoSlideDelay);
+            }
+
+            function resetAutoSlideTimer() {
+                clearInterval(slideInterval);
+                slideInterval = setTimeout(() => {
+                    userInteracted = false;
+                    startAutoSlide();
+                }, autoSlideDelay * 2); // Wait longer before resuming auto-slide
+            }
+
+            function handleUserInteraction() {
+                if (!userInteracted) {
+                    userInteracted = true;
+                    clearInterval(slideInterval);
+                    resetAutoSlideTimer();
+                }
+            }
+
+            function setupEventListeners() {
+                // Navigation buttons
+                nextBtn.addEventListener('click', () => {
+                    handleUserInteraction();
+                    nextSlide();
+                });
+
+                prevBtn.addEventListener('click', () => {
+                    handleUserInteraction();
+                    prevSlide();
+                });
+
+                // Indicator click
+                indicators.forEach((indicator, index) => {
+                    indicator.addEventListener('click', () => {
+                        handleUserInteraction();
+                        goToSlide(index);
+                    });
+                });
+
+                // Touch events for mobile
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                carouselContainer.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                }, { passive: true });
+
+                carouselContainer.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                }, { passive: true });
+
+                function handleSwipe() {
+                    const difference = touchStartX - touchEndX;
+                    if (Math.abs(difference) > 50) { // Minimum swipe distance
+                        handleUserInteraction();
+                        if (difference > 0) {
+                            nextSlide();
+                        } else {
+                            prevSlide();
+                        }
+                    }
+                }
+
+                // Pause auto-slide when tab is not visible
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        clearInterval(slideInterval);
+                    } else if (!userInteracted) {
+                        startAutoSlide();
+                    }
+                });
+            }
+
+            // Initialize
+            initCarousel();
+        });
+    </script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Toggle info banner
             const toggleButton = document.querySelector('.info-toggle');
@@ -463,8 +721,8 @@
                                 </div>
                                 <h3>Server Administrator?</h3>
                                 <p>Set up contributor accounts and manage server settings</p>
-                                <a href="../server/index.html#user-management" class="btn btn-primary">
-                                    <span>Server Administration</span>
+                                <a href="../server/index.html#managing-contributor-accounts" class="btn btn-primary">
+                                    <span>Manage Contributors</span>
                                     <i class="fas fa-arrow-right"></i>
                                 </a>
                             </div>
@@ -475,9 +733,9 @@
                                 </div>
                                 <h3>Try It Locally</h3>
                                 <p>Test the Lection Creator on your local machine without setting up a server</p>
-                                <a href="../server/index.html#local-setup" class="btn btn-outline">
-                                    <span>Local Development Guide</span>
-                                    <i class="fas fa-arrow-right"></i>
+                                <a href="#how-to-run" class="btn btn-outline">
+                                    <span>How to Run</span>
+                                    <i class="fas fa-arrow-down"></i>
                                 </a>
                             </div>
 
@@ -528,6 +786,136 @@
                 </div>
             </section>
         </main>
+
+        <!-- How to Run Section -->
+        <section id="how-to-run" class="how-to-run" style="padding: 4rem 2rem; background: #f8f9fa; scroll-margin-top: 80px;">
+            <div class="container" style="max-width: 1200px; margin: 0 auto;">
+                <h2 style="font-size: 2.25rem; color: #1a73e8; text-align: center; margin-bottom: 2rem;">How to Run the Lection Creator</h2>
+                <div style="max-width: 800px; margin: 0 auto 3rem;">
+                    <h3 style="font-size: 1.5rem; color: #333; margin: 2rem 0 1rem;">1. Set up a virtual environment (recommended):</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" title="Copy to clipboard">
+                            <i class="far fa-copy"></i>
+                        </button>
+                        <pre><code>python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+
+# On macOS/Linux:
+source venv/bin/activate</code></pre>
+                    </div>
+
+                    <h3 style="font-size: 1.5rem; color: #333; margin: 2rem 0 1rem;">2. Install the required packages:</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" title="Copy to clipboard">
+                            <i class="far fa-copy"></i>
+                        </button>
+                        <pre><code>pip install -r requirements.txt</code></pre>
+                    </div>
+
+                    <h3 style="font-size: 1.5rem; color: #333; margin: 2rem 0 1rem;">3. Navigate to the lectioncreator directory:</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" title="Copy to clipboard">
+                            <i class="far fa-copy"></i>
+                        </button>
+                        <pre><code>cd lectioncreator</code></pre>
+                    </div>
+
+                    <h3 style="font-size: 1.5rem; color: #333; margin: 2rem 0 1rem;">4. Run the application:</h3>
+                    <div class="code-block">
+                        <button class="copy-btn" title="Copy to clipboard">
+                            <i class="far fa-copy"></i>
+                        </button>
+                        <pre><code>flet run</code></pre>
+                    </div>
+
+                    <div class="info-banner" style="margin-top: 2rem; border-left: 4px solid #ff9800;">
+                        <div class="info-header" style="background-color: #fff8e1;">
+                            <i class="fas fa-server" style="color: #ff9800;"></i>
+                            <h3>Running a Local Server</h3>
+                        </div>
+                        <div class="info-content" style="display: block; max-height: none; opacity: 1; padding: 1.5rem;">
+                            <p>If you want to use a local server, follow these additional steps in a new terminal:</p>
+                            <ol style="margin-top: 1rem; padding-left: 1.5rem;">
+                                <li style="margin-bottom: 1rem;">
+                                    <strong>Activate the virtual environment:</strong>
+                                    <div class="code-block" style="margin-top: 0.5rem;">
+                                        <button class="copy-btn" title="Copy to clipboard">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                        <pre><code># On Windows:
+.\venv\Scripts\activate
+
+# On macOS/Linux:
+source venv/bin/activate</code></pre>
+                                    </div>
+                                </li>
+                                <li>
+                                    <strong>Navigate to the server directory and start it:</strong>
+                                    <div class="code-block" style="margin-top: 0.5rem;">
+                                        <button class="copy-btn" title="Copy to clipboard">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                        <pre><code>cd server
+uvicorn main:app --reload</code></pre>
+                                    </div>
+                                </li>
+                            </ol>
+                            <p style="margin-top: 1rem; font-style: italic;">The server will be available at <a href="http://127.0.0.1:8000" target="_blank" style="color: #1a73e8; text-decoration: none;">http://127.0.0.1:8000</a></p>
+                            
+                            <div style="margin-top: 2rem; padding: 1.5rem; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+                                <h4 style="margin: 0 0 1rem 0; color: #2d3748; font-size: 1.1rem;">Need a local contributor account?</h4>
+                                <p style="margin: 0 0 1.5rem 0; color: #4a5568;">Create and manage accounts for testing the Lection Creator with your local server</p>
+                                <a href="../server/index.html#managing-contributor-accounts" class="button" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1.5rem; background: #4299e1; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background-color 0.2s ease;">
+                                    <i class="fas fa-user-cog"></i>
+                                    Manage Contributor Accounts
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Screenshot Carousel -->
+        <section class="screenshots" style="padding: 4rem 2rem; background: white;">
+            <div class="container" style="max-width: 1200px; margin: 0 auto;">
+                <h2 style="font-size: 2.25rem; color: #1a73e8; text-align: center; margin-bottom: 2rem;">Application Walkthrough</h2>
+                
+                <div class="carousel" style="max-width: 900px; margin: 0 auto; position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); touch-action: pan-y;">
+                    <div class="carousel-inner" style="display: flex; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); will-change: transform;">
+                        <div class="carousel-item" style="min-width: 100%; box-sizing: border-box; padding: 1rem;">
+                            <img src="assets/serverpage.PNG" alt="Server Page" style="width: 100%; border-radius: 8px; display: block;">
+                            <div style="text-align: center; padding: 1rem 0; font-weight: 600; color: #333;">Server Connection</div>
+                        </div>
+                        <div class="carousel-item" style="min-width: 100%; box-sizing: border-box; padding: 1rem;">
+                            <img src="assets/login.PNG" alt="Login Page" style="width: 100%; border-radius: 8px; display: block;">
+                            <div style="text-align: center; padding: 1rem 0; font-weight: 600; color: #333;">Contributor Login</div>
+                        </div>
+                        <div class="carousel-item" style="min-width: 100%; box-sizing: border-box; padding: 1rem;">
+                            <img src="assets/contentmanager.PNG" alt="Content Manager" style="width: 100%; border-radius: 8px; display: block;">
+                            <div style="text-align: center; padding: 1rem 0; font-weight: 600; color: #333;">Lection Manager</div>
+                        </div>
+                        <div class="carousel-item" style="min-width: 100%; box-sizing: border-box; padding: 1rem;">
+                            <img src="assets/lectioncreator.PNG" alt="Lection Editor" style="width: 100%; border-radius: 8px; display: block;">
+                            <div style="text-align: center; padding: 1rem 0; font-weight: 600; color: #333;">Lection Editor</div>
+                        </div>
+                    </div>
+                    <button class="carousel-control prev" style="position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; color: #1a73e8; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        ❮
+                    </button>
+                    <button class="carousel-control next" style="position: absolute; top: 50%; right: 1rem; transform: translateY(-50%); background: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.5rem; color: #1a73e8; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+                        ❯
+                    </button>
+                    <div class="carousel-indicators" style="position: absolute; bottom: 1rem; left: 0; right: 0; display: flex; justify-content: center; gap: 0.5rem;">
+                        <button class="indicator active" data-slide-to="0" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: #1a73e8; opacity: 0.5; cursor: pointer; padding: 0;"></button>
+                        <button class="indicator" data-slide-to="1" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: #1a73e8; opacity: 0.5; cursor: pointer; padding: 0;"></button>
+                        <button class="indicator" data-slide-to="2" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: #1a73e8; opacity: 0.5; cursor: pointer; padding: 0;"></button>
+                        <button class="indicator" data-slide-to="3" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: #1a73e8; opacity: 0.5; cursor: pointer; padding: 0;"></button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <footer>
             <p>&copy; 2025 OpenLingu Project</p>

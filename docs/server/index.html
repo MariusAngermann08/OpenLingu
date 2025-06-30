@@ -277,6 +277,36 @@
                 width: 100%;
             }
         }
+        
+        /* Command and Function Cards */
+        .command-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .function-card {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin: 1rem 0;
+            border-left: 3px solid #1a73e8;
+        }
+        
+        .function-card h5 {
+            margin: 0 0 0.5rem 0;
+            color: #1a4b8c;
+            font-size: 1.1rem;
+        }
+        
+        .function-card p {
+            margin: 0 0 0.75rem 0;
+            color: #4a5568;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 <body>
@@ -316,6 +346,14 @@
                 </div>
                 <h2>Server Overview</h2>
                 <p>OpenLingu's backend is built with <strong>FastAPI</strong>, a modern, high-performance web framework for building APIs with Python. The server is designed to be hosted using <strong>Uvicorn</strong>, a lightning-fast ASGI server implementation.</p>
+            </section>
+
+            <section id="server-overview" class="highlight-section">
+                <div class="section-header">
+                    <i class="fas fa-server"></i>
+                    <h2>Server Overview</h2>
+                </div>
+                <p>OpenLingu's decentralized approach allows anyone to create and host their own server with custom learning content. Each server can offer unique learning experiences through:</p>
                 
                 <div class="server-features">
                     <h3>What are OpenLingu Servers?</h3>
@@ -669,6 +707,94 @@ CORS_ORIGINS=["*"]</code></pre>
                 </style>
                 </div>
                 
+                <div class="contributor-management" id="managing-contributor-accounts" style="text-align: center; margin: 4rem 0; padding: 2rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                    <h3 style="margin-bottom: 1.5rem; color: #1a365d;">Managing Contributor Accounts</h3>
+                    <p style="max-width: 800px; margin: 0 auto 2rem; color: #4a5568;">Server administrators can manage contributor accounts using the built-in admin tools. These tools allow you to create, list, and remove contributor accounts with appropriate permissions.</p>
+                    
+                    <div style="max-width: 800px; margin: 0 auto; text-align: left;">
+                        <div class="command-card">
+                            <h4 style="color: #2d3748; margin-bottom: 1rem;">1. Run Admin Tools</h4>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                                <pre><code># Navigate to the server directory
+cd server
+
+# Run the admin tools
+python -m admin.tools</code></pre>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2.5rem;" id="admin-tool-functions">
+                            <h4 style="color: #2d3748; margin-bottom: 1.5rem; text-align: center;">2. Admin Tool Functions</h4>
+                            
+                            <div class="function-card">
+                                <h5>Create New Contributor</h5>
+                                <p>Creates a new contributor account with the specified username and password.</p>
+                                <div class="code-block">
+                                    <button class="copy-btn" title="Copy to clipboard">
+                                        <i class="far fa-copy"></i>
+                                    </button>
+                                    <pre><code># Select option 1 from the menu
+1</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="function-card" style="margin-top: 1.5rem;">
+                                <h5>List All Contributors</h5>
+                                <p>Displays a list of all registered contributors.</p>
+                                <div class="code-block">
+                                    <button class="copy-btn" title="Copy to clipboard">
+                                        <i class="far fa-copy"></i>
+                                    </button>
+                                    <pre><code># Select option 2 from the menu
+2</code></pre>
+                                </div>
+                            </div>
+                            
+                            <div class="function-card" style="margin-top: 1.5rem;">
+                                <h5>Delete Contributor</h5>
+                                <p>Removes a contributor account. This action cannot be undone.</p>
+                                <div class="code-block">
+                                    <button class="copy-btn" title="Copy to clipboard">
+                                        <i class="far fa-copy"></i>
+                                    </button>
+                                    <pre><code># Select option 3 from the menu
+3</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="important-note" style="margin-top: 2.5rem; background: #fff5f5; border-left: 4px solid #f56565;">
+                            <div class="note-header" style="background: #fff5f5;">
+                                <i class="fas fa-exclamation-triangle" style="color: #f56565;"></i>
+                                <h4>Security Notice</h4>
+                            </div>
+                            <p>These admin tools provide direct access to the server's user database. Please ensure that:</p>
+                            <ul style="margin: 0.75rem 0 0 1.5rem; padding: 0;">
+                                <li style="margin-bottom: 0.5rem;">Only trusted administrators have access to these tools</li>
+                                <li style="margin-bottom: 0.5rem;">Contributor accounts are created with strong, unique passwords</li>
+                                <li>Unused accounts are promptly removed</li>
+                            </ul>
+                            
+                            <div style="margin-top: 1.5rem; padding: 1rem; background: #ebf8ff; border-radius: 6px; border-left: 4px solid #4299e1;">
+                                <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                                    <i class="fas fa-info-circle" style="color: #3182ce; font-size: 1.25rem; margin-top: 0.2rem; flex-shrink: 0;"></i>
+                                    <div>
+                                        <p style="margin: 0 0 0.5rem 0; font-weight: 500; color: #2c5282;">Testing Locally</p>
+                                        <p style="margin: 0; font-size: 0.95rem; color: #4a5568;">
+                                            You can use these admin tools with your local development server. After creating a contributor account, 
+                                            log in to the Lection Creator using <code style="background: rgba(66, 153, 225, 0.1); padding: 0.2em 0.4em; border-radius: 3px; font-family: 'Fira Code', monospace;">http://localhost:8000</code> 
+                                            with the credentials you just created.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="api-reference" style="text-align: center; margin: 4rem 0 2rem; padding: 2rem; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
                     <h3 style="margin-bottom: 1.5rem; color: #1a365d;">API Documentation</h3>
                     <a href="../api/index.html" class="button primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 2rem; font-size: 1.1em; background: #4a6cf7; color: white; text-decoration: none; border-radius: 6px; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
