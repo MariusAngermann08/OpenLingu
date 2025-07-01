@@ -13,7 +13,7 @@ import requests
 from typing import Optional, Dict, Any, List
 
 # Server configuration
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://zuhause.ipv64.de:8100/"
 
 # Global variables for authentication
 AUTH_TOKEN: Optional[str] = None

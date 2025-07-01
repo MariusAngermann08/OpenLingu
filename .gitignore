@@ -4,3 +4,5 @@
 /server/language_handler/__pycache__/
 /server/db/
 /server/db/users.db
+dev/test.json
+dev/openlingu_cli.py
