@@ -54,7 +54,7 @@ class LanguageChooser(ft.Container):
         )
         
         self.subtitle = ft.Text(
-            "Select your preferred language from the list below",
+            "Choose the language you want to learn",
             size=16,
             color="#5f6368",
             text_align="center"

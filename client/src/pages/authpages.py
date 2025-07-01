@@ -192,7 +192,7 @@ class SignInPage(ft.Container):
             if response.status_code == 200:
                 # Save token to local page storage
                 await save_token(self.page, response.json()["access_token"])
-                self.page.go("/main")
+                self.page.go("/languages")
             else:
                 self.show_error("Invalid credentials")
                 self._reset_sign_in_button()
@@ -380,6 +380,9 @@ class SignUpPage(ft.Container):
     def show_error(self, message):
         """Show an error message below the form."""
         try:
+            # Get the column that contains the form controls
+            form_column = self.sign_up_card.content.content
+            
             if not hasattr(self, 'error_text'):
                 # Create error text if it doesn't exist
                 self.error_text = ft.Text(
@@ -389,11 +392,15 @@ class SignUpPage(ft.Container):
                     visible=False,
                     weight="w500"
                 )
+                
+                # Find the index of the sign up button in the form controls
+                button_index = form_column.controls.index(self.sign_up_button)
+                
                 # Insert error text above the sign up button
-                self.sign_up_card.content.controls.insert(
-                    self.sign_up_card.content.controls.index(self.sign_up_button),
-                    self.error_text
-                )
+                form_column.controls.insert(button_index, self.error_text)
+                
+                # Update the page to reflect the changes
+                self.page.update()
             
             # Update error text and make it visible
             self.error_text.value = message
@@ -402,6 +409,8 @@ class SignUpPage(ft.Container):
             
         except Exception as e:
             print(f"Error showing error message: {str(e)}")
+            import traceback
+            traceback.print_exc()
     
     def _is_valid_email(self, email):
         """Check if the email has a valid format."""
@@ -445,6 +454,12 @@ class SignUpPage(ft.Container):
         if not password:
             self.password_field.border_color = "red"
             self.show_error("Password is required")
+            return
+            
+        if len(password) < 8:
+            self.password_field.border_color = "red"
+            self.confirm_password_field.border_color = "red"
+            self.show_error("Password must be at least 8 characters long")
             return
             
         if password != confirm_password:
