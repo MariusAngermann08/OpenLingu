@@ -33,21 +33,11 @@ class LectionParser:
             if not content:
                 return result
                 
-            # Handle nested content structure
-            if "content" in content and isinstance(content["content"], dict):
-                nested_content = content["content"]
-                # Update metadata from nested content
-                result["title"] = nested_content.get("title", result["title"])
-                result["description"] = nested_content.get("description", result["description"])
-                result["language"] = nested_content.get("language", result["language"])
-                result["difficulty"] = nested_content.get("difficulty", result["difficulty"])
-                content = nested_content
-            else:
-                # Update metadata from direct content
-                result["title"] = content.get("title", result["title"])
-                result["description"] = content.get("description", result["description"])
-                result["language"] = content.get("language", result["language"])
-                result["difficulty"] = content.get("difficulty", result["difficulty"])
+            # Update metadata from content if not already set
+            result["title"] = content.get("title", result["title"])
+            result["description"] = content.get("description", result["description"])
+            result["language"] = content.get("language", result["language"])
+            result["difficulty"] = content.get("difficulty", result["difficulty"])
             
             # Process pages
             if "pages" not in content or not content["pages"]:
