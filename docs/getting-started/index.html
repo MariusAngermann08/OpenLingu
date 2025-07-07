@@ -116,6 +116,45 @@
             window.addEventListener('resize', () => {
                 updateIndicator(activeTab);
             });
+            
+            // Handle troubleshooting section toggle with smooth animation
+            document.querySelectorAll('.troubleshooting-header').forEach(button => {
+                // Initialize as collapsed
+                const content = button.nextElementSibling;
+                content.setAttribute('aria-hidden', 'true');
+                content.style.maxHeight = '0';
+                content.style.opacity = '0';
+                content.style.padding = '0 2rem';
+                
+                button.addEventListener('click', () => {
+                    const expanded = button.getAttribute('aria-expanded') === 'true' || false;
+                    
+                    // Toggle the expanded state
+                    button.setAttribute('aria-expanded', !expanded);
+                    content.setAttribute('aria-hidden', expanded);
+                    
+                    if (expanded) {
+                        // Collapsing
+                        content.style.maxHeight = '0';
+                        content.style.opacity = '0';
+                        content.style.padding = '0 2rem';
+                    } else {
+                        // Expanding
+                        // First, set a temporary height to measure the content
+                        content.style.maxHeight = 'none';
+                        const height = content.scrollHeight + 'px';
+                        content.style.maxHeight = '0';
+                        
+                        // Trigger reflow
+                        void content.offsetHeight;
+                        
+                        // Set the final height with transition
+                        content.style.maxHeight = height;
+                        content.style.opacity = '1';
+                        content.style.padding = '0 2rem 1.5rem';
+                    }
+                });
+            });
         });
     </script>
     <style>
@@ -466,8 +505,46 @@ source venv/bin/activate</code></pre>
                         </div>
                     </div>
                     
+                    <div class="step troubleshooting-section">
+                        <button class="troubleshooting-header" aria-expanded="false">
+                            <span class="header-content">
+                                <i class="fas fa-database"></i>
+                                <h3>Database Connection Issues? Click to expand</h3>
+                            </span>
+                            <i class="fas fa-chevron-down arrow"></i>
+                        </button>
+                        <div class="troubleshooting-content">
+                            <p>If you encounter database connection errors when running the application, you may need to reset and reinitialize the database. Follow these steps:</p>
+                            
+                            <div class="warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p><strong>Warning:</strong> This will delete all existing data in the database. Only proceed if you don't need the current data or are experiencing issues.</p>
+                            </div>
+                            
+                            <p>First, navigate to the server directory:</p>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code>cd server</code></pre>
+                            </div>
+                            
+                            <p>Then, reset the database:</p>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code>python reset_databases.py</code></pre>
+                            </div>
+                            
+                            <p>Finally, reinitialize the database:</p>
+                            <div class="code-block">
+                                <button class="copy-btn" title="Copy to clipboard"><i class="far fa-copy"></i></button>
+                                <pre><code>python init_db.py</code></pre>
+                            </div>
+                            
+                            <p>After completing these steps, you can return to the project root and start the application again.</p>
+                        </div>
+                    </div>
+                    
                     <div class="step">
-                        <h3>5. Next Steps</h3>
+                        <h3>6. Next Steps</h3>
                         <p>You've successfully set up and run the OpenLingu client application! 🎉</p>
                         <p>To learn more about using the client application and its features, check out the client documentation:</p>
                         <div class="next-steps">
@@ -481,6 +558,123 @@ source venv/bin/activate</code></pre>
         </main>
 
         <style>
+            /* Troubleshooting Section Styles */
+            .troubleshooting-section {
+                border: 1px solid #ffccbc;
+                border-radius: 10px;
+                overflow: hidden;
+                margin: 2rem 0;
+                background: #fff8f6;
+                box-shadow: 0 2px 8px rgba(230, 81, 0, 0.08);
+                transition: all 0.3s ease;
+            }
+            
+            .troubleshooting-section:hover {
+                box-shadow: 0 4px 12px rgba(230, 81, 0, 0.12);
+            }
+            
+            .troubleshooting-header {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.25rem 2rem;
+                background: #fff5f2;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                text-align: left;
+                margin: 0;
+            }
+            
+            .troubleshooting-header:hover {
+                background: #fff0eb;
+            }
+            
+            .troubleshooting-header[aria-expanded="true"] {
+                background: #ffebee;
+                border-bottom: 1px solid #ffcdd2;
+            }
+            
+            .troubleshooting-header[aria-expanded="true"] .arrow {
+                transform: rotate(180deg);
+            }
+            
+            .troubleshooting-header h3 {
+                margin: 0;
+                color: #d32f2f;
+                font-size: 1.05rem;
+                font-weight: 600;
+                letter-spacing: 0.3px;
+            }
+            
+            .header-content {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            .troubleshooting-header i.fa-database {
+                color: #f44336;
+                font-size: 1.1rem;
+                width: 20px;
+                text-align: center;
+            }
+            
+            .arrow {
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                color: #f44336;
+                font-size: 0.85rem;
+                margin-left: 8px;
+            }
+            
+            .troubleshooting-content {
+                max-height: 0;
+                overflow: hidden;
+                opacity: 0;
+                transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                            opacity 0.3s ease, 
+                            padding 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                padding: 0 2rem;
+                background: #fff;
+                border-top: 1px solid transparent;
+            }
+            
+            .troubleshooting-content[aria-hidden="false"] {
+                max-height: 1000px;
+                opacity: 1;
+                padding: 0 2rem 1.5rem;
+                border-top: 1px solid #f5f5f5;
+            }
+            
+            .troubleshooting-content p {
+                margin: 1rem 0;
+                line-height: 1.6;
+                color: #424242;
+            }
+            
+            .troubleshooting-content .warning {
+                background: #fff8e1;
+                border-left: 4px solid #ffc107;
+                padding: 0.75rem 1rem;
+                margin: 1.25rem 0;
+                border-radius: 0 4px 4px 0;
+                display: flex;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            
+            .troubleshooting-content .warning i {
+                color: #ffa000;
+                margin-top: 2px;
+            }
+            
+            .troubleshooting-content .warning p {
+                margin: 0;
+                color: #5d4037;
+                font-size: 0.95rem;
+            }
+            
             .next-steps {
                 margin: 2rem 0;
                 text-align: center;
