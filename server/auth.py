@@ -30,7 +30,6 @@ def _get_token_service():
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def verify_password(plain_password, hashed_password):
-    print(f"[DEBUG] Verifying password. Plain: '{plain_password}', Hashed: '{hashed_password}'")
     result = pwd_context.verify(plain_password, hashed_password)
     print(f"[DEBUG] Password verification result: {result}")
     return result
