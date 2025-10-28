@@ -1,0 +1,269 @@
+name: All Builds (Linux, macOS, Windows, AAB, APK, IPA)
+
+on:
+  # Allows you to run this workflow manually from the Actions tab of the repository
+  workflow_dispatch:
+    inputs:
+      buildNumber:
+        description: 'Build Number'
+        required: true
+        default: '1'
+      buildVersion:
+        description: 'Build Version'
+        required: true
+        default: '1.0.0'
+
+env:
+  # https://flet.dev/docs/publish#versioning
+  BUILD_NUMBER: ${{ inputs.buildNumber }}
+  BUILD_VERSION: ${{ inputs.buildVersion }}
+  PYTHON_VERSION: 3.12.8
+  FLET_CLI_VERSION: 0.28.3
+  PYTHONUTF8: 1
+  FLET_CLI_NO_RICH_OUTPUT: 1
+  UV_NO_PROGRESS: 1
+
+defaults:
+  run:
+    working-directory: ./client
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet-cli==$FLET_CLI_VERSION
+
+    - name: Patch for linux build
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y ninja-build libgtk-3-dev
+
+    - name: Flet Build Linux
+      run: |
+        flet build linux --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
+
+    - name: Upload Linux Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-flet
+        path: client/build/linux
+        if-no-files-found: warn
+        overwrite: false
+
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet-cli==$FLET_CLI_VERSION
+
+    - name: Flet Build macOS
+      run: |
+        flet build macos --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
+
+    - name: Upload macOS Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-flet
+        path: client/build/macos
+        if-no-files-found: warn
+        overwrite: false
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet-cli==$env:FLET_CLI_VERSION
+
+    - name: Flet Build Windows
+      run: |
+        flet build windows --verbose --no-rich-output --build-number=$env:BUILD_NUMBER --build-version=$env:BUILD_VERSION
+
+    - name: Upload Windows Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-flet
+        path: client/build/windows
+        if-no-files-found: warn
+        overwrite: false
+
+  build-aab:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet-cli==$FLET_CLI_VERSION
+
+    - name: Flet Build AAB
+      run: |
+        flet build aab --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
+
+    - name: Upload AAB Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: aab-flet
+        path: client/build/aab
+        if-no-files-found: warn
+        overwrite: false
+
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet-cli==$FLET_CLI_VERSION
+
+    - name: Flet Build APK
+      run: |
+        flet build apk --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: apk-flet
+        path: client/build/apk
+        if-no-files-found: warn
+        overwrite: false
+
+  build-ipa:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
+      run: |
+        python -m pip install --upgrade pip
+        pip install flet-cli==$FLET_CLI_VERSION
+
+    - name: Flet Build IPA
+      run: |
+        flet build ipa --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION 
+
+    - name: Upload IPA Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ipa-flet
+        path: client/build/ipa
+        if-no-files-found: warn
+        overwrite: false
+
+
+  create-release:
+    needs: [build-linux, build-macos, build-windows, build-aab, build-apk, build-ipa]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: ./
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Zip Artifacts
+        run: |
+          cd artifacts
+          echo "Initial directory structure:"
+          ls -la
+          echo "\nShowing ipa-flet contents:"
+          ls -la ipa-flet/
+          echo "\nShowing complete path structure:"
+          find ipa-flet -type d
+          mv ipa-flet/Runner.xcarchive/Products/Applications ipa-flet/Payload
+          echo "\nDirectory structure after mv:"
+          ls -la ipa-flet/
+          cd ipa-flet
+          zip -r ../ipa-flet.ipa Payload
+          cd ..
+          zip -r linux-flet.zip linux-flet/
+          zip -r macos-flet.zip macos-flet/
+          zip -r windows-flet.zip windows-flet/
+          zip -r aab-flet.zip aab-flet/
+
+      - name: List Workspace After Zipping
+        run: |
+          echo "Artifacts Directory After Zipping:"
+          ls -la artifacts/
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/apk-flet/app-release.apk
+            artifacts/ipa-flet.ipa
+            artifacts/windows-flet.zip
+            artifacts/linux-flet.zip
+            artifacts/macos-flet.zip
+            artifacts/aab-flet.zip
+          name: Release v${{ env.BUILD_VERSION }}
+          tag_name: v${{ env.BUILD_VERSION }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
