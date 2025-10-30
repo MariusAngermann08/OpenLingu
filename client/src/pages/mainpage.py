@@ -81,11 +81,61 @@ class MainPage(ft.Container):
         def set_native_language(self, name, code):
             self.current_language = name
             self.native_language_code = code
+
+            # try to update in-place first (keeps menu open state if supported)
+            language_menu = next(
+                (action for action in self.page.views[-1].appbar.actions 
+                if isinstance(action, ft.PopupMenuButton) and action.icon == "language"),
+                None
+            )
+            if language_menu:
+                # update items list
+                language_menu.items = self.native_language_items()
+            
+            # recreate the app bar to force immediate refresh
+            try:
+                self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+            except Exception:
+                pass
+
             self.page.client_storage.set("native_language", code)
             self.page.snack_bar = ft.SnackBar(ft.Text(f"Native language set to {name}"))
             self.page.snack_bar.open = True
+            self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
             self.page.update()
+
+        # bind the helper so it exists before native_language_items uses it
         self.set_native_language = set_native_language.__get__(self)
+
+        def native_language_items(self):
+            return [
+                ft.PopupMenuItem(text="Select your native language"),  # Title
+                ft.PopupMenuItem(),  # Divider
+                ft.PopupMenuItem(
+                    text="English",
+                    icon="check" if self.native_language_code == "en" else None,
+                    on_click=lambda e: self.set_native_language("English", "en")
+                ),
+                ft.PopupMenuItem(
+                    text="German",
+                    icon="check" if self.native_language_code == "de" else None,
+                    on_click=lambda e: self.set_native_language("German", "de")
+                ),
+                ft.PopupMenuItem(
+                    text="Spanish",
+                    icon="check" if self.native_language_code == "es" else None,
+                    on_click=lambda e: self.set_native_language("Spanish", "es")
+                ),
+                ft.PopupMenuItem(
+                    text="French",
+                    icon="check" if self.native_language_code == "fr" else None,
+                    on_click=lambda e: self.set_native_language("French", "fr")
+                )
+                # Add more languages as needed
+            ]
+        
+        # bind the helper so you can call self.native_language_items()
+        self.native_language_items = native_language_items.__get__(self)
 
         # Download Lection Dialog opener and dynamic logic
         def open_download_lection_dialog(self, e=None):
@@ -443,31 +493,7 @@ class MainPage(ft.Container):
                     icon="language",
                     icon_color="white",
                     tooltip="Change Native Language",
-                    items=[
-                        ft.PopupMenuItem(text="Select your native language"),  # Title
-                        ft.PopupMenuItem(),  # Divider
-                        ft.PopupMenuItem(
-                            text="English",
-                            icon="check" if self.native_language_code == "en" else None,
-                            on_click=lambda e: self.set_native_language("English", "en")
-                        ),
-                        ft.PopupMenuItem(
-                            text="German",
-                            icon="check" if self.native_language_code == "de" else None,
-                            on_click=lambda e: self.set_native_language("German", "de")
-                        ),
-                        ft.PopupMenuItem(
-                            text="Spanish",
-                            icon="check" if self.native_language_code == "es" else None,
-                            on_click=lambda e: self.set_native_language("Spanish", "es")
-                        ),
-                        ft.PopupMenuItem(
-                            text="French",
-                            icon="check" if self.native_language_code == "fr" else None,
-                            on_click=lambda e: self.set_native_language("French", "fr")
-                        ),
-                        # Add more languages as needed
-                    ],
+                    items=self.native_language_items(),
                 ),
                 ft.IconButton(
                     icon="download",
