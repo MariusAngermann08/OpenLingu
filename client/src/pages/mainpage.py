@@ -691,18 +691,19 @@ class MainPage(ft.Container):
                     "At the top, you'll find the <b>AppBar</b>.<br>"
                     "• The <b>menu button</b> (☰) opens the navigation drawer.<br>"
                     "• The <b>language button</b> lets you change your learning language.<br>"
-                    "• The <b>Globe Icon</b> lets you change your native language.<br>"
-                    "• The <b>Server info</b> and <b>Download</b> icons are for advanced features.<br><br>"
-                    "Let's look at the drawer next!"
+                    "• The <b>Globe Icon</b> lets you change your native language(for auto translation).<br>"
+                    "• The <b>Server info</b> shows you what server your on.<br>"
+                    "• The <b>Download</b> icon lets you download lections to use offline via Localhost.<br>"
+                    
                 ),
             },
             {
                 "target": self.drawer,
                 "message": (
-                    "📚 <b>This is the Navigation Drawer.</b><br><br>"
-                    "• Use it to switch between Daily Tasks, Learning Page, Vocabulary Trainer, and more.<br>"
+                    "📚 <b>The Navigation Drawer can be opened via the menu button (☰) in the top left corner </b><br>"
+                    "• Use it to switch between <b> Daily Tasks, Learning Page, Vocabulary Trainer,</b> and more.<br>"
                     "• The <b>Account</b> and <b>Settings</b> are at the bottom.They allow you to customize your Experience with Openlingu<br>"
-                    "• You can always open this drawer from the menu button in the AppBar."
+                    
                 ),
             },
         ]
@@ -725,9 +726,12 @@ class MainPage(ft.Container):
             self.end_tutorial()
 
     def next_tutorial_step(self, e=None):
+        # ceck if tutorial is open(overlay exists)
         if hasattr(self, "tutorial_overlay_instance") and self.tutorial_overlay_instance:
+            # Remove current overlay
             self.page.overlay.remove(self.tutorial_overlay_instance)
             self.tutorial_overlay_instance = None
+        # advance to next step and open again
         self.tutorial_step += 1
         self.show_tutorial_step()
 
@@ -764,6 +768,7 @@ class TutorialOverlay(ft.Stack):
             spans.pop()
 
         super().__init__(
+            # UI definition for Tutorial Overlay
             controls=[
                 ft.Container(
                     bgcolor="#00000088",  # semi-transparent overlay
