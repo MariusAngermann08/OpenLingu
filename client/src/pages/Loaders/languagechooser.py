@@ -73,7 +73,7 @@ class LanguageChooser(ft.Container):
             on_change=self.on_language_select,
             width=300
         )
-        self.selected_language = "en"  # Set initial selected language
+        self.selected_language = None
         
         self.select_button = ft.ElevatedButton(
             text="Select",
@@ -95,6 +95,27 @@ class LanguageChooser(ft.Container):
                 padding=20,
             )
         )
+
+        # Aler dialog for no selection
+        self.alert_dialog = ft.AlertDialog(
+                modal=True,
+                title=ft.Text("Language Required", size=20),
+                content=ft.Text(
+                    "Please select a language before proceeding.",
+                    size=16,
+                    color="#5f6368",
+                ),
+                actions=[
+                    ft.TextButton(
+                        text="OK",
+                        on_click=lambda e: self.close_alert(e)
+                    )
+                ],
+                actions_alignment=ft.MainAxisAlignment.END
+            )
+        
+        self.page.dialog = self.alert_dialog
+
         
         # Main content
         self.content = ft.Container(
@@ -133,30 +154,35 @@ class LanguageChooser(ft.Container):
     async def on_select_click(self, e):
         print(f"[DEBUG] Selected language: {self.selected_language}")
         if not self.selected_language:
-            print("[DEBUG] No language selected")
+            self.page.open(self.alert_dialog)
             return
             
         try:
             
-            # Save the selected language to client storage
+            # Then save to storage
             await self.page.client_storage.set_async("selected_language", self.selected_language)
             print(f"[DEBUG] Saved language to storage: {self.selected_language}")
             
-            # Update the current page if mainpage is available
-            if hasattr(self, 'mainpage') and self.mainpage:
-                print(f"[DEBUG] Calling update_language with: {self.selected_language}")
-                # Call the async method and wait for it to complete
-                await self.mainpage.update_language(self.selected_language)
-                print("[DEBUG] Language update completed")
-                
-            # Navigate back to main page
+            # Navigate back last (after UI and storage updates complete)
             self.page.go("/main")
             
         except Exception as ex:
             print(f"[ERROR] Error in on_select_click: {str(ex)}")
+            import traceback
+            traceback.print_exc()
             # Still try to navigate even if there was an error
             self.page.go("/main")
         
     def on_cancel_click(self, e):
-        # Placeholder for cancel action
-        self.page.go("/main")
+        stored_language = self.page.client_storage.get("selected_language")
+        if not self.selected_language:
+            print("[DEBUG] Cancel clicked with no language selected")
+            self.page.open(self.alert_dialog)
+            self.page.update()
+        else:
+            self.page.go("/main")
+    
+    # simple function to close alert dialog
+    def close_alert(self,e):
+        self.page.close(self.alert_dialog)
+        self.page.update()

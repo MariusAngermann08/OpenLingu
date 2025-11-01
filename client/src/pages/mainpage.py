@@ -38,9 +38,12 @@ class MainPage(ft.Container):
         page.vertical_alignment = ft.MainAxisAlignment.CENTER
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         
-        # Initialize language from client storage or default to English
-        self.current_language = "English"  # Default value
-        self.native_language_code = "en"   # Default code
+        self.current_language = self.page.client_storage.get("selected_language")
+
+        if self.current_language is None:
+            # Initialize language from client storage or default to English
+            self.current_language = "English"  # Default value
+            self.native_language_code = "en"   # Default code
 
         # Create language button reference for hover effect (for learning language)
         self.language_btn = ft.ElevatedButton(
@@ -639,12 +642,7 @@ class MainPage(ft.Container):
             return None
 
     async def update_language(self, language_name: str):
-        """
-        Update the language button text with the provided language name.
-        
-        Args:
-            language_name (str): The display name of the language (e.g., 'English', 'Deutsch')
-        """
+        """Update the language button text with the provided language name."""
         if not language_name or not isinstance(language_name, str):
             print("[WARNING] Invalid language name provided")
             return
@@ -652,21 +650,35 @@ class MainPage(ft.Container):
         print(f"[DEBUG] update_language called with: {language_name}")
         
         try:
+            # Check if we have required references
+            if not hasattr(self, 'page') or self.page is None:
+                print("[ERROR] Page reference is missing")
+                return
+                
+            if not hasattr(self.page, 'views') or not self.page.views:
+                print("[ERROR] No page views available")
+                return
+                
             # Update the current language
             self.current_language = language_name
             
-            # Update the UI
-            if hasattr(self, 'language_btn') and self.language_btn is not None and self.page is not None:
-                try:
-                    self.language_btn.text = language_name
-                    self.page.update()
-                    print("[DEBUG] Language button updated")
-                except Exception as e:
-                    print(f"[ERROR] Failed to update language button: {e}")
+            # Update button text
+            if hasattr(self, 'language_btn') and self.language_btn is not None:
+                self.language_btn.text = language_name
             
-            # Save to storage in the background
-            if self.page is not None:
-                # Run the save operation without awaiting it
+            # Only attempt AppBar update if we have all required references
+            if hasattr(self.page, 'client_storage'):
+                try:
+                    self.page.views[-1].appbar = self.create_app_bar(self.appbar_title)
+                    self.page.update()
+                    print(f"[DEBUG] Language button updated to: {language_name}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to update AppBar: {e}")
+            else:
+                print("[WARNING] Client storage not available - skipping AppBar update")
+            
+            # Save to storage in background if available
+            if hasattr(self.page, 'client_storage'):
                 self._run_async_save(language_name)
                         
         except Exception as e:
