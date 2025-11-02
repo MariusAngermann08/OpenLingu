@@ -990,7 +990,7 @@ class EditorSelection(ft.Container):
                             label=ft.Text(f"{words[idx]}"),
                             bgcolor=color,
                             on_delete=lambda e, i=idx1: remove_underlined_word(i),
-                            color="white" if color != "#FBC02D" else "black",
+                            color="white",
                         )
                     )
             self.underlined_display.content = ft.Column(
