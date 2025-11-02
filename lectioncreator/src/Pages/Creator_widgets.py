@@ -275,14 +275,16 @@ class MatchablePairs:
 
 
     def build(self):
-        self.left_column = ft.Column()
-        self.right_column = ft.Column()
+        self.left_column = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO, expand=False)
+        self.right_column = ft.Column(spacing=8, scroll=ft.ScrollMode.AUTO, expand=False)
 
         for idx, word in self.left_items:
             btn = ft.ElevatedButton(
                 text=word,
-                width=150,
-                on_click=lambda e, i=idx: self.left_click(i)
+                on_click=lambda e, i=idx: self.left_click(i),
+                style=ft.ButtonStyle(
+                    padding=ft.Padding(8, 8, 8, 8),
+                )
             )
             self.buttons_left.append((idx, btn))
             self.left_column.controls.append(btn)
@@ -290,16 +292,21 @@ class MatchablePairs:
         for idx, word in self.right_items:
             btn = ft.ElevatedButton(
                 text=word,
-                width=150,
-                on_click=lambda e, i=idx: self.right_click(i)
+                on_click=lambda e, i=idx: self.right_click(i),
+                style=ft.ButtonStyle(
+                    padding=ft.Padding(8, 8, 8, 8),
+                )
             )
             self.buttons_right.append((idx, btn))
             self.right_column.controls.append(btn)
 
-        return ft.Row([self.left_column, self.right_column],
-                      alignment=ft.MainAxisAlignment.CENTER,
-                      spacing=50)
-
+        # Put left and right columns in a row with spacing
+        return ft.Row(
+            [self.left_column, self.right_column],
+            alignment=ft.MainAxisAlignment.CENTER,
+            spacing=50,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER  # keep them top-aligned
+    )
     def get_button(self, idx, side):
         btn_list = self.buttons_left if side == "left" else self.buttons_right
         for i, btn in btn_list:
