@@ -463,6 +463,7 @@ class PictureDrag:
 # Draggable Text Widget
 # Muss mit .build() innitiert werden
 class DraggableText:
+
     def __init__(self, page: ft.Page, text: str, gaps_idx: list[int], options: dict[str, int]):
         self.page = page
         self.raw_text = text
@@ -564,15 +565,21 @@ class DraggableText:
 
             self.page.run_task(reset_task)
 
+   # ==== BUILD UI ====
     def build(self):
         self.drop_targets.clear()
         self.buttons.clear()
 
-        text_parts = self.raw_text.split(" ")
-        row = ft.Row(wrap=True, spacing=5, alignment=ft.MainAxisAlignment.CENTER)
+        words = self.raw_text.replace("\n", " \n ").split(" ")
+        flow_controls = []
 
         luecke_counter = 0
-        for i, word in enumerate(text_parts):
+        for i, word in enumerate(words):
+            if word == "\n":
+                # Manual line break
+                flow_controls.append(ft.Container(height=0, width=0))
+                continue
+
             if i in self.luecken_idx:
                 drop = ft.DragTarget(
                     data=str(luecke_counter),
@@ -581,54 +588,74 @@ class DraggableText:
                     on_leave=self.drag_leave,
                     on_accept=self.drag_accept,
                     content=ft.Container(
-                        padding=10,
-                        width=100,
-                        height=40,
-                        bgcolor=ft.Colors.BLUE_GREY_100,
+                        padding=8,
+                        bgcolor="#ECEFF1",
                         border_radius=8,
                         alignment=ft.alignment.center,
-                        content=ft.Text("______", size=16, color=ft.Colors.BLACK),
+                        # width dynamically scales to word length (~10px per char)
+                        width=max(60, len(self.options[luecke_counter][0]) * 10),
+                        content=ft.Text("_____", size=16, color=ft.Colors.BLACK),
                     ),
                 )
                 self.drop_targets.append(drop)
-                row.controls.append(drop)
+                flow_controls.append(drop)
                 luecke_counter += 1
             else:
-                row.controls.append(ft.Text(word, size=16, color=ft.Colors.BLACK))
+                flow_controls.append(
+                    ft.Text(word, size=16, color=ft.Colors.BLACK)
+                )
 
-        drag_row = ft.Row(
-            spacing=10,
+        text_flow = ft.Row(
             wrap=True,
-            alignment=ft.MainAxisAlignment.CENTER
+            spacing=6,
+            alignment=ft.MainAxisAlignment.CENTER,
+            controls=flow_controls,
         )
+
+        drag_buttons = []
         for word, idx in self.options:
             drag_data = json.dumps({"word": word, "index": idx})
-            print("Draggable created:", drag_data)
             btn = ft.Draggable(
                 group="textdrop",
                 data=drag_data,
                 content=ft.Container(
-                    padding=10,
-                    width=100,
-                    height=40,
-                    bgcolor=ft.Colors.BLUE_GREY_100,
+                    padding=8,
                     border_radius=8,
+                    bgcolor="#CFD8DC",
                     alignment=ft.alignment.center,
+                    width=max(120, len(word) * 10),
                     content=ft.Text(word, size=16, color=ft.Colors.BLACK),
                 ),
             )
-            self.buttons.append(btn)
-            drag_row.controls.append(btn)
+            drag_buttons.append(btn)
 
-        return ft.Column(
-            [
-                ft.Row([row], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Divider(height=20),
-                drag_row,
-            ],
-            spacing=20,
+        drag_row = ft.Row(
+            wrap=True,
+            spacing=10,
             alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=drag_buttons,
+        )
+
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.Container(
+                        content=text_flow,
+                        padding=10,
+                        bgcolor="#FFFFFF",
+                        border_radius=8,
+                        shadow=ft.BoxShadow(blur_radius=4, color="#E0E0E0"),
+                    ),
+                    ft.Divider(height=20),
+                    drag_row,
+                ],
+                spacing=20,
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            expand=True,
+            bgcolor="#FAFAFA",
+            border_radius=12,
+            padding=20,
         )
 
     def is_fully_correct(self):
