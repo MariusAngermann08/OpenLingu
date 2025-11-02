@@ -443,13 +443,16 @@ class EditorSelection(ft.Container):
             self.pairs_display.update()
 
         def add_pair(e):
+            print("DEBUG: Adding pair")
             left = self.left_input.value.strip()
             right = self.right_input.value.strip()
             if left and right:
-                self.left_items.append(left)     # <-- plain strings
+                self.left_items.append(left)
                 self.right_items.append(right)
                 self.left_input.value = ""
                 self.right_input.value = ""
+                # reload ui
+                self.page.update()
                 refresh_pairs_display()
 
         def edit_pair(index: int):
@@ -461,11 +464,13 @@ class EditorSelection(ft.Container):
 
 
         def finish_editor(e):
-            if len(self.left_items) != len(self.right_items) or not self.left_items:
-                self.page.snack_bar = ft.SnackBar(ft.Text("Invalid pairs! Please add at least one valid pair."))
+            if not self.left_items or not self.right_items:
+                self.page.snack_bar = ft.SnackBar(ft.Text("Please add at least one pair!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
+
+            print("DEBUG: Saving pairs:", self.left_items, self.right_items)
 
             self.on_select_editor_callback(
                 None,
@@ -473,12 +478,11 @@ class EditorSelection(ft.Container):
                 config={
                     "type": "matchable_pairs",
                     "data": {
-                        "left_items": list(self.left_items),   # <-- changed keys
-                        "right_items": list(self.right_items), # <-- changed keys
+                        "left_items": self.left_items,
+                        "right_items": self.right_items
                     }
                 }
             )
-            self.show_editor_ui(self._build_selection_options())
 
         return ft.Container(
             content=ft.Column(
@@ -1560,8 +1564,8 @@ class MainEditor(ft.Container):
                     widget_export = {
                         "type": "matchable_pairs",
                         "data": {
-                            "left_items": list(widget_data.get("left", [])),
-                            "right_items": list(widget_data.get("right", []))
+                            "left_items": list(widget_data.get("left_items", [])),
+                            "right_items": list(widget_data.get("right_items", []))
                         }
                     }
                     
