@@ -255,8 +255,9 @@ class EditorField(ft.Container):
         if config["type"] == "gap_text":
             # Always create a new DraggableText for unsolved state
             return DraggableText(self.page, config["data"]["text"], config["data"]["gaps"], config["data"]["options"]).build()
+        
         elif config["type"] == "matchable_pairs":
-            return MatchablePairs(self.page, config["data"]["left"], config["data"]["right"]).build()
+            return MatchablePairs(self.page, config["data"]["left_items"], config["data"]["right_items"]).build()
         # Add more types as needed
         elif config["type"] == "custom":
             return config["data"]
@@ -339,22 +340,15 @@ class EditorField(ft.Container):
 
 class EditorSelection(ft.Container):
     def __init__(self, page: ft.Page, on_select_editor_callback, new: bool = False, lection_name: str = "", language: str = "en"):
-        super().__init__(
-            expand=True,
-            padding=ft.padding.symmetric(horizontal=24, vertical=16),
-            bgcolor="#f5f5f5"
-        )
+        super().__init__(expand=True, padding=ft.padding.symmetric(horizontal=24, vertical=16), bgcolor="#f5f5f5")
         self.page = page
         self.new = new
         self.lection_name = lection_name
-        self.language = language  # Store the selected language
+        self.language = language
         self.on_select_editor_callback = on_select_editor_callback
-
         self.content = ft.Container(
             content=ft.Column(
-                [
-                    self._build_selection_options()
-                ],
+                [self._build_selection_options()],
                 alignment=ft.MainAxisAlignment.CENTER,
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 spacing=10,
@@ -366,16 +360,15 @@ class EditorSelection(ft.Container):
         self.content.content = editor_ui
         self.content.update()
 
-    def on_editor_selected(self, editor_type: str):
+    def on_editor_selected(self, editor_type: str, **kwargs):
         editor_map = {
             "Matchable Pairs": self.build_matchable_pairs_editor,
             "Gap Text": self.build_gap_text_editor,
             "Plain Text": self.build_plain_text_editor,
-            "Underlined Text": self.build_underlined_text_editor,  # <-- add this line
-            # Weitere Editoren können hier ergänzt werden
+            "Underlined Text": self.build_underlined_text_editor,
         }
         if editor_type in editor_map:
-            editor_ui = editor_map[editor_type]()
+            editor_ui = editor_map[editor_type](**kwargs)
             self.show_editor_ui(editor_ui)
 
     def _build_selection_options(self) -> ft.Container:
@@ -422,13 +415,15 @@ class EditorSelection(ft.Container):
             height=50,
         )
 
+    # -------------------
     # Matchable Pairs Editor
-    def build_matchable_pairs_editor(self) -> ft.Control:
+    # -------------------
+    def build_matchable_pairs_editor(self, left_items=None, right_items=None) -> ft.Control:
+        self.left_items = left_items or []
+        self.right_items = right_items or []
         self.left_input = ft.TextField(label="Left item", filled=True, border_radius=8)
         self.right_input = ft.TextField(label="Right item", filled=True, border_radius=8)
         self.pairs_display = ft.Column()
-        self.left_items = []
-        self.right_items = []
 
         def refresh_pairs_display():
             self.pairs_display.controls.clear()
@@ -445,13 +440,13 @@ class EditorSelection(ft.Container):
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     )
                 )
-            self.page.update()
+            self.pairs_display.update()
 
         def add_pair(e):
             left = self.left_input.value.strip()
             right = self.right_input.value.strip()
             if left and right:
-                self.left_items.append(left)
+                self.left_items.append(left)     # <-- plain strings
                 self.right_items.append(right)
                 self.left_input.value = ""
                 self.right_input.value = ""
@@ -464,22 +459,22 @@ class EditorSelection(ft.Container):
             del self.right_items[index]
             refresh_pairs_display()
 
+
         def finish_editor(e):
             if len(self.left_items) != len(self.right_items) or not self.left_items:
-                self.page.snack_bar = ft.SnackBar(
-                    ft.Text("Invalid pairs! Please add at least one valid pair.")
-                )
+                self.page.snack_bar = ft.SnackBar(ft.Text("Invalid pairs! Please add at least one valid pair."))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
+
             self.on_select_editor_callback(
                 None,
                 "Matchable Pairs Activity",
                 config={
                     "type": "matchable_pairs",
                     "data": {
-                        "left": list(self.left_items),
-                        "right": list(self.right_items)
+                        "left_items": list(self.left_items),   # <-- changed keys
+                        "right_items": list(self.right_items), # <-- changed keys
                     }
                 }
             )
@@ -523,14 +518,13 @@ class EditorSelection(ft.Container):
             border_radius=12,
             padding=16,
         )
-    
-    # Edit existing widgets
 
+    # -------------------
+    # Edit Existing Widget
+    # -------------------
     def edit_existing_widget(self, widget_config):
-        """Load an existing widget into the appropriate editor."""
         widget_type = widget_config.get("type")
 
-        # Map widget types to editor names
         type_to_editor = {
             "matchable_pairs": "Matchable Pairs",
             "gap_text": "Gap Text",
@@ -543,29 +537,24 @@ class EditorSelection(ft.Container):
             print(f"[WARNING] Unknown widget type: {widget_type}")
             return
 
-        # Switch to the correct editor
-        self.on_editor_selected(editor_name)
-
-        # populate with matchable pairs data
+        # Pass existing data into editor constructors
+        data = widget_config.get("data", {})
+        
+        # constructor for matchable pairs
         if widget_type == "matchable_pairs":
-            self.left_items = list(widget_config["data"].get("left", []))
-            self.right_items = list(widget_config["data"].get("right", []))
-            if hasattr(self, 'pairs_display'):
-                self.pairs_display.controls.clear()
-                for left, right in zip(self.left_items, self.right_items):
-                    self.pairs_display.controls.append(ft.Text(f"{left} ↔ {right}"))
-                self.pairs_display.update()
+            left_items = data.get("left_items", [])
+            right_items = data.get("right_items", [])
+            left_items = [str(x) for x in left_items]
+            right_items = [str(x) for x in right_items]
+            self.on_editor_selected("Matchable Pairs", left_items=left_items, right_items=right_items)
 
-        # populate with gap text data
+        
         elif widget_type == "gap_text":
+            self.on_editor_selected(editor_name)
             if hasattr(self, 'text_field'):
-                # set text first
-                self.text_field.value = widget_config["data"].get("text", "")
-                # set gaps from backend (list of indices)
-                self.gaps_idx = list(widget_config["data"].get("gaps", []))
-
-                # convert backend dict -> editor list-of-dicts, clamp invalid idx -> 99
-                backend_options = widget_config["data"].get("options", {}) or {}
+                self.text_field.value = data.get("text", "")
+                self.gaps_idx = list(data.get("gaps", []))
+                backend_options = data.get("options", {}) or {}
                 self.options = []
                 for word, idx in backend_options.items():
                     try:
@@ -575,28 +564,59 @@ class EditorSelection(ft.Container):
                     if idx_int not in range(len(self.gaps_idx)):
                         idx_int = 99
                     self.options.append({"word": str(word), "gap_idx": idx_int})
-
-                # refresh UI
                 self.text_field.update()
                 self._render_options()
-
-        # populate with plain text data
+        
         elif widget_type == "plain_text":
+            self.on_editor_selected(editor_name)
             if hasattr(self, 'plain_text_field'):
-                self.plain_text_field.value = widget_config["data"].get("text", "")
+                self.plain_text_field.value = data.get("text", "")
                 self.plain_text_field.update()
-
-        # populate with underlined text data
+        
         elif widget_type == "underlined_text":
-            if hasattr(self, 'underlined_text_field'):
-                self.underlined_text_field.value = widget_config["data"].get("text", "")
-                self.underlined_words = widget_config["data"].get("underlined", {})
-                self.underlined_text_field.update()
-                if hasattr(self, 'render_underlined_preview'):
-                    self.render_underlined_preview()
+            self.on_editor_selected(editor_name)
+            self.underlined_text_field.value = data.get("text", "")
+            self.underlined_words = {int(k): v for k, v in data.get("underlined", {}).items()}
+            if hasattr(self, 'underlined_display'):
+                self._render_underlined_preview()
 
+    # -------------------
+    # Underlined Text Editor Helpers
+    # -------------------
+    def _render_underlined_preview(self):
+        if not hasattr(self, 'underlined_text_field') or not hasattr(self, 'underlined_display'):
+            return
+        text = self.underlined_text_field.value or ""
+        preview = UnderlinedText(text, self.underlined_words, font_size=18, bgcolor="#f5f5f5")
+        chips = []
+        words = text.split()
+        for idx1, color in self.underlined_words.items():
+            idx = idx1 - 1
+            if 0 <= idx < len(words):
+                chips.append(
+                    ft.Chip(
+                        label=ft.Text(f"{words[idx]}"),
+                        bgcolor=color,
+                        on_delete=lambda e, i=idx1: self._remove_underlined_word(i),
+                        color="white" if color != "#FBC02D" else "black",
+                    )
+                )
+        self.underlined_display.content = ft.Column(
+            [
+                ft.Text("Preview:", size=16, weight=ft.FontWeight.W_600),
+                preview,
+                ft.Row(chips, spacing=8) if chips else ft.Text("No underlined words."),
+            ],
+            spacing=8,
+        )
+        self.underlined_display.update()
 
-# render options for Gap text editor (class-level, safe)
+    def _remove_underlined_word(self, idx1):
+        if idx1 in self.underlined_words:
+            del self.underlined_words[idx1]
+            self._render_underlined_preview()
+
+    # render options for Gap text editor (class-level, safe, copy)
     def _render_options(self):
         if not hasattr(self, "options_container"):
             return
@@ -651,6 +671,11 @@ class EditorSelection(ft.Container):
             self.options_container.controls.append(row)
 
         self.options_container.update()
+
+    def _remove_underlined_word(self, idx1):
+            if idx1 in self.underlined_words:
+                del self.underlined_words[idx1]
+                self._render_underlined_preview()
 
 
     # -- Helper methods for Gap Text Editor --
