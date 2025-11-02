@@ -39,6 +39,7 @@ class MainPage(ft.Container):
         page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
         
         self.current_language = self.page.client_storage.get("selected_language")
+        self.current_language = self.current_language.capitalize()
 
         if self.current_language is None:
             # Initialize language from client storage or default to English

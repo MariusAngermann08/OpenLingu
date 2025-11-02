@@ -306,7 +306,7 @@ class EditorSelection(ft.Container):
             height=50,
         )
 
-    # — Matchable Pairs Editor, unverändert —
+    # Matchable Pairs Editor
     def build_matchable_pairs_editor(self) -> ft.Control:
         self.left_input = ft.TextField(label="Left item", filled=True, border_radius=8)
         self.right_input = ft.TextField(label="Right item", filled=True, border_radius=8)
@@ -408,7 +408,7 @@ class EditorSelection(ft.Container):
             padding=16,
         )
 
-    # — NEUER GAP TEXT EDITOR (smooth, funktional, clean) —
+    # Gap Tex Editor
 
     def build_gap_text_editor(self) -> ft.Control:
         self.text_field = ft.TextField(
@@ -463,7 +463,7 @@ class EditorSelection(ft.Container):
                     border_radius=8,
                 )
 
-                dropdown_options = [ft.dropdown.Option(str(idx)) for idx in range(len(self.gaps_idx))]
+                dropdown_options = [ft.dropdown.Option(str(idx + 1)) for idx in range(len(self.gaps_idx))]
                 dropdown_options.append(ft.dropdown.Option("99", "Incorrect Option"))
 
                 gap_dropdown = ft.Dropdown(
