@@ -235,7 +235,7 @@ class LoginPage(ft.Container):
             if hasattr(self, 'loading') and self.loading is not None:
                 self.loading.visible = False
             if hasattr(self, 'page') and self.page is not None:
-                await self.page.update_async()
+                await self.page.update()
     
     def _update_ui_with_error(self, message):
         """Wrapper to run UI updates on the main thread"""
