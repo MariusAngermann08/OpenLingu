@@ -1030,6 +1030,34 @@ class EditorSelection(ft.Container):
         # Update dropdown when text changes
         self.underlined_text_field.on_change = update_words_dropdown
 
+        if hasattr(self, "editing_config") and self.editing_config:
+            # Set internal state first
+            self.underlined_text_field.value = self.editing_config["text"]
+            self.underlined_words = {int(k): v for k, v in self.editing_config["underlined"].items()}
+
+            # Update dropdown options based on current text
+            text = self.underlined_text_field.value or ""
+            words = text.split()
+            self.words_dropdown.options = [
+                ft.dropdown.Option(f"{i}:{w}", w) for i, w in enumerate(words)
+            ]
+            # optionally preselect the first underlined word
+            if self.underlined_words:
+                first_idx = next(iter(self.underlined_words))
+                self.words_dropdown.value = f"{first_idx}:{words[first_idx]}" if first_idx < len(words) else None
+            else:
+                self.words_dropdown.value = None
+
+            # Set color dropdown to first selected word color if exists
+            self.selected_word = self.words_dropdown.value
+            self.selected_color = (
+                self.underlined_words.get(first_idx, "#1976D2") if self.underlined_words else "#1976D2"
+            )
+            self.color_dropdown.value = self.selected_color
+
+            # Render preview
+            render_underlined_preview()
+
         return ft.Container(
             content=ft.Column(
                 [

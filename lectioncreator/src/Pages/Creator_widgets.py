@@ -51,41 +51,21 @@ class UnderlinedText(ft.Container):
 
 
 class DraggableText:
-
     def __init__(self, page: ft.Page, text: str, gaps_idx: list[int], options: dict[str, int]):
         self.page = page
         self.raw_text = text
         self.luecken_idx = gaps_idx
-        self.options = list(options.items())  # [(word, idx)]
+        self.options = list(options.items())
         self.correct_state = [False] * len(gaps_idx)
         self.drop_targets = []
         self.buttons = []
 
+    # ==== DRAG HANDLERS ====
     def drag_will_accept(self, e: ft.DragTargetEvent):
-        # e.data kommt als String, entweder JSON oder direkter Index
         try:
-            print("DRAG WILL ACCEPT | e.data:", e.data)
-            data = None
-            # Versuch JSON zu parsen
-            try:
-                data = json.loads(e.data)
-            except Exception:
-                data = e.data  # fallback: roher String
-
-            if isinstance(data, dict):
-                dragged_idx = int(data.get("index", -1))
-            elif isinstance(data, str) and data.isdigit():
-                dragged_idx = int(data)
-            else:
-                dragged_idx = -1
-
-            drop_idx = int(e.control.data)
-
-
-            color = "#000000"
-            e.control.content.border = ft.border.all(2, color)
+            e.control.content.border = ft.border.all(2, "#1976D2")
         except Exception as ex:
-            print("drag_will_accept Fehler:", ex)
+            print("drag_will_accept error:", ex)
         e.control.update()
 
     def drag_leave(self, e: ft.DragTargetEvent):
@@ -94,38 +74,11 @@ class DraggableText:
 
     def drag_accept(self, e: ft.DragTargetEvent):
         try:
-            print("DROP ACCEPTED | e.data:", e.data)
-
-            data_obj = None
-            # Versuche JSON parsen, fallback auf rohen String
-            try:
-                data_obj = json.loads(e.data)
-            except Exception:
-                data_obj = e.data
-
-            # Falls data_obj ein dict mit src_id, holen wir Daten vom Draggable Control
-            if isinstance(data_obj, dict) and "src_id" in data_obj:
-                src_control = self.page.get_control(data_obj["src_id"])
-                drag_data_raw = src_control.data
-                if isinstance(drag_data_raw, str):
-                    drag_data = json.loads(drag_data_raw)
-                elif isinstance(drag_data_raw, dict):
-                    drag_data = drag_data_raw
-                else:
-                    print("Unerwarteter Datentyp bei src_control.data:", type(drag_data_raw))
-                    return
-            elif isinstance(data_obj, dict) and "word" in data_obj and "index" in data_obj:
-                drag_data = data_obj
-            else:
-                print("Unbekanntes Drag-Datenformat:", data_obj)
-                return
-
-            word = drag_data["word"]
-            dragged_idx = int(drag_data["index"])
+            data = json.loads(e.data) if isinstance(e.data, str) else e.data
+            word, dragged_idx = data["word"], int(data["index"])
             drop_idx = int(e.control.data)
-
         except Exception as ex:
-            print("Fehler bei drag_accept:", ex)
+            print("drag_accept parse error:", ex)
             return
 
         correct = dragged_idx == drop_idx
@@ -133,7 +86,7 @@ class DraggableText:
 
         container = e.control.content
         container.border = None
-        container.bgcolor = ft.Colors.GREEN if correct else ft.Colors.RED
+        container.bgcolor = "#A5D6A7" if correct else "#EF9A9A"
         container.content = ft.Text(word, size=16, color=ft.Colors.BLACK)
         e.control.update()
 
@@ -144,24 +97,28 @@ class DraggableText:
             async def reset_task():
                 await asyncio.sleep(1)
                 self.correct_state[drop_idx] = False
-                container.bgcolor = ft.Colors.BLUE_GREY_100
-                container.content = ft.Text("______", size=16, color=ft.Colors.BLACK)
+                container.bgcolor = "#ECEFF1"
+                container.content = ft.Text("_____", size=16, color=ft.Colors.BLACK)
                 e.control.update()
-
                 if hasattr(self.page, "notify_task_update"):
                     self.page.notify_task_update()
-
             self.page.run_task(reset_task)
 
+    # ==== BUILD UI ====
     def build(self):
         self.drop_targets.clear()
         self.buttons.clear()
 
-        text_parts = self.raw_text.split(" ")
-        row = ft.Row(wrap=True, spacing=5, alignment=ft.MainAxisAlignment.CENTER)
+        words = self.raw_text.replace("\n", " \n ").split(" ")
+        flow_controls = []
 
         luecke_counter = 0
-        for i, word in enumerate(text_parts):
+        for i, word in enumerate(words):
+            if word == "\n":
+                # Manual line break
+                flow_controls.append(ft.Container(height=0, width=0))
+                continue
+
             if i in self.luecken_idx:
                 drop = ft.DragTarget(
                     data=str(luecke_counter),
@@ -170,54 +127,74 @@ class DraggableText:
                     on_leave=self.drag_leave,
                     on_accept=self.drag_accept,
                     content=ft.Container(
-                        padding=10,
-                        width=100,
-                        height=40,
-                        bgcolor=ft.Colors.BLUE_GREY_100,
+                        padding=8,
+                        bgcolor="#ECEFF1",
                         border_radius=8,
                         alignment=ft.alignment.center,
-                        content=ft.Text("______", size=16, color=ft.Colors.BLACK),
+                        # width dynamically scales to word length (~10px per char)
+                        width=max(60, len(self.options[luecke_counter][0]) * 10),
+                        content=ft.Text("_____", size=16, color=ft.Colors.BLACK),
                     ),
                 )
                 self.drop_targets.append(drop)
-                row.controls.append(drop)
+                flow_controls.append(drop)
                 luecke_counter += 1
             else:
-                row.controls.append(ft.Text(word, size=16, color=ft.Colors.BLACK))
+                flow_controls.append(
+                    ft.Text(word, size=16, color=ft.Colors.BLACK)
+                )
 
-        drag_row = ft.Row(
-            spacing=10,
+        text_flow = ft.Row(
             wrap=True,
-            alignment=ft.MainAxisAlignment.CENTER
+            spacing=6,
+            alignment=ft.MainAxisAlignment.START,
+            controls=flow_controls,
         )
+
+        drag_buttons = []
         for word, idx in self.options:
             drag_data = json.dumps({"word": word, "index": idx})
-            print("Draggable created:", drag_data)
             btn = ft.Draggable(
                 group="textdrop",
                 data=drag_data,
                 content=ft.Container(
-                    padding=10,
-                    width=100,
-                    height=40,
-                    bgcolor=ft.Colors.BLUE_GREY_100,
+                    padding=8,
                     border_radius=8,
+                    bgcolor="#CFD8DC",
                     alignment=ft.alignment.center,
+                    width=max(60, len(word) * 10),
                     content=ft.Text(word, size=16, color=ft.Colors.BLACK),
                 ),
             )
-            self.buttons.append(btn)
-            drag_row.controls.append(btn)
+            drag_buttons.append(btn)
 
-        return ft.Column(
-            [
-                ft.Row([row], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Divider(height=20),
-                drag_row,
-            ],
-            spacing=20,
+        drag_row = ft.Row(
+            wrap=True,
+            spacing=10,
             alignment=ft.MainAxisAlignment.CENTER,
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=drag_buttons,
+        )
+
+        return ft.Container(
+            content=ft.Column(
+                [
+                    ft.Container(
+                        content=text_flow,
+                        padding=10,
+                        bgcolor="#FFFFFF",
+                        border_radius=8,
+                        shadow=ft.BoxShadow(blur_radius=4, color="#E0E0E0"),
+                    ),
+                    ft.Divider(height=20),
+                    drag_row,
+                ],
+                spacing=20,
+                alignment=ft.MainAxisAlignment.CENTER,
+            ),
+            expand=True,
+            bgcolor="#FAFAFA",
+            border_radius=12,
+            padding=20,
         )
 
     def is_fully_correct(self):
