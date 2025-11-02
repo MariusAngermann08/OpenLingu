@@ -125,6 +125,39 @@ class EditorField(ft.Container):
 
         self.editor_panel_label = ft.Text("Editor Panel - Page 1", size=18, weight=ft.FontWeight.W_600)
 
+        def _init_delete_dialog(self):
+            # we define it as a separate method to keep __init__ clean
+            def on_cancel(e):
+                self.deletion_dialog.open = False
+                self.page.update()
+
+            def on_confirm(e):
+                idx = getattr(self, "pending_deletion_index", None)
+                if idx is not None and 0 <= self.page_index < len(self.pages_content):
+                    page = self.pages_content[self.page_index]
+                    if 0 <= idx < len(page):
+                        del page[idx]
+                        print(f"Deleted widget {idx} on page {self.page_index}")
+                # close dialog
+                self.deletion_dialog.open = False
+                self.page.update()
+                self.update_view()
+
+            self.deletion_dialog = ft.AlertDialog(
+                modal=True,
+                title=ft.Text("Delete Widget?"),
+                content=ft.Text("This action cannot be undone."),
+                actions=[
+                    ft.TextButton("Cancel", on_click=on_cancel),
+                    ft.TextButton("Delete", on_click=on_confirm, style=ft.ButtonStyle(color=ft.Colors.RED_400))
+                ],
+            )
+            
+        _init_delete_dialog(self),
+        
+
+
+
         super().__init__(
             expand=True,
             padding=10,
@@ -167,35 +200,53 @@ class EditorField(ft.Container):
 
     def update_view(self):
         """Update the view to show the current page's widgets"""
-        # Show loading indicator while updating
         self.show_loading(True)
-        
         try:
-            # Clear existing content
             self.field_content.controls.clear()
             
-            # Add all widgets from the current page
             if self.pages_content and self.page_index < len(self.pages_content):
-                for widget_config in self.pages_content[self.page_index]:
+                for i, widget_config in enumerate(self.pages_content[self.page_index]):
                     widget = self.build_widget_from_config(widget_config)
                     if widget:
-                        self.field_content.controls.append(widget)
+                        wrapped = self.build_widget_with_controls(widget, widget_config, i)
+                        self.field_content.controls.append(wrapped)
             
-            # Update the page counter
+            # Update counters/labels
             self.navigator.content.controls[1].value = f"{self.page_index + 1} / {self.page_count}"
             self.editor_panel_label.value = f"Editor Panel - Page {self.page_index + 1}"
-            
-            # Update the UI
             self.update()
         finally:
-            # Hide loading indicator when done
             self.show_loading(False)
 
     def set_editor_content(self, content: ft.Control, label: str = "Editor Panel", config=None):
-        # Save config (type, data) instead of widget instance
+        # Ensure pages_content list exists
+        while len(self.pages_content) <= self.page_index:
+            self.pages_content.append([])
+
+        page_widgets = self.pages_content[self.page_index]
+
+        # If no config provided, create a default one
         if config is None:
             config = {"type": "custom", "data": content}
-        self.pages_content[self.page_index].append(config)
+
+        # Check if we're editing an existing widget
+        if hasattr(self, 'editing_widget_index'):
+            if 0 <= self.editing_widget_index < len(page_widgets):
+                # Replace existing widget
+                page_widgets[self.editing_widget_index] = config
+            else:
+                # Index out of range, append instead
+                page_widgets.append(config)
+
+            # Clear editing state
+            delattr(self, 'editing_widget_index')
+            if hasattr(self, 'editing_widget_config'):
+                delattr(self, 'editing_widget_config')
+        else:
+            # Adding new widget
+            page_widgets.append(config)
+
+        # Update view and label
         self.update_view()
         self.editor_panel_label.value = label
         self.update()
@@ -219,6 +270,71 @@ class EditorField(ft.Container):
                 bgcolor="#f5f5f5"
             )
         return ft.Text("Unknown widget type")
+
+    def build_widget_with_controls(self, widget, widget_config, index):
+        return ft.Container(
+            content=ft.Column([
+                # Control bar
+                ft.Container(
+                    content=ft.Row(
+                        [
+                            ft.Text(f"Widget {index + 1}", size=12, color="grey"),
+                            ft.Row(
+                                [
+                                    ft.IconButton(
+                                        icon=ft.Icons.EDIT,
+                                        icon_color="blue400",
+                                        tooltip="Edit widget",
+                                        on_click=lambda e: self.edit_widget(index, widget_config)
+                                    ),
+                                    ft.IconButton(
+                                        icon=ft.Icons.DELETE,
+                                        icon_color="red400",
+                                        tooltip="Delete widget",
+                                        on_click= lambda e: self.delete_widget(index)
+                                    ),
+                                ]
+                            )
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN
+                    ),
+                    bgcolor="#f0f0f0",
+                    padding=8,
+                    border_radius=ft.border_radius.only(top_left=8, top_right=8)
+                ),
+                # Actual widget
+                widget
+            ]),
+            border=ft.border.all(1, "#e0e0e0"),
+            border_radius=8,
+            margin=ft.margin.only(bottom=16)
+        )
+    
+    
+    def delete_widget(self, index):
+        self.pending_deletion_index = index
+
+        # Make dialog an overlay to ignore stack hirarchy
+        if self.deletion_dialog not in self.page.overlay:
+            self.page.overlay.append(self.deletion_dialog)
+
+        self.deletion_dialog.open = True
+        self.page.update()
+
+        print(f"Delete requested for widget {index} on page {self.page_index}")
+
+    def edit_widget(self, index, widget_config):
+        # Store current widget for editing
+        self.editing_widget_index = index
+        self.editing_widget_config = widget_config
+        
+        # Show editor selection with current config
+        if isinstance(self.editor_selection, EditorSelection):
+            self.editor_selection.edit_existing_widget(widget_config)
+            
+        # Update UI to show we're editing
+        self.editor_panel_label.value = f"Editing Widget {index + 1}"
+        self.update()
 
 
 class EditorSelection(ft.Container):
@@ -407,10 +523,176 @@ class EditorSelection(ft.Container):
             border_radius=12,
             padding=16,
         )
+    
+    # Edit existing widgets
 
-    # Gap Tex Editor
+    def edit_existing_widget(self, widget_config):
+        """Load an existing widget into the appropriate editor."""
+        widget_type = widget_config.get("type")
 
+        # Map widget types to editor names
+        type_to_editor = {
+            "matchable_pairs": "Matchable Pairs",
+            "gap_text": "Gap Text",
+            "plain_text": "Plain Text",
+            "underlined_text": "Underlined Text"
+        }
+
+        editor_name = type_to_editor.get(widget_type)
+        if not editor_name:
+            print(f"[WARNING] Unknown widget type: {widget_type}")
+            return
+
+        # Switch to the correct editor
+        self.on_editor_selected(editor_name)
+
+        # populate with matchable pairs data
+        if widget_type == "matchable_pairs":
+            self.left_items = list(widget_config["data"].get("left", []))
+            self.right_items = list(widget_config["data"].get("right", []))
+            if hasattr(self, 'pairs_display'):
+                self.pairs_display.controls.clear()
+                for left, right in zip(self.left_items, self.right_items):
+                    self.pairs_display.controls.append(ft.Text(f"{left} ↔ {right}"))
+                self.pairs_display.update()
+
+        # populate with gap text data
+        elif widget_type == "gap_text":
+            if hasattr(self, 'text_field'):
+                # set text first
+                self.text_field.value = widget_config["data"].get("text", "")
+                # set gaps from backend (list of indices)
+                self.gaps_idx = list(widget_config["data"].get("gaps", []))
+
+                # convert backend dict -> editor list-of-dicts, clamp invalid idx -> 99
+                backend_options = widget_config["data"].get("options", {}) or {}
+                self.options = []
+                for word, idx in backend_options.items():
+                    try:
+                        idx_int = int(idx)
+                    except Exception:
+                        idx_int = 99
+                    if idx_int not in range(len(self.gaps_idx)):
+                        idx_int = 99
+                    self.options.append({"word": str(word), "gap_idx": idx_int})
+
+                # refresh UI
+                self.text_field.update()
+                self._render_options()
+
+        # populate with plain text data
+        elif widget_type == "plain_text":
+            if hasattr(self, 'plain_text_field'):
+                self.plain_text_field.value = widget_config["data"].get("text", "")
+                self.plain_text_field.update()
+
+        # populate with underlined text data
+        elif widget_type == "underlined_text":
+            if hasattr(self, 'underlined_text_field'):
+                self.underlined_text_field.value = widget_config["data"].get("text", "")
+                self.underlined_words = widget_config["data"].get("underlined", {})
+                self.underlined_text_field.update()
+                if hasattr(self, 'render_underlined_preview'):
+                    self.render_underlined_preview()
+
+
+# render options for Gap text editor (class-level, safe)
+    def _render_options(self):
+        if not hasattr(self, "options_container"):
+            return
+
+        # Clear and rebuild rows
+        self.options_container.controls.clear()
+
+        # Build dropdown option list (same for all rows)
+        dropdown_options = [ft.dropdown.Option(str(i)) for i in range(len(self.gaps_idx))]
+        dropdown_options.append(ft.dropdown.Option("99", "Incorrect Option"))
+
+        for option in self.options:
+            # Text field: word
+            word_field = ft.TextField(
+                label="Option word",
+                value=option.get("word", ""),
+                width=220,
+                filled=True,
+                border_radius=8,
+                on_change=lambda e, opt=option: self._update_word(opt, e.control.value),
+            )
+
+            # Dropdown: gap index (value must be string)
+            current_gap_idx = option.get("gap_idx", 99)
+            # If current gap idx is a valid int, convert to str, else fall back to "99"
+            try:
+                if int(current_gap_idx) in range(len(self.gaps_idx)):
+                    value = str(int(current_gap_idx))
+                else:
+                    value = "99"
+            except Exception:
+                value = "99"
+
+            gap_dropdown = ft.Dropdown(
+                label="Select gap",
+                width=140,
+                options=dropdown_options,
+                value=value,
+                on_change=lambda e, opt=option: self._update_gap_idx(opt, e.control.value),
+            )
+
+            # Delete button by reference (avoids index capture issues)
+            delete_button = ft.IconButton(
+                icon=ft.Icons.DELETE,
+                icon_color="red",
+                tooltip="Delete option",
+                on_click=lambda e, opt=option: self._delete_option_by_ref(opt),
+            )
+
+            row = ft.Row([word_field, gap_dropdown, delete_button], spacing=12,
+                        vertical_alignment=ft.CrossAxisAlignment.CENTER)
+            self.options_container.controls.append(row)
+
+        self.options_container.update()
+
+
+    # -- Helper methods for Gap Text Editor --
+
+    def _update_word(self, option, new_word):
+        # directly mutate the option dict used by the UI
+        option["word"] = new_word
+
+    def _update_gap_idx(self, option, new_idx):
+        # new_idx comes as string from dropdown; store as int if possible
+        try:
+            idx = int(new_idx)
+        except Exception:
+            idx = 99
+        # allow storing any int for the UI; clamping to valid range done at save time
+        option["gap_idx"] = idx
+
+    def _delete_option_by_ref(self, option):
+        if option in self.options:
+            self.options.remove(option)
+            # re-render UI after removal
+            self._render_options()
+
+
+    # Gap Text Editor: fully reworked build function
     def build_gap_text_editor(self) -> ft.Control:
+        # main text field with live update of gaps
+        def update_gaps_internal(_e=None):
+            text = self.text_field.value or ""
+            words = text.split(" ")
+            # recalc gaps indices
+            self.gaps_idx = [i for i, w in enumerate(words) if w == "_____"]
+            # ensure existing options keep their gap_idx if still valid, else 99
+            for opt in self.options:
+                try:
+                    idx = int(opt.get("gap_idx", 99))
+                except Exception:
+                    idx = 99
+                opt["gap_idx"] = idx if idx in range(len(self.gaps_idx)) else 99
+            # refresh UI rows (will rebuild dropdown options)
+            self._render_options()
+
         self.text_field = ft.TextField(
             label="Text with gaps (place cursor and click 'Insert Gap' to add a gap)",
             multiline=True,
@@ -418,98 +700,42 @@ class EditorSelection(ft.Container):
             border_radius=8,
             min_lines=5,
             expand=True,
+            on_change=lambda e: update_gaps_internal(e),
         )
+
+        # internal editor lists
         self.gaps_idx = []
         self.options = []
         self.options_container = ft.Column(spacing=10, expand=True)
 
-        def update_gaps():
-            text = self.text_field.value or ""
-            words = text.split(" ")
-            self.gaps_idx = [i for i, w in enumerate(words) if w == "_____"]
-            update_option_dropdowns()
-
+        # add option handler
         def add_option(e):
             if not self.gaps_idx:
                 self.page.snack_bar = ft.SnackBar(ft.Text("Please add at least one gap in the text first!"))
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
-            option = {"word": "", "gap_idx": 0}
+            # default gap index = 0 if valid, else 99
+            default_idx = 0 if len(self.gaps_idx) > 0 else 99
+            option = {"word": "", "gap_idx": default_idx}
             self.options.append(option)
-            render_options()
+            self._render_options()
 
+        # insert gap at end (keeps UI simple)
         def insert_gap(e):
             text = self.text_field.value or ""
             gap_placeholder = "_____"
-            new_text = text + " " + gap_placeholder
+            if text and not text.endswith(" "):
+                new_text = text + " " + gap_placeholder
+            else:
+                new_text = text + gap_placeholder
             self.text_field.value = new_text
             self.text_field.update()
-            update_gaps()
+            update_gaps_internal()
 
-        def update_option_dropdowns():
-            # Optional: update dropdowns if gaps change
-            pass
-
-        def render_options():
-            self.options_container.controls.clear()
-            for i, option in enumerate(self.options):
-                word_field = ft.TextField(
-                    label="Option word",
-                    value=option["word"],
-                    width=220,
-                    on_change=lambda e, opt=option: update_word(opt, e.control.value),
-                    filled=True,
-                    border_radius=8,
-                )
-
-                dropdown_options = [ft.dropdown.Option(str(idx + 1)) for idx in range(len(self.gaps_idx))]
-                dropdown_options.append(ft.dropdown.Option("99", "Incorrect Option"))
-
-                gap_dropdown = ft.Dropdown(
-                    label="Select gap",
-                    width=140,
-                    options=dropdown_options,
-                    value=str(option["gap_idx"]),  # always string for dropdown
-                    on_change=lambda e, opt=option: update_gap_idx(opt, e.control.value),
-                )
-
-                delete_button = ft.IconButton(
-                    icon=ft.Icons.DELETE,
-                    icon_color="red",
-                    tooltip="Delete option",
-                    on_click=lambda e, idx=i: delete_option(idx),
-                )
-
-                option_row = ft.Row(
-                    [
-                        word_field,
-                        gap_dropdown,
-                        delete_button,
-                    ],
-                    spacing=12,
-                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                )
-                self.options_container.controls.append(option_row)
-            self.options_container.update()
-
-        def update_word(option, new_word):
-            option["word"] = new_word
-
-        def update_gap_idx(option, new_idx):
-            try:
-                idx = int(new_idx)
-                if (0 <= idx < len(self.gaps_idx)) or idx == 99:
-                    option["gap_idx"] = idx  # store as int!
-            except Exception:
-                pass
-
-        def delete_option(index):
-            self.options.pop(index)
-            render_options()
-
+        # Done handler (validate and convert to backend format)
         def finish_editor(e):
-            # Validation
+            # basic validations
             if not self.gaps_idx:
                 self.page.snack_bar = ft.SnackBar(ft.Text("No gaps found in the text!"))
                 self.page.snack_bar.open = True
@@ -520,7 +746,9 @@ class EditorSelection(ft.Container):
                 self.page.snack_bar.open = True
                 self.page.update()
                 return
-            assigned_indices = {opt["gap_idx"] for opt in self.options if opt["gap_idx"] != 99}
+
+            # compute assigned indices (ignore 99)
+            assigned_indices = {opt["gap_idx"] for opt in self.options if opt.get("gap_idx", 99) != 99}
             missing = [i for i in range(len(self.gaps_idx)) if i not in assigned_indices]
             if missing:
                 self.page.snack_bar = ft.SnackBar(ft.Text(f"Gap(s) {missing} without assigned option!"))
@@ -528,28 +756,46 @@ class EditorSelection(ft.Container):
                 self.page.update()
                 return
 
-            # Prepare data for DraggableText
-            text = self.text_field.value
-            options = {opt["word"]: opt["gap_idx"] for opt in self.options}
-            gaps = self.gaps_idx
+            # build backend dict keyed by word; clamp indices to valid range or 99
+            options_dict = {}
+            for opt in self.options:
+                word = str(opt.get("word", ""))  # backend key must be string
+                try:
+                    idx = int(opt.get("gap_idx", 99))
+                except Exception:
+                    idx = 99
+                if idx not in range(len(self.gaps_idx)):
+                    idx = 99
+                options_dict[word] = idx
 
-            # Add to page and reset editor UI
+            # call existing callback (backend expects dict)
             self.on_select_editor_callback(
                 None,
                 "Gap Text Activity",
-                config={"type": "gap_text", "data": {"text": text, "gaps": gaps, "options": options}}
+                config={
+                    "type": "gap_text",
+                    "data": {
+                        "text": self.text_field.value,
+                        "gaps": self.gaps_idx,
+                        "options": options_dict
+                    }
+                }
             )
+
+            # leave editor
             self.show_editor_ui(self._build_selection_options())
 
-        # --- Build the UI ---
+        # Build UI
         return ft.Container(
             content=ft.Column(
-                [   ft.ElevatedButton(
+                [
+                    ft.ElevatedButton(
                         "Back",
                         icon=ft.Icons.ARROW_BACK,
                         on_click=lambda e: self.show_editor_ui(self._build_selection_options()),
                         bgcolor="#bbbbbb",
-                        color="black",),
+                        color="black",
+                    ),
                     ft.Text("Create Gap Text", size=20, weight=ft.FontWeight.BOLD),
                     ft.Row(
                         [
@@ -579,13 +825,14 @@ class EditorSelection(ft.Container):
                 ],
                 spacing=15,
                 expand=True,
-                scroll=ft.ScrollMode.ALWAYS,  # <-- PUT IT HERE!
+                scroll=ft.ScrollMode.ALWAYS,
             ),
             expand=True,
             bgcolor="#fff",
             border_radius=12,
             padding=16,
         )
+
 
     def build_plain_text_editor(self) -> ft.Control:
         self.plain_text_field = ft.TextField(
@@ -813,6 +1060,8 @@ class MainEditor(ft.Container):
             language=language
         )
 
+        self.editor_field.editor_selection = self.editor_selection
+
         self.lection_name_field = ft.TextField(
             label="Lection Name",
             hint_text="Enter lesson name",
@@ -1030,8 +1279,8 @@ class MainEditor(ft.Container):
                 config = {
                     "type": "matchable_pairs",
                     "data": {
-                        "left": data.get("left_items", []),
-                        "right": data.get("right_items", [])
+                        "left_items": data.get("left_items", []),
+                        "right_items": data.get("right_items", [])
                     }
                 }
                 # Add the widget with config
@@ -1309,3 +1558,4 @@ class MainEditor(ft.Container):
         
         return lection_data
         return lection_data
+
